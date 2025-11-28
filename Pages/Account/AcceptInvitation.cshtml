@@ -1,0 +1,94 @@
+@page "{token}"
+@model MercatoApp.Pages.Account.AcceptInvitationModel
+@{
+    ViewData["Title"] = "Accept Invitation";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        @if (Model.InvitationValid)
+        {
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4 class="mb-0">You're Invited!</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-envelope-open text-primary" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">Join @Model.StoreName</h5>
+                        <p class="text-muted">
+                            <strong>@Model.InvitedByName</strong> has invited you to join their store team as a
+                            <span class="badge bg-info">@Model.RoleName</span>.
+                        </p>
+                    </div>
+
+                    @if (Model.IsAuthenticated)
+                    {
+                        @if (Model.EmailMatches)
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                You're signed in as <strong>@Model.CurrentUserEmail</strong>. Click below to accept the invitation.
+                            </div>
+
+                            <form method="post">
+                                <input type="hidden" name="token" value="@Model.Token" />
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">Accept Invitation</button>
+                                </div>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                This invitation was sent to <strong>@Model.InvitationEmail</strong>, but you're signed in as <strong>@Model.CurrentUserEmail</strong>.
+                            </div>
+                            <p class="text-muted">Please sign out and sign in with the correct account, or register a new account with the invited email address.</p>
+                            <div class="d-grid gap-2">
+                                <a asp-page="/Account/Logout" class="btn btn-outline-secondary">Sign Out</a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            This invitation was sent to <strong>@Model.InvitationEmail</strong>.
+                        </div>
+                        
+                        <p class="text-muted text-center mb-4">Please sign in or create an account to accept this invitation.</p>
+
+                        <div class="d-grid gap-2">
+                            <a asp-page="/Account/Login" asp-route-returnUrl="@($"/Account/AcceptInvitation/{Model.Token}")" class="btn btn-primary btn-lg">
+                                Sign In to Accept
+                            </a>
+                            <a asp-page="/Account/Register" asp-route-email="@Model.InvitationEmail" asp-route-returnUrl="@($"/Account/AcceptInvitation/{Model.Token}")" class="btn btn-outline-primary">
+                                Create New Account
+                            </a>
+                        </div>
+                    }
+
+                    <hr class="my-4" />
+
+                    <div class="small text-muted">
+                        <p class="mb-1"><strong>What does @Model.RoleName mean?</strong></p>
+                        <p>@Model.RoleDescription</p>
+                        <p class="mb-0">This invitation expires on @Model.ExpiresAt.ToString("MMMM d, yyyy").</p>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Invalid Invitation</h4>
+                    <p class="text-muted">@Model.ErrorMessage</p>
+                    <a asp-page="/Index" class="btn btn-primary">Go to Home</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

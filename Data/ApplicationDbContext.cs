@@ -50,6 +50,18 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<PayoutMethod> PayoutMethods { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the store user roles table.
+    /// Maps users to stores with their assigned internal role.
+    /// </summary>
+    public DbSet<StoreUserRole> StoreUserRoles { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the store user invitations table.
+    /// Tracks pending invitations for internal users to join a store.
+    /// </summary>
+    public DbSet<StoreUserInvitation> StoreUserInvitations { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -153,6 +165,66 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.StoreId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<StoreUserRole>(entity =>
+        {
+            // Composite unique index - one role per user per store
+            entity.HasIndex(e => new { e.StoreId, e.UserId }).IsUnique();
+
+            // Index for finding all users in a store
+            entity.HasIndex(e => e.StoreId);
+
+            // Index for finding all stores a user belongs to
+            entity.HasIndex(e => e.UserId);
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with AssignedByUser (optional)
+            entity.HasOne(e => e.AssignedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<StoreUserInvitation>(entity =>
+        {
+            // Index on invitation token for fast lookups
+            entity.HasIndex(e => e.InvitationToken).IsUnique();
+
+            // Index for finding pending invitations by email
+            entity.HasIndex(e => new { e.Email, e.Status });
+
+            // Index for finding invitations for a store
+            entity.HasIndex(e => e.StoreId);
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with InvitedByUser
+            entity.HasOne(e => e.InvitedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with AcceptedByUser (optional)
+            entity.HasOne(e => e.AcceptedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.AcceptedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

@@ -45,6 +45,8 @@ builder.Services.AddScoped<ISellerOnboardingService, SellerOnboardingService>();
 builder.Services.AddScoped<IStoreProfileService, StoreProfileService>();
 builder.Services.AddScoped<ISellerVerificationService, SellerVerificationService>();
 builder.Services.AddScoped<IPayoutSettingsService, PayoutSettingsService>();
+builder.Services.AddScoped<IInternalUserManagementService, InternalUserManagementService>();
+builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Configure role-based authorization policies
 builder.Services.AddAuthorization(options =>
