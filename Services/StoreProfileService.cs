@@ -338,10 +338,10 @@ public class StoreProfileService : IStoreProfileService
         // Trim hyphens from start and end
         slug = slug.Trim('-');
 
-        // Limit length to 100 characters
-        if (slug.Length > 100)
+        // Limit length to 150 characters to match Store model MaxLength
+        if (slug.Length > 150)
         {
-            slug = slug[..100].TrimEnd('-');
+            slug = slug[..150].TrimEnd('-');
         }
 
         return slug;
@@ -359,11 +359,18 @@ public class StoreProfileService : IStoreProfileService
 
         var slug = baseSlug;
         var counter = 1;
+        const int maxAttempts = 1000; // Prevent infinite loops
 
-        while (await SlugExistsAsync(slug, excludeStoreId))
+        while (await SlugExistsAsync(slug, excludeStoreId) && counter <= maxAttempts)
         {
             slug = $"{baseSlug}-{counter}";
             counter++;
+        }
+
+        if (counter > maxAttempts)
+        {
+            // Fallback: append timestamp to ensure uniqueness
+            slug = $"{baseSlug}-{DateTime.UtcNow.Ticks}";
         }
 
         return slug;
