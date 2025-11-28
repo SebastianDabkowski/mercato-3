@@ -153,4 +153,30 @@ public class User
     /// </summary>
     [MaxLength(256)]
     public string? SecurityStamp { get; set; }
+
+    // 2FA Configuration Properties
+
+    /// <summary>
+    /// Gets or sets whether two-factor authentication is enabled for this account.
+    /// </summary>
+    public bool TwoFactorEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the encrypted secret key used for TOTP-based 2FA.
+    /// This should be encrypted at rest in production environments.
+    /// </summary>
+    [MaxLength(512)]
+    public string? TwoFactorSecretKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets the recovery codes for 2FA (comma-separated, hashed).
+    /// Used when the user loses access to their authenticator app.
+    /// </summary>
+    [MaxLength(1024)]
+    public string? TwoFactorRecoveryCodes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when 2FA was enabled.
+    /// </summary>
+    public DateTime? TwoFactorEnabledAt { get; set; }
 }
