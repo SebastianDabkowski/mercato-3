@@ -125,6 +125,11 @@ public class Store
     /// Gets or sets the date and time when the store was last updated.
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the products in this store (navigation property).
+    /// </summary>
+    public ICollection<Product> Products { get; set; } = new List<Product>();
 }
 
 /// <summary>

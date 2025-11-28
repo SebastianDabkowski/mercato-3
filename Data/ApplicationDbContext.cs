@@ -62,6 +62,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<StoreUserInvitation> StoreUserInvitations { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the products table.
+    /// </summary>
+    public DbSet<Product> Products { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -225,6 +230,25 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.AcceptedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            // Index on store ID for finding all products in a store
+            entity.HasIndex(e => e.StoreId);
+
+            // Composite index for finding products by store and status
+            entity.HasIndex(e => new { e.StoreId, e.Status });
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany(s => s.Products)
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure Price precision
+            entity.Property(e => e.Price)
+                .HasPrecision(18, 2);
         });
     }
 }
