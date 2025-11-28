@@ -87,7 +87,7 @@ public class RoleAuthorizationService : IRoleAuthorizationService
     /// <inheritdoc />
     public RoleAuthorizationResult AuthorizeRole(ClaimsPrincipal user, string role)
     {
-        if (!user.Identity?.IsAuthenticated ?? true)
+        if (user.Identity?.IsAuthenticated != true)
         {
             LogAuthorizationFailure(user, role, "User is not authenticated");
             return RoleAuthorizationResult.Fail("User is not authenticated.");
@@ -112,7 +112,7 @@ public class RoleAuthorizationService : IRoleAuthorizationService
     /// <inheritdoc />
     public RoleAuthorizationResult AuthorizeAnyRole(ClaimsPrincipal user, params string[] roles)
     {
-        if (!user.Identity?.IsAuthenticated ?? true)
+        if (user.Identity?.IsAuthenticated != true)
         {
             LogAuthorizationFailure(user, string.Join(", ", roles), "User is not authenticated");
             return RoleAuthorizationResult.Fail("User is not authenticated.");
