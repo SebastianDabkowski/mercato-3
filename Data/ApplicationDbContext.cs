@@ -93,6 +93,9 @@ public class ApplicationDbContext : DbContext
             // Index on user ID for fast lookups
             entity.HasIndex(e => e.UserId).IsUnique();
 
+            // Index on store name for uniqueness
+            entity.HasIndex(e => e.StoreName).IsUnique();
+
             // Configure relationship with User
             entity.HasOne(e => e.User)
                 .WithMany()

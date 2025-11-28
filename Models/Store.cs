@@ -42,6 +42,33 @@ public class Store
     public string? Category { get; set; }
 
     /// <summary>
+    /// Gets or sets the URL or path to the store logo image.
+    /// </summary>
+    [MaxLength(500)]
+    public string? LogoUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the store contact email address.
+    /// </summary>
+    [EmailAddress]
+    [MaxLength(256)]
+    public string? ContactEmail { get; set; }
+
+    /// <summary>
+    /// Gets or sets the store contact phone number.
+    /// </summary>
+    [Phone]
+    [MaxLength(20)]
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the store website URL.
+    /// </summary>
+    [Url]
+    [MaxLength(500)]
+    public string? WebsiteUrl { get; set; }
+
+    /// <summary>
     /// Gets or sets the store status.
     /// </summary>
     public StoreStatus Status { get; set; } = StoreStatus.PendingVerification;
