@@ -1,0 +1,91 @@
+@page
+@model MercatoApp.Pages.Seller.OnboardingReviewModel
+@{
+    ViewData["Title"] = "Seller Onboarding - Review";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="mb-4">
+            <h1>Review Your Information</h1>
+            <p class="text-muted">Please review all information before submitting your seller application.</p>
+        </div>
+
+        <form method="post">
+            <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+            <!-- Store Profile Summary -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Store Profile</h5>
+                    <a asp-page="OnboardingStep1" class="btn btn-sm btn-outline-secondary">Edit</a>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Store Name</dt>
+                        <dd class="col-sm-8">@Model.Draft?.StoreName</dd>
+                        
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">@(Model.Draft?.Description ?? "-")</dd>
+                        
+                        <dt class="col-sm-4">Category</dt>
+                        <dd class="col-sm-8">@(Model.Draft?.Category ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Verification Summary -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Verification Details</h5>
+                    <a asp-page="OnboardingStep2" class="btn btn-sm btn-outline-secondary">Edit</a>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Business Type</dt>
+                        <dd class="col-sm-8">@Model.Draft?.BusinessType</dd>
+                        
+                        <dt class="col-sm-4">Registration Number</dt>
+                        <dd class="col-sm-8">@(Model.Draft?.BusinessRegistrationNumber ?? "-")</dd>
+                        
+                        <dt class="col-sm-4">Tax ID</dt>
+                        <dd class="col-sm-8">@(Model.Draft?.TaxId ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Payout Summary -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Payout Details</h5>
+                    <a asp-page="OnboardingStep3" class="btn btn-sm btn-outline-secondary">Edit</a>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Bank Name</dt>
+                        <dd class="col-sm-8">@Model.Draft?.BankName</dd>
+                        
+                        <dt class="col-sm-4">Account Holder</dt>
+                        <dd class="col-sm-8">@Model.Draft?.BankAccountHolderName</dd>
+                        
+                        <dt class="col-sm-4">Account Number</dt>
+                        <dd class="col-sm-8">@Model.MaskedAccountNumber</dd>
+                        
+                        <dt class="col-sm-4">Routing Number</dt>
+                        <dd class="col-sm-8">@(Model.Draft?.BankRoutingNumber ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>Important:</strong> By submitting this application, you confirm that all information provided is accurate and complete. 
+                Your store will be created in a "Pending Verification" state and will be activated after our team reviews your application.
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a asp-page="OnboardingStep3" class="btn btn-outline-secondary">← Back to Payout</a>
+                <button type="submit" class="btn btn-success btn-lg">Submit Application</button>
+            </div>
+        </form>
+    </div>
+</div>

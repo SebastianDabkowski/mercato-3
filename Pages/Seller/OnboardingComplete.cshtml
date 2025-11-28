@@ -1,0 +1,56 @@
+@page
+@model MercatoApp.Pages.Seller.OnboardingCompleteModel
+@{
+    ViewData["Title"] = "Seller Onboarding Complete";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6 text-center">
+        <div class="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" class="bi bi-check-circle-fill text-success mb-3" viewBox="0 0 16 16">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+            <h1 class="text-success">Congratulations!</h1>
+            <p class="lead">Your seller account has been created successfully.</p>
+        </div>
+
+        @if (Model.Store != null)
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Store Details</h5>
+                </div>
+                <div class="card-body text-start">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Store Name</dt>
+                        <dd class="col-sm-8">@Model.Store.StoreName</dd>
+                        
+                        <dt class="col-sm-4">Category</dt>
+                        <dd class="col-sm-8">@(Model.Store.Category ?? "-")</dd>
+                        
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-warning text-dark">Pending Verification</span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Created At</dt>
+                        <dd class="col-sm-8">@Model.Store.CreatedAt.ToString("MMMM dd, yyyy")</dd>
+                    </dl>
+                </div>
+            </div>
+        }
+
+        <div class="alert alert-info text-start">
+            <h5>What's Next?</h5>
+            <ul class="mb-0">
+                <li>Our team will review your application within 1-3 business days.</li>
+                <li>You'll receive an email notification once your account is verified.</li>
+                <li>After verification, you can start listing your products.</li>
+            </ul>
+        </div>
+
+        <div class="d-grid gap-2">
+            <a asp-page="/Index" class="btn btn-primary btn-lg">Go to Dashboard</a>
+        </div>
+    </div>
+</div>
