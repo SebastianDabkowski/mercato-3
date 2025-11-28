@@ -147,8 +147,8 @@ public class EmailVerificationService : IEmailVerificationService
 
         await _context.SaveChangesAsync();
 
-        // Send new verification email
-        await _emailService.SendVerificationEmailAsync(user.Email, newToken);
+        // Resend verification email with new token
+        await _emailService.ResendVerificationEmailAsync(user.Email, newToken);
 
         _logger.LogInformation("New verification token generated and sent to: {Email}", user.Email);
 
