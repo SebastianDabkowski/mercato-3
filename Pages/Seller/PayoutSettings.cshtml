@@ -1,0 +1,258 @@
+@page
+@model MercatoApp.Pages.Seller.PayoutSettingsModel
+@{
+    ViewData["Title"] = "Payout Settings";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="mb-4">
+            <h1>Payout Settings</h1>
+            <p class="text-muted">Configure your bank account and payout preferences to receive funds from sales.</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Payout Configuration Status -->
+        @if (Model.PayoutSummary != null && Model.PayoutSummary.ConfigurationIssues.Count > 0)
+        {
+            <div class="alert alert-warning" role="alert">
+                <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Payout Configuration Incomplete</h5>
+                <p class="mb-0">Please address the following issues before you can receive payouts:</p>
+                <ul class="mb-0 mt-2">
+                    @foreach (var issue in Model.PayoutSummary.ConfigurationIssues)
+                    {
+                        <li>@issue</li>
+                    }
+                </ul>
+            </div>
+        }
+        else if (Model.PayoutSummary != null && Model.PayoutSummary.IsPayoutConfigurationComplete)
+        {
+            <div class="alert alert-success" role="alert">
+                <i class="bi bi-check-circle"></i> Your payout configuration is complete. You're ready to receive payouts.
+            </div>
+        }
+
+        <!-- Existing Payout Methods -->
+        @if (Model.PayoutMethods.Count > 0)
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Payout Methods</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var method in Model.PayoutMethods)
+                    {
+                        <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+                            <div>
+                                <h6 class="mb-1">
+                                    @method.DisplayName
+                                    @if (method.IsDefault)
+                                    {
+                                        <span class="badge bg-primary ms-2">Default</span>
+                                    }
+                                    @if (method.VerificationStatus == MercatoApp.Models.PayoutMethodVerificationStatus.Verified)
+                                    {
+                                        <span class="badge bg-success ms-1">Verified</span>
+                                    }
+                                    else if (method.VerificationStatus == MercatoApp.Models.PayoutMethodVerificationStatus.Pending)
+                                    {
+                                        <span class="badge bg-warning text-dark ms-1">Pending Verification</span>
+                                    }
+                                    else if (method.VerificationStatus == MercatoApp.Models.PayoutMethodVerificationStatus.Failed)
+                                    {
+                                        <span class="badge bg-danger ms-1">Verification Failed</span>
+                                    }
+                                </h6>
+                                <p class="text-muted mb-1">
+                                    <strong>@method.BankName</strong> &bull; ****@method.BankAccountNumberLast4
+                                </p>
+                                <small class="text-muted">
+                                    Account Holder: @method.BankAccountHolderName
+                                    @if (!string.IsNullOrEmpty(method.Currency))
+                                    {
+                                        <span>&bull; @method.Currency</span>
+                                    }
+                                </small>
+                            </div>
+                            <div class="btn-group">
+                                @if (!method.IsDefault)
+                                {
+                                    <form method="post" asp-page-handler="SetDefault" class="d-inline">
+                                        <input type="hidden" name="methodId" value="@method.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Set as Default">
+                                            Set Default
+                                        </button>
+                                    </form>
+                                }
+                                <a asp-page="PayoutSettings" asp-route-edit="@method.Id" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                    Edit
+                                </a>
+                                <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this payout method?');">
+                                    <input type="hidden" name="methodId" value="@method.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Add/Edit Payout Method Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">@(Model.IsEditing ? "Edit Payout Method" : "Add New Bank Account")</h5>
+            </div>
+            <div class="card-body">
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+                <form method="post">
+                    <input type="hidden" asp-for="Input.EditingMethodId" />
+
+                    <p class="text-muted mb-3">
+                        @if (Model.IsEditing)
+                        {
+                            <text>Update your bank account details below. For security, you must re-enter your account number.</text>
+                        }
+                        else
+                        {
+                            <text>Enter your bank account details for receiving payouts. Your information is encrypted and stored securely.</text>
+                        }
+                    </p>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.DisplayName" class="form-label"></label>
+                            <input asp-for="Input.DisplayName" class="form-control" placeholder="e.g., Main Business Account" />
+                            <span asp-validation-for="Input.DisplayName" class="text-danger"></span>
+                            <div class="form-text">A friendly name to identify this payout method.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.BankName" class="form-label"></label>
+                            <input asp-for="Input.BankName" class="form-control" placeholder="e.g., Bank of America" />
+                            <span asp-validation-for="Input.BankName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.BankAccountHolderName" class="form-label"></label>
+                        <input asp-for="Input.BankAccountHolderName" class="form-control" placeholder="e.g., John Doe" />
+                        <span asp-validation-for="Input.BankAccountHolderName" class="text-danger"></span>
+                        <div class="form-text">The name exactly as it appears on your bank account.</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.BankAccountNumber" class="form-label"></label>
+                            <input asp-for="Input.BankAccountNumber" class="form-control" placeholder="e.g., 123456789 or IBAN" />
+                            <span asp-validation-for="Input.BankAccountNumber" class="text-danger"></span>
+                            <div class="form-text">Your bank account number or IBAN.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.BankRoutingNumber" class="form-label"></label>
+                            <input asp-for="Input.BankRoutingNumber" class="form-control" placeholder="e.g., 021000021 or SWIFT code" />
+                            <span asp-validation-for="Input.BankRoutingNumber" class="text-danger"></span>
+                            <div class="form-text">Routing number, SWIFT/BIC code, or sort code.</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.Currency" class="form-label"></label>
+                            <select asp-for="Input.Currency" class="form-select">
+                                <option value="">Select currency (optional)</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="CAD">CAD - Canadian Dollar</option>
+                                <option value="AUD">AUD - Australian Dollar</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="CHF">CHF - Swiss Franc</option>
+                                <option value="CNY">CNY - Chinese Yuan</option>
+                                <option value="INR">INR - Indian Rupee</option>
+                                <option value="PLN">PLN - Polish Zloty</option>
+                            </select>
+                            <span asp-validation-for="Input.Currency" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.CountryCode" class="form-label"></label>
+                            <select asp-for="Input.CountryCode" class="form-select">
+                                <option value="">Select country (optional)</option>
+                                <option value="US">United States</option>
+                                <option value="GB">United Kingdom</option>
+                                <option value="DE">Germany</option>
+                                <option value="FR">France</option>
+                                <option value="CA">Canada</option>
+                                <option value="AU">Australia</option>
+                                <option value="JP">Japan</option>
+                                <option value="CH">Switzerland</option>
+                                <option value="CN">China</option>
+                                <option value="IN">India</option>
+                                <option value="PL">Poland</option>
+                            </select>
+                            <span asp-validation-for="Input.CountryCode" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input asp-for="Input.IsDefault" class="form-check-input" type="checkbox" />
+                        <label asp-for="Input.IsDefault" class="form-check-label"></label>
+                        <div class="form-text">If checked, future payouts will use this method by default.</div>
+                    </div>
+
+                    <div class="alert alert-info mb-3">
+                        <strong>Note:</strong> Your payout information will be verified before your first payout. Changes to bank details may require additional verification.
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        @if (Model.IsEditing)
+                        {
+                            <a asp-page="PayoutSettings" class="btn btn-outline-secondary">Cancel</a>
+                        }
+                        else
+                        {
+                            <a asp-page="StoreSettings" class="btn btn-outline-secondary">← Back to Store Settings</a>
+                        }
+                        <button type="submit" class="btn btn-primary">
+                            @(Model.IsEditing ? "Update Payout Method" : "Add Payout Method")
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="card border-secondary">
+            <div class="card-body">
+                <h6 class="card-title"><i class="bi bi-shield-lock"></i> Security Information</h6>
+                <p class="card-text text-muted mb-0">
+                    Your bank account details are encrypted at rest and protected in transit. 
+                    Only the last 4 digits of your account number are displayed. 
+                    Changes to payout settings may trigger additional verification to protect your account.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

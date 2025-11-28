@@ -45,6 +45,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<SellerVerification> SellerVerifications { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the payout methods table.
+    /// </summary>
+    public DbSet<PayoutMethod> PayoutMethods { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -132,6 +137,21 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PayoutMethod>(entity =>
+        {
+            // Index on store ID for fast lookups
+            entity.HasIndex(e => e.StoreId);
+
+            // Composite index for finding default payout method
+            entity.HasIndex(e => new { e.StoreId, e.IsDefault });
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
