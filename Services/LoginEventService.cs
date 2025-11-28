@@ -176,6 +176,9 @@ public class LoginEventService : ILoginEventService
             };
         }
 
+        // Pre-check if user has any previous successful logins (used by both IP and device checks)
+        bool? hasPreviousLogins = null;
+
         // Check for new IP address (if we have IP address)
         if (!string.IsNullOrEmpty(ipAddress))
         {
@@ -185,12 +188,12 @@ public class LoginEventService : ILoginEventService
 
             if (!hasSeenIp)
             {
-                // Check if user has any previous successful logins
-                var hasPreviousLogins = await _context.LoginEvents
+                // Check if user has any previous successful logins (cached for reuse)
+                hasPreviousLogins ??= await _context.LoginEvents
                     .Where(e => e.UserId == userId && e.IsSuccessful)
                     .AnyAsync();
 
-                if (hasPreviousLogins)
+                if (hasPreviousLogins.Value)
                 {
                     return new SecurityAlertResult
                     {
@@ -211,12 +214,12 @@ public class LoginEventService : ILoginEventService
 
             if (!hasSeenDevice)
             {
-                // Check if user has any previous successful logins
-                var hasPreviousLogins = await _context.LoginEvents
+                // Reuse cached value or fetch if not already retrieved
+                hasPreviousLogins ??= await _context.LoginEvents
                     .Where(e => e.UserId == userId && e.IsSuccessful)
                     .AnyAsync();
 
-                if (hasPreviousLogins)
+                if (hasPreviousLogins.Value)
                 {
                     return new SecurityAlertResult
                     {
@@ -239,25 +242,42 @@ public class LoginEventService : ILoginEventService
     public async Task<int> CleanupOldEventsAsync(int retentionDays = 90)
     {
         var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
+        const int batchSize = 1000;
+        var totalDeleted = 0;
         
-        var oldEvents = await _context.LoginEvents
-            .Where(e => e.CreatedAt < cutoffDate)
-            .ToListAsync();
-
-        if (oldEvents.Count == 0)
+        // Process in batches to avoid memory issues with large datasets
+        while (true)
         {
-            return 0;
+            var batch = await _context.LoginEvents
+                .Where(e => e.CreatedAt < cutoffDate)
+                .Take(batchSize)
+                .ToListAsync();
+
+            if (batch.Count == 0)
+            {
+                break;
+            }
+
+            _context.LoginEvents.RemoveRange(batch);
+            await _context.SaveChangesAsync();
+            totalDeleted += batch.Count;
+
+            // If we got fewer than batch size, we're done
+            if (batch.Count < batchSize)
+            {
+                break;
+            }
         }
 
-        _context.LoginEvents.RemoveRange(oldEvents);
-        await _context.SaveChangesAsync();
+        if (totalDeleted > 0)
+        {
+            _logger.LogInformation(
+                "Cleaned up {Count} login events older than {RetentionDays} days",
+                totalDeleted,
+                retentionDays);
+        }
 
-        _logger.LogInformation(
-            "Cleaned up {Count} login events older than {RetentionDays} days",
-            oldEvents.Count,
-            retentionDays);
-
-        return oldEvents.Count;
+        return totalDeleted;
     }
 
     /// <inheritdoc />
