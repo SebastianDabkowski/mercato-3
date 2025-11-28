@@ -11,13 +11,19 @@ namespace MercatoApp.Pages.Seller;
 public class OnboardingCompleteModel : PageModel
 {
     private readonly ISellerOnboardingService _onboardingService;
+    private readonly IPayoutSettingsService _payoutSettingsService;
 
-    public OnboardingCompleteModel(ISellerOnboardingService onboardingService)
+    public OnboardingCompleteModel(
+        ISellerOnboardingService onboardingService,
+        IPayoutSettingsService payoutSettingsService)
     {
         _onboardingService = onboardingService;
+        _payoutSettingsService = payoutSettingsService;
     }
 
     public Store? Store { get; set; }
+
+    public PayoutSettingsSummary? PayoutSummary { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -35,6 +41,9 @@ public class OnboardingCompleteModel : PageModel
         {
             return RedirectToPage("OnboardingStep1");
         }
+
+        // Get payout settings summary
+        PayoutSummary = await _payoutSettingsService.GetPayoutSettingsSummaryAsync(Store.Id);
 
         return Page();
     }

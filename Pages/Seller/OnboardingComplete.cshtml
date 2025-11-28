@@ -40,6 +40,27 @@
             </div>
         }
 
+        @if (Model.PayoutSummary != null && Model.PayoutSummary.ConfigurationIssues.Count > 0)
+        {
+            <div class="alert alert-warning text-start">
+                <h5><i class="bi bi-exclamation-triangle"></i> Payout Configuration Required</h5>
+                <p>Please complete your payout settings to receive funds from sales:</p>
+                <ul class="mb-3">
+                    @foreach (var issue in Model.PayoutSummary.ConfigurationIssues)
+                    {
+                        <li>@issue</li>
+                    }
+                </ul>
+                <a asp-page="PayoutSettings" class="btn btn-warning">Configure Payout Settings</a>
+            </div>
+        }
+        else if (Model.PayoutSummary != null && Model.PayoutSummary.IsPayoutConfigurationComplete)
+        {
+            <div class="alert alert-success text-start">
+                <i class="bi bi-check-circle"></i> Your payout configuration is complete.
+            </div>
+        }
+
         <div class="alert alert-info text-start">
             <h5>What's Next?</h5>
             <ul class="mb-0">
