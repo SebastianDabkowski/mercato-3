@@ -176,8 +176,8 @@ public class PayoutSettingsService : IPayoutSettingsService
             BankAccountNumberEncrypted = EncryptBankAccountNumber(data.BankAccountNumber.Trim()),
             BankAccountNumberLast4 = GetLast4Digits(data.BankAccountNumber.Trim()),
             BankRoutingNumber = data.BankRoutingNumber?.Trim(),
-            Currency = data.Currency?.Trim().ToUpperInvariant(),
-            CountryCode = data.CountryCode?.Trim().ToUpperInvariant(),
+            Currency = string.IsNullOrWhiteSpace(data.Currency) ? null : data.Currency.Trim().ToUpperInvariant(),
+            CountryCode = string.IsNullOrWhiteSpace(data.CountryCode) ? null : data.CountryCode.Trim().ToUpperInvariant(),
             IsDefault = isDefault,
             IsVerified = false,
             VerificationStatus = PayoutMethodVerificationStatus.Pending,
@@ -231,8 +231,8 @@ public class PayoutSettingsService : IPayoutSettingsService
         payoutMethod.BankAccountNumberEncrypted = EncryptBankAccountNumber(data.BankAccountNumber.Trim());
         payoutMethod.BankAccountNumberLast4 = GetLast4Digits(data.BankAccountNumber.Trim());
         payoutMethod.BankRoutingNumber = data.BankRoutingNumber?.Trim();
-        payoutMethod.Currency = data.Currency?.Trim().ToUpperInvariant();
-        payoutMethod.CountryCode = data.CountryCode?.Trim().ToUpperInvariant();
+        payoutMethod.Currency = string.IsNullOrWhiteSpace(data.Currency) ? null : data.Currency.Trim().ToUpperInvariant();
+        payoutMethod.CountryCode = string.IsNullOrWhiteSpace(data.CountryCode) ? null : data.CountryCode.Trim().ToUpperInvariant();
         payoutMethod.IsDefault = data.IsDefault;
         payoutMethod.UpdatedAt = DateTime.UtcNow;
 
@@ -436,17 +436,50 @@ public class PayoutSettingsService : IPayoutSettingsService
             errors.Add("Bank routing number must be 50 characters or less.");
         }
 
-        if (!string.IsNullOrWhiteSpace(data.Currency) && data.Currency.Length != 3)
+        if (!string.IsNullOrWhiteSpace(data.Currency))
         {
-            errors.Add("Currency must be a 3-letter ISO 4217 code (e.g., USD, EUR).");
+            var currency = data.Currency.Trim().ToUpperInvariant();
+            if (currency.Length != 3 || !IsValidCurrencyCode(currency))
+            {
+                errors.Add("Currency must be a valid 3-letter ISO 4217 code (e.g., USD, EUR).");
+            }
         }
 
-        if (!string.IsNullOrWhiteSpace(data.CountryCode) && data.CountryCode.Length != 2)
+        if (!string.IsNullOrWhiteSpace(data.CountryCode))
         {
-            errors.Add("Country code must be a 2-letter ISO 3166-1 alpha-2 code (e.g., US, GB).");
+            var country = data.CountryCode.Trim().ToUpperInvariant();
+            if (country.Length != 2 || !IsValidCountryCode(country))
+            {
+                errors.Add("Country code must be a valid 2-letter ISO 3166-1 alpha-2 code (e.g., US, GB).");
+            }
         }
 
         return errors;
+    }
+
+    // Common ISO 4217 currency codes
+    private static readonly HashSet<string> ValidCurrencyCodes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CHF", "CNY", "INR", "PLN",
+        "SEK", "NOK", "DKK", "NZD", "SGD", "HKD", "KRW", "MXN", "BRL", "ZAR"
+    };
+
+    // Common ISO 3166-1 alpha-2 country codes
+    private static readonly HashSet<string> ValidCountryCodes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "US", "GB", "DE", "FR", "CA", "AU", "JP", "CH", "CN", "IN", "PL",
+        "SE", "NO", "DK", "NZ", "SG", "HK", "KR", "MX", "BR", "ZA", "NL",
+        "BE", "IT", "ES", "PT", "AT", "IE", "FI", "CZ", "HU", "RO", "BG"
+    };
+
+    private static bool IsValidCurrencyCode(string code)
+    {
+        return ValidCurrencyCodes.Contains(code);
+    }
+
+    private static bool IsValidCountryCode(string code)
+    {
+        return ValidCountryCodes.Contains(code);
     }
 
     /// <summary>
@@ -460,18 +493,6 @@ public class PayoutSettingsService : IPayoutSettingsService
         // This is a simple Base64 encoding for demonstration purposes only
         var bytes = System.Text.Encoding.UTF8.GetBytes(accountNumber);
         return Convert.ToBase64String(bytes);
-    }
-
-    /// <summary>
-    /// Decrypts the bank account number.
-    /// In production, this should use a proper decryption mechanism.
-    /// </summary>
-    public static string DecryptBankAccountNumber(string encryptedAccountNumber)
-    {
-        // NOTE: In production, implement proper decryption using a key management service
-        // This is a simple Base64 decoding for demonstration purposes only
-        var bytes = Convert.FromBase64String(encryptedAccountNumber);
-        return System.Text.Encoding.UTF8.GetString(bytes);
     }
 
     private static string GetLast4Digits(string accountNumber)
