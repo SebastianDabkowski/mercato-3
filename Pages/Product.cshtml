@@ -1,0 +1,124 @@
+@page "/product/{id:int}"
+@model MercatoApp.Pages.ProductModel
+@{
+    ViewData["Title"] = Model.Product?.Title ?? "Product";
+}
+
+@if (Model.Product != null && Model.IsProductAvailable)
+{
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Product Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h1 class="mb-0">@Model.Product.Title</h1>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            @if (!string.IsNullOrEmpty(Model.Product.Description))
+                            {
+                                <p class="lead">@Model.Product.Description</p>
+                            }
+                            
+                            <dl class="row">
+                                <dt class="col-sm-3">Category</dt>
+                                <dd class="col-sm-9">
+                                    <span class="badge bg-secondary">@Model.Product.Category</span>
+                                </dd>
+                                
+                                <dt class="col-sm-3">Availability</dt>
+                                <dd class="col-sm-9">
+                                    @if (Model.Product.Stock > 0)
+                                    {
+                                        <span class="text-success">@Model.Product.Stock in stock</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-danger">Out of stock</span>
+                                    }
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-4 text-center text-md-end">
+                            <div class="mb-3">
+                                <span class="h2 text-primary">@Model.Product.Price.ToString("C")</span>
+                            </div>
+                            @if (Model.Product.Stock > 0)
+                            {
+                                <button type="button" class="btn btn-primary btn-lg" disabled>
+                                    <i class="bi bi-cart-plus"></i> Add to Cart
+                                </button>
+                                <p class="text-muted small mt-2">Cart functionality coming soon</p>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                    Out of Stock
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Store Information -->
+            @if (Model.Product.Store != null)
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Sold by</h5>
+                    </div>
+                    <div class="card-body">
+                        <a asp-page="/Store" asp-route-slug="@Model.Product.Store.Slug" class="text-decoration-none">
+                            <strong>@Model.Product.Store.StoreName</strong>
+                        </a>
+                        @if (!string.IsNullOrEmpty(Model.Product.Store.Category))
+                        {
+                            <span class="ms-2 badge bg-light text-dark">@Model.Product.Store.Category</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Product Info Sidebar -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Product Info</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="mb-0">
+                        <dt>Listed</dt>
+                        <dd>@Model.Product.CreatedAt.ToString("MMMM d, yyyy")</dd>
+                        
+                        <dt>Last Updated</dt>
+                        <dd>@Model.Product.UpdatedAt.ToString("MMMM d, yyyy")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.Product != null && !Model.IsProductAvailable)
+{
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-box-seam text-muted" viewBox="0 0 16 16">
+                <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2l-2.218-.887zm3.564 1.426L5.596 5 8 5.961 14.154 3.5l-2.404-.961zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"/>
+            </svg>
+        </div>
+        <h2>Product Unavailable</h2>
+        <p class="text-muted">@Model.UnavailableMessage</p>
+        <a asp-page="/Index" class="btn btn-primary">Go to Home</a>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <h2>Product Not Found</h2>
+        <p class="text-muted">The product you're looking for doesn't exist or is no longer available.</p>
+        <a asp-page="/Index" class="btn btn-primary">Go to Home</a>
+    </div>
+}

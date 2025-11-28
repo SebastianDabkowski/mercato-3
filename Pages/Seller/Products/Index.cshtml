@@ -24,6 +24,14 @@
             </div>
         }
 
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @Model.ErrorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
         @if (Model.Products.Count == 0)
         {
             <div class="card">
@@ -49,6 +57,7 @@
                                 <th class="text-end">Stock</th>
                                 <th>Status</th>
                                 <th>Created</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -67,6 +76,21 @@
                                         </span>
                                     </td>
                                     <td>@product.CreatedAt.ToString("MMM d, yyyy")</td>
+                                    <td class="text-end">
+                                        @if (product.Status != MercatoApp.Models.ProductStatus.Archived)
+                                        {
+                                            <a asp-page="Edit" asp-route-id="@product.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                            <a asp-page="Delete" asp-route-id="@product.Id" class="btn btn-sm btn-outline-danger ms-1" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Archived</span>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         </tbody>
