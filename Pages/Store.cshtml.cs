@@ -16,13 +16,40 @@ public class StoreModel : PageModel
 
     public Store? Store { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(int id)
+    /// <summary>
+    /// Gets a value indicating whether the store is publicly viewable (Active or LimitedActive).
+    /// </summary>
+    public bool IsStorePubliclyViewable => Store != null && 
+        (Store.Status == StoreStatus.Active || Store.Status == StoreStatus.LimitedActive);
+
+    /// <summary>
+    /// Gets the message to display when store is not accessible.
+    /// </summary>
+    public string? UnavailableMessage { get; private set; }
+
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        Store = await _storeProfileService.GetStoreByIdAsync(id);
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return NotFound();
+        }
+
+        Store = await _storeProfileService.GetStoreBySlugAsync(slug);
 
         if (Store == null)
         {
             return NotFound();
+        }
+
+        // Handle stores that are not publicly viewable
+        if (!IsStorePubliclyViewable)
+        {
+            UnavailableMessage = Store.Status switch
+            {
+                StoreStatus.Suspended => "This store is currently unavailable.",
+                StoreStatus.PendingVerification => "This store is not yet available for public viewing.",
+                _ => "This store is currently unavailable."
+            };
         }
 
         return Page();

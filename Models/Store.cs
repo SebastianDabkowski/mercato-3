@@ -30,6 +30,13 @@ public class Store
     public string StoreName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the URL-friendly slug for the store.
+    /// </summary>
+    [Required]
+    [MaxLength(150)]
+    public string Slug { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets the store description.
     /// </summary>
     [MaxLength(1000)]
@@ -134,6 +141,11 @@ public enum StoreStatus
     /// Store is active and can list products.
     /// </summary>
     Active,
+
+    /// <summary>
+    /// Store is active with limited functionality (e.g., reduced listing quota).
+    /// </summary>
+    LimitedActive,
 
     /// <summary>
     /// Store has been suspended.

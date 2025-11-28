@@ -101,6 +101,9 @@ public class ApplicationDbContext : DbContext
             // Index on store name for uniqueness
             entity.HasIndex(e => e.StoreName).IsUnique();
 
+            // Index on slug for SEO-friendly URL lookups
+            entity.HasIndex(e => e.Slug).IsUnique();
+
             // Configure relationship with User
             entity.HasOne(e => e.User)
                 .WithMany()
