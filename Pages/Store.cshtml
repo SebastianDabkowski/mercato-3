@@ -1,0 +1,140 @@
+@page "{id:int}"
+@model MercatoApp.Pages.StoreModel
+@{
+    ViewData["Title"] = Model.Store?.StoreName ?? "Store";
+}
+
+@if (Model.Store != null)
+{
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Store Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3 mb-md-0">
+                            @if (!string.IsNullOrEmpty(Model.Store.LogoUrl))
+                            {
+                                <img src="@Model.Store.LogoUrl" alt="@Model.Store.StoreName Logo" class="img-fluid rounded" style="max-width: 150px; max-height: 150px;" />
+                            }
+                            else
+                            {
+                                <div class="border rounded d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px; background-color: #f8f9fa;">
+                                    <span class="h1 text-muted">@Model.Store.StoreName[0]</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="col-md-9">
+                            <h1 class="mb-2">@Model.Store.StoreName</h1>
+                            @if (!string.IsNullOrEmpty(Model.Store.Category))
+                            {
+                                <span class="badge bg-secondary mb-2">@Model.Store.Category</span>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Store.Description))
+                            {
+                                <p class="text-muted mb-0">@Model.Store.Description</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Store Description -->
+            @if (!string.IsNullOrEmpty(Model.Store.Description))
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">About This Store</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@Model.Store.Description</p>
+                    </div>
+                </div>
+            }
+
+            <!-- Placeholder for Products -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Products</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">No products available yet. Check back soon!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Contact Information</h5>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.Store.ContactEmail) || !string.IsNullOrEmpty(Model.Store.PhoneNumber) || !string.IsNullOrEmpty(Model.Store.WebsiteUrl))
+                    {
+                        <dl class="mb-0">
+                            @if (!string.IsNullOrEmpty(Model.Store.ContactEmail))
+                            {
+                                <dt>Email</dt>
+                                <dd>
+                                    <a href="mailto:@Model.Store.ContactEmail">@Model.Store.ContactEmail</a>
+                                </dd>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Store.PhoneNumber))
+                            {
+                                <dt>Phone</dt>
+                                <dd>
+                                    <a href="tel:@Model.Store.PhoneNumber">@Model.Store.PhoneNumber</a>
+                                </dd>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Store.WebsiteUrl))
+                            {
+                                <dt>Website</dt>
+                                <dd>
+                                    <a href="@Model.Store.WebsiteUrl" target="_blank" rel="noopener noreferrer">@Model.Store.WebsiteUrl</a>
+                                </dd>
+                            }
+                        </dl>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No contact information available.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Store Info -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Store Info</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="mb-0">
+                        <dt>Member Since</dt>
+                        <dd>@Model.Store.CreatedAt.ToString("MMMM yyyy")</dd>
+                        
+                        <dt>Status</dt>
+                        <dd>
+                            @if (Model.Store.Status == MercatoApp.Models.StoreStatus.Active)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">@Model.Store.Status</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <h2>Store Not Found</h2>
+        <p class="text-muted">The store you're looking for doesn't exist or is no longer available.</p>
+        <a asp-page="/Index" class="btn btn-primary">Go to Home</a>
+    </div>
+}

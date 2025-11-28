@@ -141,6 +141,16 @@ public class SellerOnboardingService : ISellerOnboardingService
         {
             result.Errors.Add("Store name must be 100 characters or less.");
         }
+        else
+        {
+            // Check store name uniqueness
+            var normalizedName = data.StoreName.Trim().ToLowerInvariant();
+            var storeNameExists = await _context.Stores.AnyAsync(s => s.StoreName.ToLower() == normalizedName);
+            if (storeNameExists)
+            {
+                result.Errors.Add("A store with this name already exists. Please choose a different name.");
+            }
+        }
 
         if (data.Description?.Length > 1000)
         {

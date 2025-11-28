@@ -42,6 +42,7 @@ builder.Services.AddScoped<ILoginEventService, LoginEventService>();
 builder.Services.AddScoped<IRoleAuthorizationService, RoleAuthorizationService>();
 builder.Services.AddScoped<IAuthorizationHandler, RoleAuthorizationHandler>();
 builder.Services.AddScoped<ISellerOnboardingService, SellerOnboardingService>();
+builder.Services.AddScoped<IStoreProfileService, StoreProfileService>();
 
 // Configure role-based authorization policies
 builder.Services.AddAuthorization(options =>
@@ -149,6 +150,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseRouting();
 

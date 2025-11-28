@@ -1,0 +1,157 @@
+@page
+@model MercatoApp.Pages.Seller.StoreSettingsModel
+@{
+    ViewData["Title"] = "Store Settings";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="mb-4">
+            <h1>Store Settings</h1>
+            <p class="text-muted">Manage your store profile, logo, and contact information.</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+        <!-- Store Logo Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Store Logo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4 text-center mb-3 mb-md-0">
+                        @if (!string.IsNullOrEmpty(Model.Store?.LogoUrl))
+                        {
+                            <img src="@Model.Store.LogoUrl" alt="Store Logo" class="img-thumbnail" style="max-width: 150px; max-height: 150px;" />
+                        }
+                        else
+                        {
+                            <div class="border rounded d-flex align-items-center justify-content-center" style="width: 150px; height: 150px; background-color: #f8f9fa;">
+                                <span class="text-muted">No logo</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-md-8">
+                        <form method="post" asp-page-handler="UploadLogo" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="logoFile" class="form-label">Upload New Logo</label>
+                                <input type="file" class="form-control" id="logoFile" name="logoFile" accept=".jpg,.jpeg,.png,.gif,.webp" />
+                                <div class="form-text">
+                                    Allowed formats: JPG, PNG, GIF, WebP. Maximum size: 5 MB.
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary">Upload Logo</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Store Profile Form -->
+        <form method="post">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Store Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.StoreName" class="form-label"></label>
+                        <input asp-for="Input.StoreName" class="form-control" aria-required="true" placeholder="e.g., My Awesome Store" />
+                        <span asp-validation-for="Input.StoreName" class="text-danger"></span>
+                        <div class="form-text">Your store name must be unique across the platform (max 100 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Description" class="form-label"></label>
+                        <textarea asp-for="Input.Description" class="form-control" rows="4" placeholder="Tell buyers about your store and what you sell..."></textarea>
+                        <span asp-validation-for="Input.Description" class="text-danger"></span>
+                        <div class="form-text">Describe your store and products to attract buyers (max 1000 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Category" class="form-label"></label>
+                        <select asp-for="Input.Category" class="form-select">
+                            <option value="">Select a category</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Fashion">Fashion</option>
+                            <option value="Home & Garden">Home & Garden</option>
+                            <option value="Sports & Outdoors">Sports & Outdoors</option>
+                            <option value="Books & Media">Books & Media</option>
+                            <option value="Health & Beauty">Health & Beauty</option>
+                            <option value="Toys & Games">Toys & Games</option>
+                            <option value="Automotive">Automotive</option>
+                            <option value="Food & Beverages">Food & Beverages</option>
+                            <option value="Art & Crafts">Art & Crafts</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <span asp-validation-for="Input.Category" class="text-danger"></span>
+                        <div class="form-text">Select the main category for your products.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Contact Details</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">These contact details will be displayed on your public store page.</p>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.ContactEmail" class="form-label"></label>
+                        <input asp-for="Input.ContactEmail" class="form-control" type="email" placeholder="contact@yourstore.com" />
+                        <span asp-validation-for="Input.ContactEmail" class="text-danger"></span>
+                        <div class="form-text">Email address for customer inquiries.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.PhoneNumber" class="form-label"></label>
+                        <input asp-for="Input.PhoneNumber" class="form-control" type="tel" placeholder="+1 234 567 8900" />
+                        <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+                        <div class="form-text">Optional phone number for customer contact.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.WebsiteUrl" class="form-label"></label>
+                        <input asp-for="Input.WebsiteUrl" class="form-control" type="url" placeholder="https://yourstore.com" />
+                        <span asp-validation-for="Input.WebsiteUrl" class="text-danger"></span>
+                        <div class="form-text">Optional website URL (must start with http:// or https://).</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a asp-page="/Index" class="btn btn-outline-secondary">Back to Dashboard</a>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+
+        @if (Model.Store != null)
+        {
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Public Store Page</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-2">View how your store appears to buyers:</p>
+                    <a asp-page="/Store" asp-route-id="@Model.Store.Id" class="btn btn-outline-info" target="_blank">
+                        View Public Store Page →
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
