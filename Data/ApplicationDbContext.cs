@@ -40,6 +40,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<SellerOnboardingDraft> SellerOnboardingDrafts { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the seller verifications table.
+    /// </summary>
+    public DbSet<SellerVerification> SellerVerifications { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -106,6 +111,18 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SellerOnboardingDraft>(entity =>
         {
             // Index on user ID for fast lookups (one draft per user)
+            entity.HasIndex(e => e.UserId).IsUnique();
+
+            // Configure relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SellerVerification>(entity =>
+        {
+            // Index on user ID for fast lookups (one verification per user)
             entity.HasIndex(e => e.UserId).IsUnique();
 
             // Configure relationship with User

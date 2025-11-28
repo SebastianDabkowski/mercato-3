@@ -43,6 +43,7 @@ builder.Services.AddScoped<IRoleAuthorizationService, RoleAuthorizationService>(
 builder.Services.AddScoped<IAuthorizationHandler, RoleAuthorizationHandler>();
 builder.Services.AddScoped<ISellerOnboardingService, SellerOnboardingService>();
 builder.Services.AddScoped<IStoreProfileService, StoreProfileService>();
+builder.Services.AddScoped<ISellerVerificationService, SellerVerificationService>();
 
 // Configure role-based authorization policies
 builder.Services.AddAuthorization(options =>
