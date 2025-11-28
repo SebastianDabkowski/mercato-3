@@ -11,17 +11,22 @@ public class RegisterModel : PageModel
 {
     private readonly IUserRegistrationService _registrationService;
     private readonly IPasswordValidationService _passwordValidation;
+    private readonly IConfiguration _configuration;
 
     public RegisterModel(
         IUserRegistrationService registrationService,
-        IPasswordValidationService passwordValidation)
+        IPasswordValidationService passwordValidation,
+        IConfiguration configuration)
     {
         _registrationService = registrationService;
         _passwordValidation = passwordValidation;
+        _configuration = configuration;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
+
+    public List<string> ExternalProviders { get; set; } = new();
 
     public class InputModel
     {
@@ -88,10 +93,13 @@ public class RegisterModel : PageModel
 
     public void OnGet()
     {
+        LoadExternalProviders();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        LoadExternalProviders();
+
         // Validate password with our custom service
         var passwordValidation = _passwordValidation.Validate(Input.Password);
         if (!passwordValidation.IsValid)
@@ -135,5 +143,24 @@ public class RegisterModel : PageModel
         }
 
         return RedirectToPage("RegisterConfirmation");
+    }
+
+    private void LoadExternalProviders()
+    {
+        // Check if Google is configured
+        var googleClientId = _configuration["Authentication:Google:ClientId"];
+        var googleClientSecret = _configuration["Authentication:Google:ClientSecret"];
+        if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+        {
+            ExternalProviders.Add("Google");
+        }
+
+        // Check if Facebook is configured
+        var facebookAppId = _configuration["Authentication:Facebook:AppId"];
+        var facebookAppSecret = _configuration["Authentication:Facebook:AppSecret"];
+        if (!string.IsNullOrEmpty(facebookAppId) && !string.IsNullOrEmpty(facebookAppSecret))
+        {
+            ExternalProviders.Add("Facebook");
+        }
     }
 }

@@ -89,6 +89,17 @@ public class UserAuthenticationService : IUserAuthenticationService
 
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
 
+        // Check if this is a social-only account (cannot login with password)
+        if (user != null && user.PasswordHash == "SOCIAL_LOGIN_NO_PASSWORD")
+        {
+            _logger.LogWarning("Password login attempted for social-only account: {Email}", normalizedEmail);
+            return new LoginResult
+            {
+                Success = false,
+                ErrorMessage = "This account uses social login. Please use Google or Facebook to sign in."
+            };
+        }
+
         // Use generic error message to prevent user enumeration
         if (user == null || !VerifyPassword(data.Password, user.PasswordHash))
         {
