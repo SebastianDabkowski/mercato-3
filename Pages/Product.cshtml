@@ -46,14 +46,14 @@
                             </div>
                             @if (Model.Product.Stock > 0)
                             {
-                                <button type="button" class="btn btn-primary btn-lg" disabled>
+                                <button type="button" class="btn btn-primary btn-lg" disabled aria-label="Add to Cart - Cart functionality coming soon">
                                     <i class="bi bi-cart-plus"></i> Add to Cart
                                 </button>
                                 <p class="text-muted small mt-2">Cart functionality coming soon</p>
                             }
                             else
                             {
-                                <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                <button type="button" class="btn btn-secondary btn-lg" disabled aria-label="Out of Stock - Product currently unavailable">
                                     Out of Stock
                                 </button>
                             }

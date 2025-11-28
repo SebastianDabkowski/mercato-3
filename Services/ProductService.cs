@@ -95,6 +95,26 @@ public class ProductService : IProductService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ProductService> _logger;
 
+    /// <summary>
+    /// Maximum allowed price for a product.
+    /// </summary>
+    public const decimal MaxPrice = 999999.99m;
+
+    /// <summary>
+    /// Maximum length for product title.
+    /// </summary>
+    public const int MaxTitleLength = 200;
+
+    /// <summary>
+    /// Maximum length for product description.
+    /// </summary>
+    public const int MaxDescriptionLength = 2000;
+
+    /// <summary>
+    /// Maximum length for product category.
+    /// </summary>
+    public const int MaxCategoryLength = 100;
+
     public ProductService(
         ApplicationDbContext context,
         ILogger<ProductService> logger)
@@ -103,48 +123,67 @@ public class ProductService : IProductService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Validates common product fields and adds errors to the result.
+    /// </summary>
+    private static void ValidateProductFields(
+        string? title,
+        string? description,
+        decimal price,
+        int stock,
+        string? category,
+        ProductResult result)
+    {
+        // Validate title
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            result.Errors.Add("Product title is required.");
+        }
+        else if (title.Length > MaxTitleLength)
+        {
+            result.Errors.Add($"Product title must be {MaxTitleLength} characters or less.");
+        }
+
+        // Validate description
+        if (description?.Length > MaxDescriptionLength)
+        {
+            result.Errors.Add($"Description must be {MaxDescriptionLength} characters or less.");
+        }
+
+        // Validate price
+        if (price <= 0)
+        {
+            result.Errors.Add("Price must be greater than zero.");
+        }
+        else if (price > MaxPrice)
+        {
+            result.Errors.Add($"Price must be less than {MaxPrice + 0.01m:N0}.");
+        }
+
+        // Validate stock
+        if (stock < 0)
+        {
+            result.Errors.Add("Stock cannot be negative.");
+        }
+
+        // Validate category
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            result.Errors.Add("Category is required.");
+        }
+        else if (category.Length > MaxCategoryLength)
+        {
+            result.Errors.Add($"Category must be {MaxCategoryLength} characters or less.");
+        }
+    }
+
     /// <inheritdoc />
     public async Task<ProductResult> CreateProductAsync(int storeId, CreateProductData data)
     {
         var result = new ProductResult();
 
-        // Validate required fields
-        if (string.IsNullOrWhiteSpace(data.Title))
-        {
-            result.Errors.Add("Product title is required.");
-        }
-        else if (data.Title.Length > 200)
-        {
-            result.Errors.Add("Product title must be 200 characters or less.");
-        }
-
-        if (data.Description?.Length > 2000)
-        {
-            result.Errors.Add("Description must be 2000 characters or less.");
-        }
-
-        if (data.Price <= 0)
-        {
-            result.Errors.Add("Price must be greater than zero.");
-        }
-        else if (data.Price > 999999.99m)
-        {
-            result.Errors.Add("Price must be less than 1,000,000.");
-        }
-
-        if (data.Stock < 0)
-        {
-            result.Errors.Add("Stock cannot be negative.");
-        }
-
-        if (string.IsNullOrWhiteSpace(data.Category))
-        {
-            result.Errors.Add("Category is required.");
-        }
-        else if (data.Category.Length > 100)
-        {
-            result.Errors.Add("Category must be 100 characters or less.");
-        }
+        // Validate fields
+        ValidateProductFields(data.Title, data.Description, data.Price, data.Stock, data.Category, result);
 
         if (result.Errors.Count > 0)
         {
@@ -244,43 +283,13 @@ public class ProductService : IProductService
             return result;
         }
 
-        // Validate input data
-        if (string.IsNullOrWhiteSpace(data.Title))
-        {
-            result.Errors.Add("Product title is required.");
-        }
-        else if (data.Title.Length > 200)
-        {
-            result.Errors.Add("Product title must be 200 characters or less.");
-        }
+        // Trim input values once
+        var trimmedTitle = data.Title?.Trim() ?? string.Empty;
+        var trimmedDescription = data.Description?.Trim();
+        var trimmedCategory = data.Category?.Trim() ?? string.Empty;
 
-        if (data.Description?.Length > 2000)
-        {
-            result.Errors.Add("Description must be 2000 characters or less.");
-        }
-
-        if (data.Price <= 0)
-        {
-            result.Errors.Add("Price must be greater than zero.");
-        }
-        else if (data.Price > 999999.99m)
-        {
-            result.Errors.Add("Price must be less than 1,000,000.");
-        }
-
-        if (data.Stock < 0)
-        {
-            result.Errors.Add("Stock cannot be negative.");
-        }
-
-        if (string.IsNullOrWhiteSpace(data.Category))
-        {
-            result.Errors.Add("Category is required.");
-        }
-        else if (data.Category.Length > 100)
-        {
-            result.Errors.Add("Category must be 100 characters or less.");
-        }
+        // Validate input data using helper
+        ValidateProductFields(trimmedTitle, trimmedDescription, data.Price, data.Stock, trimmedCategory, result);
 
         // Validate status transition - cannot set to Archived via update
         if (data.Status == ProductStatus.Archived)
@@ -295,11 +304,11 @@ public class ProductService : IProductService
 
         // Log changes for audit
         var changes = new List<string>();
-        if (product.Title != data.Title.Trim())
+        if (product.Title != trimmedTitle)
         {
-            changes.Add($"Title: '{product.Title}' -> '{data.Title.Trim()}'");
+            changes.Add($"Title: '{product.Title}' -> '{trimmedTitle}'");
         }
-        if (product.Description != data.Description?.Trim())
+        if (product.Description != trimmedDescription)
         {
             changes.Add("Description changed");
         }
@@ -311,9 +320,9 @@ public class ProductService : IProductService
         {
             changes.Add($"Stock: {product.Stock} -> {data.Stock}");
         }
-        if (product.Category != data.Category.Trim())
+        if (product.Category != trimmedCategory)
         {
-            changes.Add($"Category: '{product.Category}' -> '{data.Category.Trim()}'");
+            changes.Add($"Category: '{product.Category}' -> '{trimmedCategory}'");
         }
         if (product.Status != data.Status)
         {
@@ -321,11 +330,11 @@ public class ProductService : IProductService
         }
 
         // Update the product
-        product.Title = data.Title.Trim();
-        product.Description = data.Description?.Trim();
+        product.Title = trimmedTitle;
+        product.Description = trimmedDescription;
         product.Price = data.Price;
         product.Stock = data.Stock;
-        product.Category = data.Category.Trim();
+        product.Category = trimmedCategory;
         product.Status = data.Status;
         product.UpdatedAt = DateTime.UtcNow;
 
