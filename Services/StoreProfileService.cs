@@ -111,7 +111,7 @@ public class StoreProfileService : IStoreProfileService
             query = query.Where(s => s.Id != excludeStoreId.Value);
         }
 
-        return !await query.AnyAsync(s => s.StoreName.ToLower() == normalizedName);
+        return !await query.AnyAsync(s => s.StoreName.ToLowerInvariant() == normalizedName);
     }
 
     /// <inheritdoc />
