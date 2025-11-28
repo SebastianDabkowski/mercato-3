@@ -102,6 +102,9 @@ public class PasswordResetService : IPasswordResetService
     private const int ResetTokenSizeBytes = 32;
     private static readonly TimeSpan DefaultTokenExpiryDuration = TimeSpan.FromHours(1);
 
+    // Marker for social-only accounts (must match SocialLoginService and UserAuthenticationService)
+    private const string SocialLoginNoPasswordMarker = "SOCIAL_LOGIN_NO_PASSWORD";
+
     private readonly ApplicationDbContext _context;
     private readonly IPasswordValidationService _passwordValidation;
     private readonly IEmailService _emailService;
@@ -134,7 +137,7 @@ public class PasswordResetService : IPasswordResetService
         if (user != null)
         {
             // Don't allow password reset for social login only accounts
-            if (user.PasswordHash == "SOCIAL_LOGIN_NO_PASSWORD")
+            if (user.PasswordHash == SocialLoginNoPasswordMarker)
             {
                 _logger.LogWarning("Password reset requested for social-only account: {Email}", normalizedEmail);
                 // Still return success to prevent enumeration
@@ -256,6 +259,14 @@ public class PasswordResetService : IPasswordResetService
         if (user == null)
         {
             result.Errors.Add("User not found.");
+            return result;
+        }
+
+        // Check if this is a social login only account
+        if (user.PasswordHash == SocialLoginNoPasswordMarker)
+        {
+            _logger.LogWarning("Password change attempted for social-only account: {Email}", user.Email);
+            result.Errors.Add("This account uses social login. Password cannot be changed.");
             return result;
         }
 
