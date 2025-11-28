@@ -42,6 +42,8 @@ public interface IUserAuthenticationService
 
 /// <summary>
 /// Service for user authentication with rate limiting.
+/// Note: Rate limiting uses in-memory storage suitable for single-instance deployments.
+/// For multi-instance production environments, replace with distributed cache (e.g., Redis).
 /// </summary>
 public class UserAuthenticationService : IUserAuthenticationService
 {
@@ -100,6 +102,8 @@ public class UserAuthenticationService : IUserAuthenticationService
         }
 
         // Check if seller has unverified email
+        // Note: Only sellers require email verification before login per business requirements.
+        // Buyers can use the platform with an unverified email (common for marketplace platforms).
         if (user.UserType == UserType.Seller && user.Status == AccountStatus.Unverified)
         {
             _logger.LogInformation("Login blocked for unverified seller: {Email}", normalizedEmail);

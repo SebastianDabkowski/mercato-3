@@ -1,11 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using MercatoApp.Data;
 using MercatoApp.Models;
 using MercatoApp.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace MercatoApp.Pages.Account;
 
@@ -13,13 +15,16 @@ public class LoginModel : PageModel
 {
     private readonly IUserAuthenticationService _authenticationService;
     private readonly IEmailService _emailService;
+    private readonly ApplicationDbContext _context;
 
     public LoginModel(
         IUserAuthenticationService authenticationService,
-        IEmailService emailService)
+        IEmailService emailService,
+        ApplicationDbContext context)
     {
         _authenticationService = authenticationService;
         _emailService = emailService;
+        _context = context;
     }
 
     [BindProperty]
@@ -100,10 +105,8 @@ public class LoginModel : PageModel
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
-        // Redirect based on user role
-        return result.User.UserType == UserType.Seller
-            ? LocalRedirect(Url.Content("~/"))  // Future: redirect to seller dashboard
-            : LocalRedirect(ReturnUrl);
+        // Redirect to home (role-based dashboard routing can be added when dashboards exist)
+        return LocalRedirect(ReturnUrl);
     }
 
     public async Task<IActionResult> OnPostResendVerificationAsync()
@@ -115,10 +118,16 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        // Note: In production, you would look up the user and regenerate/resend the token
-        // For security, we show a success message regardless of whether the email exists
-        await _emailService.ResendVerificationEmailAsync(Input.Email, "resend-token-placeholder");
+        var normalizedEmail = Input.Email.ToLowerInvariant().Trim();
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
         
+        // Only resend if user exists and has a verification token
+        if (user?.EmailVerificationToken != null)
+        {
+            await _emailService.ResendVerificationEmailAsync(user.Email, user.EmailVerificationToken);
+        }
+        
+        // Always show success message to prevent user enumeration
         TempData["Message"] = "If your email is registered, a verification link has been sent.";
         return RedirectToPage();
     }
