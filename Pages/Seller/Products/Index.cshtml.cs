@@ -27,6 +27,9 @@ public class IndexModel : PageModel
     [TempData]
     public string? SuccessMessage { get; set; }
 
+    [TempData]
+    public string? ErrorMessage { get; set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
         var userId = GetCurrentUserId();

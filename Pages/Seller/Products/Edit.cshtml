@@ -1,0 +1,114 @@
+@page "{id:int}"
+@model MercatoApp.Pages.Seller.Products.EditModel
+@{
+    ViewData["Title"] = "Edit Product";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-page="Index">Products</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit Product</li>
+                </ol>
+            </nav>
+            <h1>Edit Product</h1>
+            <p class="text-muted">Update your product information. Changes will be saved immediately.</p>
+        </div>
+
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+        <form method="post">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Product Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.Title" class="form-label"></label>
+                        <input asp-for="Input.Title" class="form-control" aria-required="true" placeholder="e.g., Wireless Bluetooth Headphones" />
+                        <span asp-validation-for="Input.Title" class="text-danger"></span>
+                        <div class="form-text">Enter a descriptive title for your product (max 200 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Description" class="form-label"></label>
+                        <textarea asp-for="Input.Description" class="form-control" rows="4" placeholder="Describe your product features, specifications, and benefits..."></textarea>
+                        <span asp-validation-for="Input.Description" class="text-danger"></span>
+                        <div class="form-text">Provide a detailed description of your product (max 2000 characters).</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.Price" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="Input.Price" class="form-control" type="number" step="0.01" min="0.01" max="999999.99" aria-required="true" placeholder="0.00" />
+                            </div>
+                            <span asp-validation-for="Input.Price" class="text-danger"></span>
+                            <div class="form-text">Set your product price (between $0.01 and $999,999.99).</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.Stock" class="form-label"></label>
+                            <input asp-for="Input.Stock" class="form-control" type="number" min="0" aria-required="true" placeholder="0" />
+                            <span asp-validation-for="Input.Stock" class="text-danger"></span>
+                            <div class="form-text">Enter the available quantity in stock.</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.Category" class="form-label"></label>
+                            <select asp-for="Input.Category" class="form-select" aria-required="true">
+                                <option value="">Select a category</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Fashion">Fashion</option>
+                                <option value="Home & Garden">Home & Garden</option>
+                                <option value="Sports & Outdoors">Sports & Outdoors</option>
+                                <option value="Books & Media">Books & Media</option>
+                                <option value="Health & Beauty">Health & Beauty</option>
+                                <option value="Toys & Games">Toys & Games</option>
+                                <option value="Automotive">Automotive</option>
+                                <option value="Food & Beverages">Food & Beverages</option>
+                                <option value="Art & Crafts">Art & Crafts</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <span asp-validation-for="Input.Category" class="text-danger"></span>
+                            <div class="form-text">Select the category that best describes your product.</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.Status" class="form-label"></label>
+                            <select asp-for="Input.Status" asp-items="Model.StatusOptions" class="form-select" aria-required="true">
+                            </select>
+                            <span asp-validation-for="Input.Status" class="text-danger"></span>
+                            <div class="form-text">
+                                <strong>Draft:</strong> Not visible in public catalog.<br />
+                                <strong>Active:</strong> Visible in public catalog.<br />
+                                <strong>Inactive:</strong> Temporarily hidden from public catalog.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-warning" role="alert">
+                <strong>Note:</strong> Changes to price or stock may affect pending orders. Please review carefully before saving.
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <div>
+                    <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+                    <a asp-page="Delete" asp-route-id="@Model.Product?.Id" class="btn btn-outline-danger ms-2">Delete Product</a>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
