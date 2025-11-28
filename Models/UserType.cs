@@ -13,5 +13,10 @@ public enum UserType
     /// <summary>
     /// A seller account that can list and sell products.
     /// </summary>
-    Seller
+    Seller,
+
+    /// <summary>
+    /// An admin account that can manage the platform.
+    /// </summary>
+    Admin
 }

@@ -1,9 +1,12 @@
+using MercatoApp.Authorization;
 using MercatoApp.Data;
+using MercatoApp.Models;
 using MercatoApp.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Facebook;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +38,27 @@ builder.Services.AddScoped<ISocialLoginService, SocialLoginService>();
 builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<IRoleAuthorizationService, RoleAuthorizationService>();
+builder.Services.AddScoped<IAuthorizationHandler, RoleAuthorizationHandler>();
+
+// Configure role-based authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(PolicyNames.BuyerOnly, policy =>
+        policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Buyer)));
+
+    options.AddPolicy(PolicyNames.SellerOnly, policy =>
+        policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Seller)));
+
+    options.AddPolicy(PolicyNames.AdminOnly, policy =>
+        policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Admin)));
+
+    options.AddPolicy(PolicyNames.BuyerOrSeller, policy =>
+        policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Buyer, Role.RoleNames.Seller)));
+
+    options.AddPolicy(PolicyNames.SellerOrAdmin, policy =>
+        policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Seller, Role.RoleNames.Admin)));
+});
 
 // Configure authentication with cookie and external OAuth providers
 var authBuilder = builder.Services.AddAuthentication(options =>
