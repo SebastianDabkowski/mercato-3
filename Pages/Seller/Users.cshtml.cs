@@ -66,9 +66,9 @@ public class UsersModel : PageModel
         // Get store owner information
         StoreOwner = Store.User;
 
-        // Get all team members (excluding store owner)
+        // Get all team members (excluding the original store owner)
         var allUsers = await _internalUserService.GetStoreUsersAsync(Store.Id);
-        TeamMembers = allUsers.Where(u => u.Role != StoreRole.StoreOwner || u.UserId != Store.UserId).ToList();
+        TeamMembers = allUsers.Where(u => u.UserId != Store.UserId).ToList();
 
         // Get pending invitations
         PendingInvitations = await _internalUserService.GetPendingInvitationsAsync(Store.Id);
