@@ -1,0 +1,279 @@
+@page
+@model MercatoApp.Pages.Seller.UsersModel
+@{
+    ViewData["Title"] = "Team Members";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Team Members</h1>
+                <p class="text-muted">Manage internal users and their roles for your store.</p>
+            </div>
+            <div>
+                <a asp-page="InviteUser" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Invite User
+                </a>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @Model.ErrorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Store Owner Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Store Owner</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.StoreOwner != null)
+                {
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                @(Model.StoreOwner.FirstName.Length > 0 ? Model.StoreOwner.FirstName[0].ToString().ToUpper() : "?")
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">@Model.StoreOwner.FirstName @Model.StoreOwner.LastName</h6>
+                            <small class="text-muted">@Model.StoreOwner.Email</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary">Store Owner</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Store owner information not available.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Team Members Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Team Members</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.TeamMembers.Count == 0)
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2 mb-0">No team members yet.</p>
+                        <p class="text-muted">Invite users to help manage your store.</p>
+                        <a asp-page="InviteUser" class="btn btn-outline-primary btn-sm">Invite Your First Team Member</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var member in Model.TeamMembers)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                    @(member.FirstName.Length > 0 ? member.FirstName[0].ToString().ToUpper() : "?")
+                                                </div>
+                                                @member.FullName
+                                            </div>
+                                        </td>
+                                        <td>@member.Email</td>
+                                        <td>
+                                            <span class="badge @(GetRoleBadgeClass(member.Role))">@member.RoleDisplayName</span>
+                                        </td>
+                                        <td>
+                                            @if (member.IsActive)
+                                            {
+                                                <span class="badge bg-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            }
+                                        </td>
+                                        <td>@member.JoinedAt.ToString("MMM d, yyyy")</td>
+                                        <td class="text-end">
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    Actions
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li>
+                                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#changeRoleModal-@member.UserId">
+                                                            Change Role
+                                                        </button>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    @if (member.IsActive)
+                                                    {
+                                                        <li>
+                                                            <form method="post" asp-page-handler="DeactivateUser">
+                                                                <input type="hidden" name="userId" value="@member.UserId" />
+                                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to deactivate this user? They will no longer be able to access the seller panel.');">
+                                                                    Deactivate User
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                    else
+                                                    {
+                                                        <li>
+                                                            <form method="post" asp-page-handler="ReactivateUser">
+                                                                <input type="hidden" name="userId" value="@member.UserId" />
+                                                                <button type="submit" class="dropdown-item text-success">
+                                                                    Reactivate User
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Pending Invitations Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Pending Invitations</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.PendingInvitations.Count == 0)
+                {
+                    <p class="text-muted mb-0">No pending invitations.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Invited By</th>
+                                    <th>Sent</th>
+                                    <th>Expires</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var invitation in Model.PendingInvitations)
+                                {
+                                    <tr>
+                                        <td>@invitation.Email</td>
+                                        <td>
+                                            <span class="badge @(GetRoleBadgeClass(invitation.Role))">
+                                                @MercatoApp.Models.StoreRoleNames.GetDisplayName(invitation.Role)
+                                            </span>
+                                        </td>
+                                        <td>@invitation.InvitedByUser?.FirstName @invitation.InvitedByUser?.LastName</td>
+                                        <td>@invitation.CreatedAt.ToString("MMM d, yyyy")</td>
+                                        <td>@invitation.ExpiresAt.ToString("MMM d, yyyy")</td>
+                                        <td class="text-end">
+                                            <form method="post" asp-page-handler="RevokeInvitation" class="d-inline">
+                                                <input type="hidden" name="invitationId" value="@invitation.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to revoke this invitation?');">
+                                                    Revoke
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="d-flex">
+            <a asp-page="StoreSettings" class="btn btn-outline-secondary">← Back to Store Settings</a>
+        </div>
+    </div>
+</div>
+
+<!-- Change Role Modals -->
+@foreach (var member in Model.TeamMembers)
+{
+    <div class="modal fade" id="changeRoleModal-@member.UserId" tabindex="-1" aria-labelledby="changeRoleModalLabel-@member.UserId" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="ChangeRole">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="changeRoleModalLabel-@member.UserId">Change Role for @member.FullName</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="userId" value="@member.UserId" />
+                        <div class="mb-3">
+                            <label for="newRole-@member.UserId" class="form-label">New Role</label>
+                            <select name="newRole" id="newRole-@member.UserId" class="form-select" required>
+                                @foreach (var role in Enum.GetValues<MercatoApp.Models.StoreRole>())
+                                {
+                                    if (role != MercatoApp.Models.StoreRole.StoreOwner) // Can't assign store owner role
+                                    {
+                                        <option value="@role" selected="@(role == member.Role)">
+                                            @MercatoApp.Models.StoreRoleNames.GetDisplayName(role) - @MercatoApp.Models.StoreRoleNames.GetDescription(role)
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@functions {
+    string GetRoleBadgeClass(MercatoApp.Models.StoreRole role)
+    {
+        return role switch
+        {
+            MercatoApp.Models.StoreRole.StoreOwner => "bg-primary",
+            MercatoApp.Models.StoreRole.CatalogManager => "bg-info",
+            MercatoApp.Models.StoreRole.OrderManager => "bg-warning text-dark",
+            MercatoApp.Models.StoreRole.ReadOnly => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+}

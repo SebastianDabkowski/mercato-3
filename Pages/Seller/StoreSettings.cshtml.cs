@@ -13,19 +13,24 @@ public class StoreSettingsModel : PageModel
 {
     private readonly IStoreProfileService _storeProfileService;
     private readonly IWebHostEnvironment _environment;
+    private readonly IFeatureFlagService _featureFlagService;
 
     public StoreSettingsModel(
         IStoreProfileService storeProfileService,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IFeatureFlagService featureFlagService)
     {
         _storeProfileService = storeProfileService;
         _environment = environment;
+        _featureFlagService = featureFlagService;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public Store? Store { get; set; }
+
+    public bool IsUserManagementEnabled => _featureFlagService.IsSellerUserManagementEnabled;
 
     [TempData]
     public string? SuccessMessage { get; set; }
