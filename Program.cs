@@ -11,6 +11,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 
+// Add anti-forgery services for CSRF protection
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "MercatoAntiForgery";
+    options.Cookie.HttpOnly = true;
+    // Use SameAsRequest to work in both development (HTTP) and production (HTTPS)
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
+
 // Add Entity Framework with In-Memory database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseInMemoryDatabase("MercatoDb"));
@@ -23,6 +34,7 @@ builder.Services.AddScoped<IUserAuthenticationService, UserAuthenticationService
 builder.Services.AddScoped<ISocialLoginService, SocialLoginService>();
 builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+builder.Services.AddScoped<ISessionService, SessionService>();
 
 // Configure authentication with cookie and external OAuth providers
 var authBuilder = builder.Services.AddAuthentication(options =>
@@ -36,11 +48,33 @@ var authBuilder = builder.Services.AddAuthentication(options =>
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.Cookie.Name = "MercatoAuth";
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.Lax; // Required for OAuth redirects
+    options.Cookie.HttpOnly = true; // Protects against XSS
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only
+    options.Cookie.SameSite = SameSiteMode.Lax; // Required for OAuth redirects, provides CSRF protection
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
+    
+    // Validate session token on each request
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        var sessionToken = context.Principal?.FindFirst("SessionToken")?.Value;
+        if (!string.IsNullOrEmpty(sessionToken))
+        {
+            var sessionService = context.HttpContext.RequestServices.GetRequiredService<ISessionService>();
+            var validationResult = await sessionService.ValidateSessionAsync(sessionToken);
+            
+            if (!validationResult.IsValid)
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            }
+            else
+            {
+                // Update last access time for sliding expiration
+                await sessionService.UpdateSessionAccessTimeAsync(sessionToken);
+            }
+        }
+    };
 });
 
 // Configure Google OAuth if credentials are provided
