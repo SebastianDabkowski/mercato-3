@@ -1,0 +1,72 @@
+@page
+@model MercatoApp.Pages.Seller.OnboardingStep3Model
+@{
+    ViewData["Title"] = "Seller Onboarding - Payout Settings";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="mb-4">
+            <h1>Seller Onboarding</h1>
+            <p class="text-muted">Step 3 of 3: Payout Settings</p>
+            
+            <!-- Progress Bar -->
+            <div class="progress mb-4" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+
+        <form method="post">
+            <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Bank Account Details</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Enter your bank account details for receiving payouts from sales. Your information is encrypted and secure.</p>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Input.BankName" class="form-label"></label>
+                        <input asp-for="Input.BankName" class="form-control" aria-required="true" placeholder="e.g., Bank of America" />
+                        <span asp-validation-for="Input.BankName" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Input.BankAccountHolderName" class="form-label"></label>
+                        <input asp-for="Input.BankAccountHolderName" class="form-control" aria-required="true" placeholder="e.g., John Doe" />
+                        <span asp-validation-for="Input.BankAccountHolderName" class="text-danger"></span>
+                        <div class="form-text">The name exactly as it appears on your bank account.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Input.BankAccountNumber" class="form-label"></label>
+                        <input asp-for="Input.BankAccountNumber" class="form-control" aria-required="true" placeholder="e.g., 123456789" />
+                        <span asp-validation-for="Input.BankAccountNumber" class="text-danger"></span>
+                        <div class="form-text">Your bank account number or IBAN.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Input.BankRoutingNumber" class="form-label"></label>
+                        <input asp-for="Input.BankRoutingNumber" class="form-control" placeholder="e.g., 021000021" />
+                        <span asp-validation-for="Input.BankRoutingNumber" class="text-danger"></span>
+                        <div class="form-text">Routing number, SWIFT/BIC code, or sort code (depending on your country).</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Note:</strong> Your payout information will be verified before your first payout. Please ensure all details are correct.
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a asp-page="OnboardingStep2" class="btn btn-outline-secondary">← Back to Verification</a>
+                <button type="submit" class="btn btn-primary">Review & Submit →</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

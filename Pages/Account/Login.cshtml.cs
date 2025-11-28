@@ -14,17 +14,20 @@ public class LoginModel : PageModel
     private readonly IUserAuthenticationService _authenticationService;
     private readonly IEmailVerificationService _emailVerificationService;
     private readonly ISessionService _sessionService;
+    private readonly ISellerOnboardingService _sellerOnboardingService;
     private readonly IConfiguration _configuration;
 
     public LoginModel(
         IUserAuthenticationService authenticationService,
         IEmailVerificationService emailVerificationService,
         ISessionService sessionService,
+        ISellerOnboardingService sellerOnboardingService,
         IConfiguration configuration)
     {
         _authenticationService = authenticationService;
         _emailVerificationService = emailVerificationService;
         _sessionService = sessionService;
+        _sellerOnboardingService = sellerOnboardingService;
         _configuration = configuration;
     }
 
@@ -139,6 +142,12 @@ public class LoginModel : PageModel
         // Check if seller requires KYC - redirect to KYC page if not approved
         if (result.User.UserType == UserType.Seller && result.User.KycStatus != KycStatus.Approved)
         {
+            // First check if seller has completed onboarding (has a store)
+            if (!await _sellerOnboardingService.HasExistingStoreAsync(result.User.Id))
+            {
+                return RedirectToPage("/Seller/OnboardingStep1");
+            }
+            
             return RedirectToPage("/Account/KycRequired");
         }
 

@@ -30,6 +30,16 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<LoginEvent> LoginEvents { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the stores table.
+    /// </summary>
+    public DbSet<Store> Stores { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the seller onboarding drafts table.
+    /// </summary>
+    public DbSet<SellerOnboardingDraft> SellerOnboardingDrafts { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -76,6 +86,30 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<Store>(entity =>
+        {
+            // Index on user ID for fast lookups
+            entity.HasIndex(e => e.UserId).IsUnique();
+
+            // Configure relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SellerOnboardingDraft>(entity =>
+        {
+            // Index on user ID for fast lookups (one draft per user)
+            entity.HasIndex(e => e.UserId).IsUnique();
+
+            // Configure relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
