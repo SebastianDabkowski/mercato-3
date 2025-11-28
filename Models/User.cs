@@ -102,4 +102,17 @@ public class User
     /// </summary>
     [MaxLength(256)]
     public string? EmailVerificationToken { get; set; }
+
+    /// <summary>
+    /// Gets or sets the external login provider (e.g., "Google", "Facebook").
+    /// Null for users who registered with email/password.
+    /// </summary>
+    [MaxLength(50)]
+    public string? ExternalProvider { get; set; }
+
+    /// <summary>
+    /// Gets or sets the unique identifier from the external provider.
+    /// </summary>
+    [MaxLength(256)]
+    public string? ExternalProviderId { get; set; }
 }

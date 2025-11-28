@@ -1,0 +1,27 @@
+@page
+@model MercatoApp.Pages.Account.ExternalLoginModel
+@{
+    ViewData["Title"] = "External Login";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1 class="mb-4">@ViewData["Title"]</h1>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @Model.ErrorMessage
+            </div>
+            <div class="mt-4">
+                <a asp-page="/Account/Login" class="btn btn-primary">Return to Login</a>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info" role="alert">
+                Processing your login...
+            </div>
+        }
+    </div>
+</div>

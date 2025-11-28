@@ -16,15 +16,18 @@ public class LoginModel : PageModel
     private readonly IUserAuthenticationService _authenticationService;
     private readonly IEmailService _emailService;
     private readonly ApplicationDbContext _context;
+    private readonly IConfiguration _configuration;
 
     public LoginModel(
         IUserAuthenticationService authenticationService,
         IEmailService emailService,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        IConfiguration configuration)
     {
         _authenticationService = authenticationService;
         _emailService = emailService;
         _context = context;
+        _configuration = configuration;
     }
 
     [BindProperty]
@@ -33,6 +36,10 @@ public class LoginModel : PageModel
     public string? ReturnUrl { get; set; }
 
     public bool ShowResendVerification { get; set; }
+
+    public string? SocialLoginError { get; set; }
+
+    public List<string> ExternalProviders { get; set; } = new();
 
     public class InputModel
     {
@@ -50,14 +57,17 @@ public class LoginModel : PageModel
         public bool RememberMe { get; set; }
     }
 
-    public void OnGet(string? returnUrl = null)
+    public void OnGet(string? returnUrl = null, string? error = null)
     {
         ReturnUrl = returnUrl ?? Url.Content("~/");
+        SocialLoginError = error;
+        LoadExternalProviders();
     }
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         ReturnUrl = returnUrl ?? Url.Content("~/");
+        LoadExternalProviders();
 
         if (!ModelState.IsValid)
         {
@@ -111,6 +121,8 @@ public class LoginModel : PageModel
 
     public async Task<IActionResult> OnPostResendVerificationAsync()
     {
+        LoadExternalProviders();
+
         if (string.IsNullOrEmpty(Input.Email))
         {
             ModelState.AddModelError("Input.Email", "Please enter your email address.");
@@ -130,5 +142,24 @@ public class LoginModel : PageModel
         // Always show success message to prevent user enumeration
         TempData["Message"] = "If your email is registered, a verification link has been sent.";
         return RedirectToPage();
+    }
+
+    private void LoadExternalProviders()
+    {
+        // Check if Google is configured
+        var googleClientId = _configuration["Authentication:Google:ClientId"];
+        var googleClientSecret = _configuration["Authentication:Google:ClientSecret"];
+        if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+        {
+            ExternalProviders.Add("Google");
+        }
+
+        // Check if Facebook is configured
+        var facebookAppId = _configuration["Authentication:Facebook:AppId"];
+        var facebookAppSecret = _configuration["Authentication:Facebook:AppSecret"];
+        if (!string.IsNullOrEmpty(facebookAppId) && !string.IsNullOrEmpty(facebookAppSecret))
+        {
+            ExternalProviders.Add("Facebook");
+        }
     }
 }
