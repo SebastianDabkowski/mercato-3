@@ -163,13 +163,9 @@ public class VerificationModel : PageModel
             return Page();
         }
 
-        // Clear individual-related model state errors since we're submitting company form
-        foreach (var key in ModelState.Keys.Where(k => k.StartsWith("IndividualInput")).ToList())
-        {
-            ModelState.Remove(key);
-        }
-
-        if (!ModelState.IsValid)
+        // Clear all model state and only validate company input
+        ModelState.Clear();
+        if (!TryValidateModel(CompanyInput, nameof(CompanyInput)))
         {
             return Page();
         }
@@ -217,13 +213,9 @@ public class VerificationModel : PageModel
             return Page();
         }
 
-        // Clear company-related model state errors since we're submitting individual form
-        foreach (var key in ModelState.Keys.Where(k => k.StartsWith("CompanyInput")).ToList())
-        {
-            ModelState.Remove(key);
-        }
-
-        if (!ModelState.IsValid)
+        // Clear all model state and only validate individual input
+        ModelState.Clear();
+        if (!TryValidateModel(IndividualInput, nameof(IndividualInput)))
         {
             return Page();
         }
