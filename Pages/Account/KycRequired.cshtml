@@ -1,0 +1,112 @@
+@page
+@model MercatoApp.Pages.Account.KycRequiredModel
+@{
+    ViewData["Title"] = "KYC Verification Required";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" class="bi bi-person-vcard text-primary" viewBox="0 0 16 16">
+                        <path d="M5 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4m4-2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5M9 8a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4A.5.5 0 0 1 9 8m1 2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5"/>
+                        <path d="M2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8.96q.04-.245.04-.5C9 10.567 7.21 9 5 9c-2.086 0-3.8 1.398-3.984 3.181A1 1 0 0 1 1 12z"/>
+                    </svg>
+                    <h1 class="h3 mt-3">Identity Verification Required</h1>
+                </div>
+
+                @if (Model.KycStatus == MercatoApp.Models.KycStatus.NotStarted)
+                {
+                    <div class="alert alert-info" role="alert">
+                        <h5 class="alert-heading">Complete Your KYC Verification</h5>
+                        <p class="mb-0">
+                            As a seller on Mercato, you are required to verify your identity. This helps build trust with buyers and ensures a safe marketplace for everyone.
+                        </p>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">What you'll need:</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle text-success me-2" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05"/>
+                                    </svg>
+                                    A valid government-issued ID (passport, driver's license, or national ID)
+                                </li>
+                                <li class="mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle text-success me-2" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05"/>
+                                    </svg>
+                                    Proof of address (utility bill or bank statement, less than 3 months old)
+                                </li>
+                                <li class="mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle text-success me-2" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="m10.97 4.97-.02.022-3.473 4.425-2.093-2.094a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05"/>
+                                    </svg>
+                                    Business registration documents (if applicable)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Start KYC Verification</button>
+                        </div>
+                    </form>
+                }
+                else if (Model.KycStatus == MercatoApp.Models.KycStatus.Pending)
+                {
+                    <div class="alert alert-warning" role="alert">
+                        <h5 class="alert-heading">Verification In Progress</h5>
+                        <p class="mb-0">
+                            Your KYC verification is currently being reviewed. This typically takes 1-2 business days.
+                            We'll notify you by email once the review is complete.
+                        </p>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="text-muted">Submitted on: @Model.KycSubmittedAt?.ToString("MMMM dd, yyyy 'at' h:mm tt")</p>
+                    </div>
+                }
+                else if (Model.KycStatus == MercatoApp.Models.KycStatus.Rejected)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading">Verification Rejected</h5>
+                        <p class="mb-2">
+                            Unfortunately, your KYC verification was not approved. This may be due to:
+                        </p>
+                        <ul class="mb-0">
+                            <li>Document quality issues</li>
+                            <li>Information mismatch</li>
+                            <li>Expired documents</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Retry KYC Verification</button>
+                        </div>
+                    </form>
+                }
+
+                <hr class="my-4" />
+
+                <div class="text-center">
+                    <h6 class="text-muted">Feature Access</h6>
+                    <p class="small text-muted mb-0">
+                        While your KYC is pending or incomplete, you have limited access to seller features. 
+                        Complete KYC verification to unlock full marketplace capabilities.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -65,6 +65,7 @@ public class UserRegistrationService : IUserRegistrationService
     private const int HashSizeBytes = 32;
     private const int Pbkdf2Iterations = 100000;
     private const int VerificationTokenSizeBytes = 32;
+    private static readonly TimeSpan VerificationTokenExpiry = TimeSpan.FromHours(24);
 
     private readonly ApplicationDbContext _context;
     private readonly IPasswordValidationService _passwordValidation;
@@ -127,7 +128,8 @@ public class UserRegistrationService : IUserRegistrationService
             AcceptedTerms = true,
             Status = AccountStatus.Unverified,
             CreatedAt = DateTime.UtcNow,
-            EmailVerificationToken = verificationToken
+            EmailVerificationToken = verificationToken,
+            EmailVerificationTokenExpiry = DateTime.UtcNow.Add(VerificationTokenExpiry)
         };
 
         _context.Users.Add(user);

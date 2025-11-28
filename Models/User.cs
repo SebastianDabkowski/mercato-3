@@ -104,6 +104,11 @@ public class User
     public string? EmailVerificationToken { get; set; }
 
     /// <summary>
+    /// Gets or sets the expiry time for the email verification token.
+    /// </summary>
+    public DateTime? EmailVerificationTokenExpiry { get; set; }
+
+    /// <summary>
     /// Gets or sets the external login provider (e.g., "Google", "Facebook").
     /// Null for users who registered with email/password.
     /// </summary>
@@ -115,4 +120,20 @@ public class User
     /// </summary>
     [MaxLength(256)]
     public string? ExternalProviderId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the KYC (Know Your Customer) verification status.
+    /// Only applicable for sellers.
+    /// </summary>
+    public KycStatus KycStatus { get; set; } = KycStatus.NotStarted;
+
+    /// <summary>
+    /// Gets or sets the date and time when KYC was submitted.
+    /// </summary>
+    public DateTime? KycSubmittedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when KYC was approved or rejected.
+    /// </summary>
+    public DateTime? KycCompletedAt { get; set; }
 }

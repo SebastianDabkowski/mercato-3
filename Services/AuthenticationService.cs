@@ -16,6 +16,7 @@ public class LoginResult
     public string? ErrorMessage { get; set; }
     public User? User { get; set; }
     public bool RequiresEmailVerification { get; set; }
+    public bool RequiresKyc { get; set; }
 }
 
 /// <summary>

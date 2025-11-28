@@ -1,32 +1,27 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using MercatoApp.Data;
 using MercatoApp.Models;
 using MercatoApp.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
 namespace MercatoApp.Pages.Account;
 
 public class LoginModel : PageModel
 {
     private readonly IUserAuthenticationService _authenticationService;
-    private readonly IEmailService _emailService;
-    private readonly ApplicationDbContext _context;
+    private readonly IEmailVerificationService _emailVerificationService;
     private readonly IConfiguration _configuration;
 
     public LoginModel(
         IUserAuthenticationService authenticationService,
-        IEmailService emailService,
-        ApplicationDbContext context,
+        IEmailVerificationService emailVerificationService,
         IConfiguration configuration)
     {
         _authenticationService = authenticationService;
-        _emailService = emailService;
-        _context = context;
+        _emailVerificationService = emailVerificationService;
         _configuration = configuration;
     }
 
@@ -115,6 +110,12 @@ public class LoginModel : PageModel
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
+        // Check if seller requires KYC - redirect to KYC page if not approved
+        if (result.User.UserType == UserType.Seller && result.User.KycStatus != KycStatus.Approved)
+        {
+            return RedirectToPage("/Account/KycRequired");
+        }
+
         // Redirect to home (role-based dashboard routing can be added when dashboards exist)
         return LocalRedirect(ReturnUrl);
     }
@@ -130,14 +131,8 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        var normalizedEmail = Input.Email.ToLowerInvariant().Trim();
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
-        
-        // Only resend if user exists and has a verification token
-        if (user?.EmailVerificationToken != null)
-        {
-            await _emailService.ResendVerificationEmailAsync(user.Email, user.EmailVerificationToken);
-        }
+        // Generate new verification token using the verification service
+        await _emailVerificationService.GenerateNewVerificationTokenAsync(Input.Email);
         
         // Always show success message to prevent user enumeration
         TempData["Message"] = "If your email is registered, a verification link has been sent.";
