@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace MercatoApp.Services;
 
 /// <summary>
@@ -31,6 +29,9 @@ public class PasswordValidationService : IPasswordValidationService
 {
     private const int MinLength = 8;
     private const int MaxLength = 128;
+
+    // Special characters that are allowed in passwords
+    private const string SpecialCharacters = "!@#$%^&*(),.?\"':{}|<>_-+=[]\\;`~";
 
     // Common passwords list (subset of most common passwords)
     private static readonly HashSet<string> CommonPasswords = new(StringComparer.OrdinalIgnoreCase)
@@ -65,25 +66,25 @@ public class PasswordValidationService : IPasswordValidationService
             result.Errors.Add($"Password must not exceed {MaxLength} characters.");
         }
 
-        if (!Regex.IsMatch(password, @"[A-Z]"))
+        if (!password.Any(char.IsUpper))
         {
             result.IsValid = false;
             result.Errors.Add("Password must contain at least one uppercase letter.");
         }
 
-        if (!Regex.IsMatch(password, @"[a-z]"))
+        if (!password.Any(char.IsLower))
         {
             result.IsValid = false;
             result.Errors.Add("Password must contain at least one lowercase letter.");
         }
 
-        if (!Regex.IsMatch(password, @"[0-9]"))
+        if (!password.Any(char.IsDigit))
         {
             result.IsValid = false;
             result.Errors.Add("Password must contain at least one digit.");
         }
 
-        if (!Regex.IsMatch(password, @"[!@#$%^&*(),.?""':{}|<>_\-+=\[\]\\;`~]"))
+        if (!password.Any(c => SpecialCharacters.Contains(c)))
         {
             result.IsValid = false;
             result.Errors.Add("Password must contain at least one special character.");

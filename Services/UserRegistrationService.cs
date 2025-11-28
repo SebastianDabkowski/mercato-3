@@ -60,6 +60,12 @@ public interface IUserRegistrationService
 /// </summary>
 public class UserRegistrationService : IUserRegistrationService
 {
+    // Password hashing constants
+    private const int SaltSizeBytes = 16;
+    private const int HashSizeBytes = 32;
+    private const int Pbkdf2Iterations = 100000;
+    private const int VerificationTokenSizeBytes = 32;
+
     private readonly ApplicationDbContext _context;
     private readonly IPasswordValidationService _passwordValidation;
     private readonly IEmailService _emailService;
@@ -144,13 +150,13 @@ public class UserRegistrationService : IUserRegistrationService
 
     private static string HashPassword(string password)
     {
-        var salt = RandomNumberGenerator.GetBytes(128 / 8);
+        var salt = RandomNumberGenerator.GetBytes(SaltSizeBytes);
         var hashed = KeyDerivation.Pbkdf2(
             password: password,
             salt: salt,
             prf: KeyDerivationPrf.HMACSHA256,
-            iterationCount: 100000,
-            numBytesRequested: 256 / 8);
+            iterationCount: Pbkdf2Iterations,
+            numBytesRequested: HashSizeBytes);
 
         // Combine salt and hash for storage
         var hashBytes = new byte[salt.Length + hashed.Length];
@@ -162,6 +168,6 @@ public class UserRegistrationService : IUserRegistrationService
 
     private static string GenerateVerificationToken()
     {
-        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(VerificationTokenSizeBytes));
     }
 }
