@@ -1,0 +1,69 @@
+@page
+@model MercatoApp.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <h1 class="mb-4">Sign In</h1>
+
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-success" role="alert">
+                @TempData["Message"]
+            </div>
+        }
+
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.Email" class="form-label"></label>
+                        <input asp-for="Input.Email" class="form-control" autocomplete="email" aria-required="true" />
+                        <span asp-validation-for="Input.Email" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Input.Password" class="form-label"></label>
+                        <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" />
+                        <span asp-validation-for="Input.Password" class="text-danger"></span>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" asp-for="Input.RememberMe" />
+                        <label class="form-check-label" asp-for="Input.RememberMe">
+                            Remember me
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+            </div>
+        </form>
+
+        @if (Model.ShowResendVerification)
+        {
+            <div class="mt-4">
+                <div class="alert alert-warning" role="alert">
+                    <strong>Email not verified</strong>
+                    <p class="mb-2">Your email address has not been verified. Please check your inbox for the verification link.</p>
+                    <form method="post" asp-page-handler="ResendVerification">
+                        <input type="hidden" asp-for="Input.Email" />
+                        <button type="submit" class="btn btn-outline-warning btn-sm">Resend verification email</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="text-center mt-4">
+            <p>Don't have an account? <a asp-page="/Account/Register">Create one</a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
