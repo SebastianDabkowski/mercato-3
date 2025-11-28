@@ -22,6 +22,7 @@ builder.Services.AddScoped<IUserRegistrationService, UserRegistrationService>();
 builder.Services.AddScoped<IUserAuthenticationService, UserAuthenticationService>();
 builder.Services.AddScoped<ISocialLoginService, SocialLoginService>();
 builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 
 // Configure authentication with cookie and external OAuth providers
 var authBuilder = builder.Services.AddAuthentication(options =>

@@ -136,4 +136,21 @@ public class User
     /// Gets or sets the date and time when KYC was approved or rejected.
     /// </summary>
     public DateTime? KycCompletedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the password reset token.
+    /// </summary>
+    [MaxLength(256)]
+    public string? PasswordResetToken { get; set; }
+
+    /// <summary>
+    /// Gets or sets the expiry time for the password reset token.
+    /// </summary>
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+
+    /// <summary>
+    /// Gets or sets the security stamp (changes when password is updated to invalidate sessions).
+    /// </summary>
+    [MaxLength(256)]
+    public string? SecurityStamp { get; set; }
 }
