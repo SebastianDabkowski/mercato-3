@@ -242,7 +242,7 @@ public class ApplicationDbContext : DbContext
 
             // Configure relationship with Store
             entity.HasOne(e => e.Store)
-                .WithMany()
+                .WithMany(s => s.Products)
                 .HasForeignKey(e => e.StoreId)
                 .OnDelete(DeleteBehavior.Cascade);
 
