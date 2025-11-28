@@ -10,13 +10,16 @@ namespace MercatoApp.Pages.Account;
 public class ExternalLoginModel : PageModel
 {
     private readonly ISocialLoginService _socialLoginService;
+    private readonly IAuthenticationSchemeProvider _schemeProvider;
     private readonly ILogger<ExternalLoginModel> _logger;
 
     public ExternalLoginModel(
         ISocialLoginService socialLoginService,
+        IAuthenticationSchemeProvider schemeProvider,
         ILogger<ExternalLoginModel> logger)
     {
         _socialLoginService = socialLoginService;
+        _schemeProvider = schemeProvider;
         _logger = logger;
     }
 
@@ -70,45 +73,46 @@ public class ExternalLoginModel : PageModel
             return Page();
         }
 
-        // Get the external login info
-        var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        
-        // For external authentication, we need to check the external scheme
-        // First, try to get info from the temporary cookie set during the OAuth flow
+        // Get all configured external authentication schemes
+        var schemes = await _schemeProvider.GetAllSchemesAsync();
+        var externalSchemes = schemes
+            .Where(s => !string.IsNullOrEmpty(s.DisplayName) && 
+                       s.Name != CookieAuthenticationDefaults.AuthenticationScheme)
+            .Select(s => s.Name)
+            .ToList();
+
         AuthenticateResult? externalResult = null;
-        
-        // Try Google first, then Facebook
-        try
+        string? authenticatedScheme = null;
+
+        // Try each configured external scheme until one succeeds
+        foreach (var scheme in externalSchemes)
         {
-            externalResult = await HttpContext.AuthenticateAsync("Google");
-            if (!externalResult.Succeeded)
-            {
-                externalResult = await HttpContext.AuthenticateAsync("Facebook");
-            }
-        }
-        catch
-        {
-            // Provider might not be configured
             try
             {
-                externalResult = await HttpContext.AuthenticateAsync("Facebook");
+                var result = await HttpContext.AuthenticateAsync(scheme);
+                if (result.Succeeded)
+                {
+                    externalResult = result;
+                    authenticatedScheme = scheme;
+                    break;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                // Neither provider is configured
+                _logger.LogDebug(ex, "Authentication attempt with scheme {Scheme} failed", scheme);
             }
         }
 
         if (externalResult?.Succeeded != true)
         {
-            _logger.LogWarning("External authentication failed");
+            _logger.LogWarning("External authentication failed - no scheme succeeded");
             ErrorMessage = "External authentication failed. Please try again.";
             return Page();
         }
 
         var externalPrincipal = externalResult.Principal;
         var provider = externalResult.Properties?.Items["LoginProvider"] 
-            ?? externalPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Issuer 
+            ?? authenticatedScheme
             ?? "Unknown";
 
         // Extract user info from claims
@@ -159,11 +163,11 @@ public class ExternalLoginModel : PageModel
             LastName = lastName
         };
 
-        var result = await _socialLoginService.AuthenticateOrRegisterBuyerAsync(externalInfo);
+        var loginResult = await _socialLoginService.AuthenticateOrRegisterBuyerAsync(externalInfo);
 
-        if (!result.Success)
+        if (!loginResult.Success)
         {
-            ErrorMessage = result.ErrorMessage ?? "Social login failed. Please try again.";
+            ErrorMessage = loginResult.ErrorMessage ?? "Social login failed. Please try again.";
             return Page();
         }
 
@@ -173,12 +177,12 @@ public class ExternalLoginModel : PageModel
         // Create claims for the authenticated user
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, result.User!.Id.ToString()),
-            new(ClaimTypes.Email, result.User.Email),
-            new(ClaimTypes.Name, $"{result.User.FirstName} {result.User.LastName}".Trim()),
-            new(ClaimTypes.GivenName, result.User.FirstName),
-            new(ClaimTypes.Surname, result.User.LastName),
-            new(ClaimTypes.Role, result.User.UserType.ToString()),
+            new(ClaimTypes.NameIdentifier, loginResult.User!.Id.ToString()),
+            new(ClaimTypes.Email, loginResult.User.Email),
+            new(ClaimTypes.Name, $"{loginResult.User.FirstName} {loginResult.User.LastName}".Trim()),
+            new(ClaimTypes.GivenName, loginResult.User.FirstName),
+            new(ClaimTypes.Surname, loginResult.User.LastName),
+            new(ClaimTypes.Role, loginResult.User.UserType.ToString()),
             new("ExternalProvider", normalizedProvider)
         };
 
@@ -196,9 +200,9 @@ public class ExternalLoginModel : PageModel
 
         _logger.LogInformation(
             "User {Email} logged in with {Provider} (IsNewUser: {IsNewUser})",
-            result.User.Email,
+            loginResult.User.Email,
             normalizedProvider,
-            result.IsNewUser);
+            loginResult.IsNewUser);
 
         return LocalRedirect(returnUrl);
     }

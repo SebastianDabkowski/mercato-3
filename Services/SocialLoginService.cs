@@ -176,12 +176,12 @@ public class SocialLoginService : ISocialLoginService
         var newUser = new User
         {
             Email = normalizedEmail,
-            PasswordHash = string.Empty, // No password for social login accounts
+            PasswordHash = "SOCIAL_LOGIN_NO_PASSWORD", // Marker for social-only accounts - no password login allowed
             FirstName = externalInfo.FirstName?.Trim() ?? "User",
             LastName = externalInfo.LastName?.Trim() ?? string.Empty,
             UserType = UserType.Buyer,
             Status = AccountStatus.Active, // Email is verified by the provider
-            AcceptedTerms = true, // User accepts terms by using social login
+            AcceptedTerms = true, // Users accept terms via OAuth provider consent screen
             CreatedAt = DateTime.UtcNow,
             ExternalProvider = externalInfo.Provider,
             ExternalProviderId = externalInfo.ProviderId
