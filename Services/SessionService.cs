@@ -275,6 +275,23 @@ public class SessionService : ISessionService
             };
         }
 
+        // Check if seller's email verification status changed to unverified
+        // Note: Only sellers require email verification - buyers can use the platform with unverified email
+        if (session.User != null && 
+            session.User.UserType == Models.UserType.Seller && 
+            session.User.Status == AccountStatus.Unverified)
+        {
+            session.IsValid = false;
+            await _context.SaveChangesAsync();
+
+            return new SessionValidationResult
+            {
+                IsValid = false,
+                RequiresReauthentication = true,
+                Reason = "Email verification required."
+            };
+        }
+
         return new SessionValidationResult
         {
             IsValid = true,
@@ -347,15 +364,14 @@ public class SessionService : ISessionService
 
             // Implement sliding expiration - extend session if within window
             var timeUntilExpiry = session.ExpiresAt - now;
-            if (timeUntilExpiry < SlidingExpirationWindow && session.IsPersistent)
+            if (timeUntilExpiry < SlidingExpirationWindow)
             {
-                session.ExpiresAt = now.Add(DefaultPersistentSessionDuration);
-                _logger.LogDebug("Session expiration extended for user {UserId}", session.UserId);
-            }
-            else if (timeUntilExpiry < SlidingExpirationWindow && !session.IsPersistent)
-            {
-                session.ExpiresAt = now.Add(DefaultSessionDuration);
-                _logger.LogDebug("Session expiration extended for user {UserId}", session.UserId);
+                var newDuration = session.IsPersistent ? DefaultPersistentSessionDuration : DefaultSessionDuration;
+                session.ExpiresAt = now.Add(newDuration);
+                _logger.LogDebug(
+                    "Session expiration extended for user {UserId} (persistent: {IsPersistent})", 
+                    session.UserId, 
+                    session.IsPersistent);
             }
 
             await _context.SaveChangesAsync();
