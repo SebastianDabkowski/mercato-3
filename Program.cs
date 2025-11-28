@@ -38,6 +38,7 @@ builder.Services.AddScoped<ISocialLoginService, SocialLoginService>();
 builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<ILoginEventService, LoginEventService>();
 builder.Services.AddScoped<IRoleAuthorizationService, RoleAuthorizationService>();
 builder.Services.AddScoped<IAuthorizationHandler, RoleAuthorizationHandler>();
 
