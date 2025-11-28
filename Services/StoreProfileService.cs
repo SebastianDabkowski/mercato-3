@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.RegularExpressions;
 using MercatoApp.Data;
 using MercatoApp.Models;
 using Microsoft.EntityFrameworkCore;
@@ -53,9 +55,25 @@ public interface IStoreProfileService
     Task<Store?> GetStoreByIdAsync(int storeId);
 
     /// <summary>
+    /// Gets a store by its slug for public viewing.
+    /// Returns the store regardless of status for proper handling of different states.
+    /// </summary>
+    Task<Store?> GetStoreBySlugAsync(string slug);
+
+    /// <summary>
     /// Checks if a store name is unique (excluding the current store).
     /// </summary>
     Task<bool> IsStoreNameUniqueAsync(string storeName, int? excludeStoreId = null);
+
+    /// <summary>
+    /// Generates a URL-friendly slug from a store name.
+    /// </summary>
+    string GenerateSlug(string storeName);
+
+    /// <summary>
+    /// Generates a unique slug, appending a number if necessary.
+    /// </summary>
+    Task<string> GenerateUniqueSlugAsync(string storeName, int? excludeStoreId = null);
 }
 
 /// <summary>
@@ -97,6 +115,19 @@ public class StoreProfileService : IStoreProfileService
         return await _context.Stores
             .Include(s => s.User)
             .FirstOrDefaultAsync(s => s.Id == storeId && s.Status == StoreStatus.Active);
+    }
+
+    /// <inheritdoc />
+    public async Task<Store?> GetStoreBySlugAsync(string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            return null;
+        }
+
+        return await _context.Stores
+            .Include(s => s.User)
+            .FirstOrDefaultAsync(s => s.Slug == slug);
     }
 
     /// <inheritdoc />
@@ -279,5 +310,98 @@ public class StoreProfileService : IStoreProfileService
     {
         return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
                && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+    }
+
+    /// <inheritdoc />
+    public string GenerateSlug(string storeName)
+    {
+        if (string.IsNullOrWhiteSpace(storeName))
+        {
+            return string.Empty;
+        }
+
+        // Convert to lowercase and trim
+        var slug = storeName.ToLowerInvariant().Trim();
+
+        // Replace spaces and underscores with hyphens
+        slug = slug.Replace(' ', '-').Replace('_', '-');
+
+        // Remove diacritics (accented characters)
+        slug = RemoveDiacritics(slug);
+
+        // Remove invalid characters (keep only letters, numbers, and hyphens)
+        slug = Regex.Replace(slug, @"[^a-z0-9\-]", "");
+
+        // Replace multiple consecutive hyphens with single hyphen
+        slug = Regex.Replace(slug, @"-+", "-");
+
+        // Trim hyphens from start and end
+        slug = slug.Trim('-');
+
+        // Limit length to 150 characters to match Store model MaxLength
+        if (slug.Length > 150)
+        {
+            slug = slug[..150].TrimEnd('-');
+        }
+
+        return slug;
+    }
+
+    /// <inheritdoc />
+    public async Task<string> GenerateUniqueSlugAsync(string storeName, int? excludeStoreId = null)
+    {
+        var baseSlug = GenerateSlug(storeName);
+        
+        if (string.IsNullOrEmpty(baseSlug))
+        {
+            baseSlug = "store";
+        }
+
+        var slug = baseSlug;
+        var counter = 1;
+        const int maxAttempts = 1000; // Prevent infinite loops
+
+        while (await SlugExistsAsync(slug, excludeStoreId) && counter <= maxAttempts)
+        {
+            slug = $"{baseSlug}-{counter}";
+            counter++;
+        }
+
+        if (counter > maxAttempts)
+        {
+            // Fallback: append timestamp to ensure uniqueness
+            slug = $"{baseSlug}-{DateTime.UtcNow.Ticks}";
+        }
+
+        return slug;
+    }
+
+    private async Task<bool> SlugExistsAsync(string slug, int? excludeStoreId = null)
+    {
+        var query = _context.Stores.AsQueryable();
+        
+        if (excludeStoreId.HasValue)
+        {
+            query = query.Where(s => s.Id != excludeStoreId.Value);
+        }
+
+        return await query.AnyAsync(s => s.Slug == slug);
+    }
+
+    private static string RemoveDiacritics(string text)
+    {
+        var normalizedString = text.Normalize(NormalizationForm.FormD);
+        var stringBuilder = new StringBuilder();
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
+        }
+
+        return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }
 }

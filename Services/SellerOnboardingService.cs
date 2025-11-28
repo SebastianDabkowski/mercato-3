@@ -94,13 +94,16 @@ public class SellerOnboardingService : ISellerOnboardingService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<SellerOnboardingService> _logger;
+    private readonly IStoreProfileService _storeProfileService;
 
     public SellerOnboardingService(
         ApplicationDbContext context,
-        ILogger<SellerOnboardingService> logger)
+        ILogger<SellerOnboardingService> logger,
+        IStoreProfileService storeProfileService)
     {
         _context = context;
         _logger = logger;
+        _storeProfileService = storeProfileService;
     }
 
     /// <inheritdoc />
@@ -367,11 +370,15 @@ public class SellerOnboardingService : ISellerOnboardingService
             return result;
         }
 
+        // Generate a unique slug for the store
+        var slug = await _storeProfileService.GenerateUniqueSlugAsync(draft.StoreName!);
+
         // Create the store
         var store = new Store
         {
             UserId = userId,
             StoreName = draft.StoreName!,
+            Slug = slug,
             Description = draft.Description,
             Category = draft.Category,
             BusinessType = draft.BusinessType,
