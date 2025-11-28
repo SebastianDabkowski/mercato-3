@@ -10,15 +10,18 @@ namespace MercatoApp.Pages.Account;
 public class ExternalLoginModel : PageModel
 {
     private readonly ISocialLoginService _socialLoginService;
+    private readonly ISessionService _sessionService;
     private readonly IAuthenticationSchemeProvider _schemeProvider;
     private readonly ILogger<ExternalLoginModel> _logger;
 
     public ExternalLoginModel(
         ISocialLoginService socialLoginService,
+        ISessionService sessionService,
         IAuthenticationSchemeProvider schemeProvider,
         ILogger<ExternalLoginModel> logger)
     {
         _socialLoginService = socialLoginService;
+        _sessionService = sessionService;
         _schemeProvider = schemeProvider;
         _logger = logger;
     }
@@ -174,7 +177,25 @@ public class ExternalLoginModel : PageModel
         // Sign out the external cookie
         await HttpContext.SignOutAsync(normalizedProvider);
 
-        // Create claims for the authenticated user
+        // Create a secure session token
+        var sessionData = new SessionCreationData
+        {
+            UserId = loginResult.User!.Id,
+            SecurityStamp = loginResult.User.SecurityStamp,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = Request.Headers.UserAgent.ToString(),
+            IsPersistent = true // Social logins default to persistent sessions
+        };
+
+        var sessionResult = await _sessionService.CreateSessionAsync(sessionData);
+
+        if (!sessionResult.Success)
+        {
+            ErrorMessage = "Failed to create session. Please try again.";
+            return Page();
+        }
+
+        // Create claims for the authenticated user, including the session token
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, loginResult.User!.Id.ToString()),
@@ -183,14 +204,15 @@ public class ExternalLoginModel : PageModel
             new(ClaimTypes.GivenName, loginResult.User.FirstName),
             new(ClaimTypes.Surname, loginResult.User.LastName),
             new(ClaimTypes.Role, loginResult.User.UserType.ToString()),
-            new("ExternalProvider", normalizedProvider)
+            new("ExternalProvider", normalizedProvider),
+            new("SessionToken", sessionResult.Token!) // Store session token in claims for validation
         };
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var authProperties = new AuthenticationProperties
         {
             IsPersistent = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+            ExpiresUtc = DateTimeOffset.UtcNow.Add(_sessionService.PersistentSessionDuration)
         };
 
         await HttpContext.SignInAsync(

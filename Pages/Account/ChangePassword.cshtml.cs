@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using MercatoApp.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,10 +13,14 @@ namespace MercatoApp.Pages.Account;
 public class ChangePasswordModel : PageModel
 {
     private readonly IPasswordResetService _passwordResetService;
+    private readonly ISessionService _sessionService;
 
-    public ChangePasswordModel(IPasswordResetService passwordResetService)
+    public ChangePasswordModel(
+        IPasswordResetService passwordResetService,
+        ISessionService sessionService)
     {
         _passwordResetService = passwordResetService;
+        _sessionService = sessionService;
     }
 
     [BindProperty]
@@ -70,7 +76,13 @@ public class ChangePasswordModel : PageModel
             return Page();
         }
 
-        ChangeSuccessful = true;
-        return Page();
+        // Invalidate all user sessions (security stamp change will also invalidate on next validation)
+        await _sessionService.InvalidateAllUserSessionsAsync(userId);
+
+        // Sign out the current user and redirect to login
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        
+        TempData["Message"] = "Your password has been changed successfully. Please log in with your new password.";
+        return RedirectToPage("/Account/Login");
     }
 }

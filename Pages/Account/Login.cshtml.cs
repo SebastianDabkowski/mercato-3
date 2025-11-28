@@ -13,15 +13,18 @@ public class LoginModel : PageModel
 {
     private readonly IUserAuthenticationService _authenticationService;
     private readonly IEmailVerificationService _emailVerificationService;
+    private readonly ISessionService _sessionService;
     private readonly IConfiguration _configuration;
 
     public LoginModel(
         IUserAuthenticationService authenticationService,
         IEmailVerificationService emailVerificationService,
+        ISessionService sessionService,
         IConfiguration configuration)
     {
         _authenticationService = authenticationService;
         _emailVerificationService = emailVerificationService;
+        _sessionService = sessionService;
         _configuration = configuration;
     }
 
@@ -87,7 +90,25 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        // Create claims for the authenticated user
+        // Create a secure session token
+        var sessionData = new SessionCreationData
+        {
+            UserId = result.User!.Id,
+            SecurityStamp = result.User.SecurityStamp,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = Request.Headers.UserAgent.ToString(),
+            IsPersistent = Input.RememberMe
+        };
+
+        var sessionResult = await _sessionService.CreateSessionAsync(sessionData);
+
+        if (!sessionResult.Success)
+        {
+            ModelState.AddModelError(string.Empty, "Failed to create session. Please try again.");
+            return Page();
+        }
+
+        // Create claims for the authenticated user, including the session token
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, result.User!.Id.ToString()),
@@ -95,14 +116,19 @@ public class LoginModel : PageModel
             new(ClaimTypes.Name, $"{result.User.FirstName} {result.User.LastName}"),
             new(ClaimTypes.GivenName, result.User.FirstName),
             new(ClaimTypes.Surname, result.User.LastName),
-            new(ClaimTypes.Role, result.User.UserType.ToString())
+            new(ClaimTypes.Role, result.User.UserType.ToString()),
+            new("SessionToken", sessionResult.Token!) // Store session token in claims for validation
         };
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var sessionDuration = Input.RememberMe 
+            ? _sessionService.PersistentSessionDuration 
+            : _sessionService.SessionDuration;
+        
         var authProperties = new AuthenticationProperties
         {
             IsPersistent = Input.RememberMe,
-            ExpiresUtc = Input.RememberMe ? DateTimeOffset.UtcNow.AddDays(7) : null
+            ExpiresUtc = DateTimeOffset.UtcNow.Add(sessionDuration)
         };
 
         await HttpContext.SignInAsync(
