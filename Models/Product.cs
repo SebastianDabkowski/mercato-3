@@ -1,0 +1,74 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace MercatoApp.Models;
+
+/// <summary>
+/// Represents a product in a seller's catalog.
+/// </summary>
+public class Product
+{
+    /// <summary>
+    /// Gets or sets the unique identifier for the product.
+    /// </summary>
+    public int Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the store ID that owns this product.
+    /// </summary>
+    public int StoreId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the store that owns this product (navigation property).
+    /// </summary>
+    public Store Store { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the product title.
+    /// </summary>
+    [Required]
+    [MaxLength(200)]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the product description.
+    /// </summary>
+    [MaxLength(2000)]
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Gets or sets the product price.
+    /// </summary>
+    [Required]
+    [Range(0.01, 999999.99)]
+    public decimal Price { get; set; }
+
+    /// <summary>
+    /// Gets or sets the stock quantity.
+    /// </summary>
+    [Required]
+    [Range(0, int.MaxValue)]
+    public int Stock { get; set; }
+
+    /// <summary>
+    /// Gets or sets the product category.
+    /// </summary>
+    [Required]
+    [MaxLength(100)]
+    public string Category { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the product status.
+    /// New products default to Draft status.
+    /// </summary>
+    public ProductStatus Status { get; set; } = ProductStatus.Draft;
+
+    /// <summary>
+    /// Gets or sets the date and time when the product was created.
+    /// </summary>
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the date and time when the product was last updated.
+    /// </summary>
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
