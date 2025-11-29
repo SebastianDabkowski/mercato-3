@@ -430,21 +430,16 @@ public class ProductService : IProductService
             return result;
         }
 
-        // Create a temporary product with updated values for activation validation
-        var tempProduct = new Product
-        {
-            Title = trimmedTitle,
-            Description = trimmedDescription,
-            Price = data.Price,
-            Stock = data.Stock,
-            Category = trimmedCategory,
-            ImageUrls = trimmedImageUrls
-        };
-
         // If transitioning to Active, validate data quality requirements
         if (data.Status == ProductStatus.Active && product.Status != ProductStatus.Active)
         {
-            var activationErrors = ProductWorkflowService.ValidateForActivationStatic(tempProduct);
+            var activationErrors = ProductWorkflowService.ValidateForActivationStatic(
+                trimmedTitle,
+                trimmedDescription,
+                trimmedCategory,
+                data.Price,
+                data.Stock,
+                trimmedImageUrls);
             if (activationErrors.Count > 0)
             {
                 result.Errors.AddRange(activationErrors);

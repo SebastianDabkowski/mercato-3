@@ -135,34 +135,62 @@ public class ProductWorkflowService : IProductWorkflowService
     /// <returns>List of validation error messages.</returns>
     public static List<string> ValidateForActivationStatic(Product product)
     {
+        return ValidateForActivationStatic(
+            product.Title,
+            product.Description,
+            product.Category,
+            product.Price,
+            product.Stock,
+            product.ImageUrls);
+    }
+
+    /// <summary>
+    /// Static helper method to validate product data for activation.
+    /// Returns a list of error messages.
+    /// </summary>
+    /// <param name="title">The product title.</param>
+    /// <param name="description">The product description.</param>
+    /// <param name="category">The product category.</param>
+    /// <param name="price">The product price.</param>
+    /// <param name="stock">The product stock.</param>
+    /// <param name="imageUrls">The product image URLs.</param>
+    /// <returns>List of validation error messages.</returns>
+    public static List<string> ValidateForActivationStatic(
+        string? title,
+        string? description,
+        string? category,
+        decimal price,
+        int stock,
+        string? imageUrls)
+    {
         var errors = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(product.Title))
+        if (string.IsNullOrWhiteSpace(title))
         {
             errors.Add("Product title is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(product.Description))
+        if (string.IsNullOrWhiteSpace(description))
         {
             errors.Add("Product description is required for active products.");
         }
 
-        if (string.IsNullOrWhiteSpace(product.Category))
+        if (string.IsNullOrWhiteSpace(category))
         {
             errors.Add("Product category is required.");
         }
 
-        if (product.Price <= 0)
+        if (price <= 0)
         {
             errors.Add("Product price must be greater than zero.");
         }
 
-        if (product.Stock < 0)
+        if (stock < 0)
         {
             errors.Add("Product stock cannot be negative.");
         }
 
-        if (string.IsNullOrWhiteSpace(product.ImageUrls))
+        if (string.IsNullOrWhiteSpace(imageUrls))
         {
             errors.Add("At least one product image is required for active products.");
         }
@@ -235,47 +263,29 @@ public class ProductWorkflowService : IProductWorkflowService
     public WorkflowTransitionResult ValidateForActivation(Product product)
     {
         var result = new WorkflowTransitionResult { Success = true };
-
-        // Validate required fields for active products
-        if (string.IsNullOrWhiteSpace(product.Title))
-        {
-            result.InvalidFields.Add("Title");
-            result.Errors.Add("Product title is required.");
-        }
-
-        if (string.IsNullOrWhiteSpace(product.Description))
-        {
-            result.InvalidFields.Add("Description");
-            result.Errors.Add("Product description is required for active products.");
-        }
-
-        if (string.IsNullOrWhiteSpace(product.Category))
-        {
-            result.InvalidFields.Add("Category");
-            result.Errors.Add("Product category is required.");
-        }
-
-        if (product.Price <= 0)
-        {
-            result.InvalidFields.Add("Price");
-            result.Errors.Add("Product price must be greater than zero.");
-        }
-
-        if (product.Stock < 0)
-        {
-            result.InvalidFields.Add("Stock");
-            result.Errors.Add("Product stock cannot be negative.");
-        }
-
-        if (string.IsNullOrWhiteSpace(product.ImageUrls))
-        {
-            result.InvalidFields.Add("ImageUrls");
-            result.Errors.Add("At least one product image is required for active products.");
-        }
-
-        if (result.Errors.Count > 0)
+        var errors = ValidateForActivationStatic(product);
+        
+        if (errors.Count > 0)
         {
             result.Success = false;
+            result.Errors.AddRange(errors);
+            
+            // Map errors to invalid fields
+            foreach (var error in errors)
+            {
+                if (error.Contains("title", StringComparison.OrdinalIgnoreCase))
+                    result.InvalidFields.Add("Title");
+                else if (error.Contains("description", StringComparison.OrdinalIgnoreCase))
+                    result.InvalidFields.Add("Description");
+                else if (error.Contains("category", StringComparison.OrdinalIgnoreCase))
+                    result.InvalidFields.Add("Category");
+                else if (error.Contains("price", StringComparison.OrdinalIgnoreCase))
+                    result.InvalidFields.Add("Price");
+                else if (error.Contains("stock", StringComparison.OrdinalIgnoreCase))
+                    result.InvalidFields.Add("Stock");
+                else if (error.Contains("image", StringComparison.OrdinalIgnoreCase))
+                    result.InvalidFields.Add("ImageUrls");
+            }
         }
 
         return result;
@@ -284,51 +294,13 @@ public class ProductWorkflowService : IProductWorkflowService
     /// <inheritdoc />
     public bool IsTransitionAllowed(ProductStatus currentStatus, ProductStatus newStatus, bool isAdmin = false)
     {
-        // Same status is always allowed (no-op)
-        if (currentStatus == newStatus)
-        {
-            return true;
-        }
-
-        // Check seller allowed transitions
-        if (SellerAllowedTransitions.TryGetValue(currentStatus, out var allowedForSeller) 
-            && allowedForSeller.Contains(newStatus))
-        {
-            return true;
-        }
-
-        // Check admin additional transitions
-        if (isAdmin && AdminAdditionalTransitions.TryGetValue(currentStatus, out var allowedForAdmin) 
-            && allowedForAdmin.Contains(newStatus))
-        {
-            return true;
-        }
-
-        return false;
+        return IsTransitionAllowedStatic(currentStatus, newStatus, isAdmin);
     }
 
     /// <inheritdoc />
     public IEnumerable<ProductStatus> GetAllowedTransitions(ProductStatus currentStatus, bool isAdmin = false)
     {
-        var allowed = new HashSet<ProductStatus>();
-
-        if (SellerAllowedTransitions.TryGetValue(currentStatus, out var sellerTransitions))
-        {
-            foreach (var status in sellerTransitions)
-            {
-                allowed.Add(status);
-            }
-        }
-
-        if (isAdmin && AdminAdditionalTransitions.TryGetValue(currentStatus, out var adminTransitions))
-        {
-            foreach (var status in adminTransitions)
-            {
-                allowed.Add(status);
-            }
-        }
-
-        return allowed;
+        return GetAllowedTransitionsStatic(currentStatus, isAdmin);
     }
 
     /// <inheritdoc />
@@ -355,6 +327,14 @@ public class ProductWorkflowService : IProductWorkflowService
             return result;
         }
 
+        // Same status - no-op, return success
+        if (product.Status == newStatus)
+        {
+            result.Success = true;
+            result.Product = product;
+            return result;
+        }
+
         // Check if transition is allowed
         if (!IsTransitionAllowed(product.Status, newStatus, isAdmin))
         {
@@ -363,7 +343,7 @@ public class ProductWorkflowService : IProductWorkflowService
         }
 
         // If transitioning to Active, validate data quality requirements
-        if (newStatus == ProductStatus.Active && product.Status != ProductStatus.Active)
+        if (newStatus == ProductStatus.Active)
         {
             var validationResult = ValidateForActivation(product);
             if (!validationResult.Success)
