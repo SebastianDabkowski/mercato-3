@@ -14,13 +14,16 @@ public class EditModel : PageModel
 {
     private readonly IProductService _productService;
     private readonly IStoreProfileService _storeProfileService;
+    private readonly ICategoryService _categoryService;
 
     public EditModel(
         IProductService productService,
-        IStoreProfileService storeProfileService)
+        IStoreProfileService storeProfileService,
+        ICategoryService categoryService)
     {
         _productService = productService;
         _storeProfileService = storeProfileService;
+        _categoryService = categoryService;
     }
 
     [BindProperty]
@@ -33,6 +36,18 @@ public class EditModel : PageModel
     public string? SuccessMessage { get; set; }
 
     public List<SelectListItem> StatusOptions { get; set; } = new();
+
+    public List<CategorySelectOption> Categories { get; set; } = new();
+
+    /// <summary>
+    /// Represents a category option for selection in a dropdown.
+    /// </summary>
+    public class CategorySelectOption
+    {
+        public int Id { get; set; }
+        public string FullPath { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
 
     public class InputModel
     {
@@ -59,6 +74,9 @@ public class EditModel : PageModel
         [MaxLength(100, ErrorMessage = "Category must be 100 characters or less.")]
         [Display(Name = "Category")]
         public string Category { get; set; } = string.Empty;
+
+        [Display(Name = "Category")]
+        public int? CategoryId { get; set; }
 
         [Required(ErrorMessage = "Status is required.")]
         [Display(Name = "Status")]
@@ -126,6 +144,7 @@ public class EditModel : PageModel
             Price = Product.Price,
             Stock = Product.Stock,
             Category = Product.Category,
+            CategoryId = Product.CategoryId,
             Status = Product.Status,
             Weight = Product.Weight,
             Length = Product.Length,
@@ -136,6 +155,7 @@ public class EditModel : PageModel
         };
 
         PopulateStatusOptions();
+        await LoadCategoriesAsync();
         return Page();
     }
 
@@ -162,6 +182,7 @@ public class EditModel : PageModel
         }
 
         PopulateStatusOptions();
+        await LoadCategoriesAsync();
 
         if (!ModelState.IsValid)
         {
@@ -175,6 +196,7 @@ public class EditModel : PageModel
             Price = Input.Price,
             Stock = Input.Stock,
             Category = Input.Category,
+            CategoryId = Input.CategoryId,
             Status = Input.Status,
             Weight = Input.Weight,
             Length = Input.Length,
@@ -250,5 +272,18 @@ public class EditModel : PageModel
             ProductStatus.Archived => "Archived",
             _ => status.ToString()
         };
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var categories = await _categoryService.GetActiveCategoriesForSelectionAsync();
+        Categories = categories
+            .Select(c => new CategorySelectOption
+            {
+                Id = c.Id,
+                FullPath = c.FullPath,
+                DisplayName = c.DisplayName
+            })
+            .ToList();
     }
 }

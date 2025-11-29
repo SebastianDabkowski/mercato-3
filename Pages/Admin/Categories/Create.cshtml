@@ -1,0 +1,62 @@
+@page
+@model MercatoApp.Pages.Admin.Categories.CreateModel
+@{
+    ViewData["Title"] = "Create Category";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-page="Index">Categories</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create Category</li>
+                </ol>
+            </nav>
+            <h1>Create Category</h1>
+            <p class="text-muted">Add a new category to the product category tree.</p>
+        </div>
+
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+        <form method="post">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Category Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.Name" class="form-label"></label>
+                        <input asp-for="Input.Name" class="form-control" aria-required="true" placeholder="e.g., Electronics, Fashion, Home & Garden" />
+                        <span asp-validation-for="Input.Name" class="text-danger"></span>
+                        <div class="form-text">Enter a descriptive name for the category (max 100 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.ParentCategoryId" class="form-label"></label>
+                        <select asp-for="Input.ParentCategoryId" asp-items="Model.ParentCategories" class="form-select">
+                        </select>
+                        <span asp-validation-for="Input.ParentCategoryId" class="text-danger"></span>
+                        <div class="form-text">Select a parent category to create a subcategory, or leave as root.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.DisplayOrder" class="form-label"></label>
+                        <input asp-for="Input.DisplayOrder" class="form-control" type="number" min="0" placeholder="0" />
+                        <span asp-validation-for="Input.DisplayOrder" class="text-danger"></span>
+                        <div class="form-text">Lower numbers appear first when listing categories.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

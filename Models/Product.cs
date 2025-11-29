@@ -50,11 +50,23 @@ public class Product
     public int Stock { get; set; }
 
     /// <summary>
-    /// Gets or sets the product category.
+    /// Gets or sets the product category name.
+    /// This is the display name stored for backward compatibility.
     /// </summary>
     [Required]
     [MaxLength(100)]
     public string Category { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the category ID for the structured category.
+    /// Null for products created before category management was implemented.
+    /// </summary>
+    public int? CategoryId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the structured category (navigation property).
+    /// </summary>
+    public Category? CategoryEntity { get; set; }
 
     /// <summary>
     /// Gets or sets the product status.
