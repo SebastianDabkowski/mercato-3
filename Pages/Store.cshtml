@@ -1,5 +1,6 @@
 @page "/store/{slug}"
 @model MercatoApp.Pages.StoreModel
+@using MercatoApp.Helpers
 @{
     ViewData["Title"] = Model.Store?.StoreName ?? "Store";
 }
@@ -73,13 +74,9 @@
                             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
                                 @foreach (var product in category.Value)
                                 {
+                                    var firstImage = product.ImageUrls.GetFirstCommaSeparatedValue();
                                     <div class="col">
                                         <div class="card h-100">
-                                            @{
-                                                var firstImage = !string.IsNullOrEmpty(product.ImageUrls) 
-                                                    ? product.ImageUrls.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() 
-                                                    : null;
-                                            }
                                             @if (!string.IsNullOrEmpty(firstImage))
                                             {
                                                 <img src="@firstImage" class="card-img-top" alt="@product.Title" style="height: 150px; object-fit: contain;" />
