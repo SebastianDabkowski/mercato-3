@@ -43,6 +43,12 @@ public class CategoryTreeItem
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string FullPath { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets the display name (last segment of the full path).
+    /// </summary>
+    public string DisplayName => Name;
+    
     public int? ParentCategoryId { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; }
@@ -105,6 +111,13 @@ public interface ICategoryService
     /// Validates that creating/moving a category to the specified parent wouldn't create a circular reference.
     /// </summary>
     Task<bool> WouldCreateCircularReferenceAsync(int categoryId, int? newParentId);
+
+    /// <summary>
+    /// Gets all descendant category IDs for a given category.
+    /// </summary>
+    /// <param name="categoryId">The parent category ID.</param>
+    /// <returns>A set of all descendant category IDs.</returns>
+    Task<HashSet<int>> GetDescendantCategoryIdsAsync(int categoryId);
 }
 
 /// <summary>
@@ -390,23 +403,33 @@ public class CategoryService : ICategoryService
         }
 
         // Check if the new parent is a descendant of the category being moved
-        var descendantIds = new HashSet<int>();
-        await CollectDescendantIdsAsync(categoryId, descendantIds);
-
+        var descendantIds = await GetDescendantCategoryIdsAsync(categoryId);
         return descendantIds.Contains(newParentId.Value);
     }
 
-    private async Task CollectDescendantIdsAsync(int categoryId, HashSet<int> descendantIds)
+    /// <inheritdoc />
+    public async Task<HashSet<int>> GetDescendantCategoryIdsAsync(int categoryId)
     {
-        var childIds = await _context.Categories
-            .Where(c => c.ParentCategoryId == categoryId)
-            .Select(c => c.Id)
+        // Load all categories once to avoid N+1 queries
+        var allCategories = await _context.Categories
+            .Select(c => new { c.Id, c.ParentCategoryId })
             .ToListAsync();
 
+        var descendantIds = new HashSet<int>();
+        CollectDescendantsInMemory(categoryId, allCategories.ToDictionary(c => c.Id, c => c.ParentCategoryId), descendantIds);
+        return descendantIds;
+    }
+
+    private static void CollectDescendantsInMemory(
+        int categoryId,
+        Dictionary<int, int?> categoryParentMap,
+        HashSet<int> descendantIds)
+    {
+        var childIds = categoryParentMap.Where(kvp => kvp.Value == categoryId).Select(kvp => kvp.Key).ToList();
         foreach (var childId in childIds)
         {
             descendantIds.Add(childId);
-            await CollectDescendantIdsAsync(childId, descendantIds);
+            CollectDescendantsInMemory(childId, categoryParentMap, descendantIds);
         }
     }
 

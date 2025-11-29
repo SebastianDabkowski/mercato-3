@@ -67,8 +67,8 @@
                                     <option value="">Select a category</option>
                                     @foreach (var cat in Model.Categories)
                                     {
-                                        var isSelected = Model.Input.CategoryId?.ToString() == cat.Value;
-                                        <option value="@cat.Value" data-name="@cat.Text.Split(" > ").Last()" selected="@isSelected">@cat.Text</option>
+                                        var isSelected = Model.Input.CategoryId == cat.Id;
+                                        <option value="@cat.Id" data-name="@cat.DisplayName" selected="@isSelected">@cat.FullPath</option>
                                     }
                                 </select>
                                 <input type="hidden" asp-for="Input.CategoryId" id="category-id-input" />
@@ -203,7 +203,7 @@
                         var selectedOption = this.options[this.selectedIndex];
                         if (selectedOption.value) {
                             categoryIdInput.value = selectedOption.value;
-                            categoryNameInput.value = selectedOption.getAttribute('data-name') || selectedOption.text.split(' > ').pop();
+                            categoryNameInput.value = selectedOption.getAttribute('data-name') || '';
                         } else {
                             categoryIdInput.value = '';
                             categoryNameInput.value = '';

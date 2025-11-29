@@ -31,10 +31,20 @@ public class CreateModel : PageModel
 
     public Store? Store { get; set; }
 
-    public List<SelectListItem> Categories { get; set; } = new();
+    public List<CategorySelectOption> Categories { get; set; } = new();
 
     [TempData]
     public string? SuccessMessage { get; set; }
+
+    /// <summary>
+    /// Represents a category option for selection in a dropdown.
+    /// </summary>
+    public class CategorySelectOption
+    {
+        public int Id { get; set; }
+        public string FullPath { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
 
     public class InputModel
     {
@@ -174,10 +184,11 @@ public class CreateModel : PageModel
     {
         var categories = await _categoryService.GetActiveCategoriesForSelectionAsync();
         Categories = categories
-            .Select(c => new SelectListItem
+            .Select(c => new CategorySelectOption
             {
-                Value = c.Id.ToString(),
-                Text = c.FullPath
+                Id = c.Id,
+                FullPath = c.FullPath,
+                DisplayName = c.DisplayName
             })
             .ToList();
     }

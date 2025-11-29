@@ -115,8 +115,8 @@ public class EditModel : PageModel
         var categories = await _categoryService.GetActiveCategoriesForSelectionAsync();
         
         // Exclude current category and its descendants from parent options
-        var excludeIds = new HashSet<int> { excludeCategoryId };
-        await CollectDescendantIds(excludeCategoryId, excludeIds);
+        var descendantIds = await _categoryService.GetDescendantCategoryIdsAsync(excludeCategoryId);
+        var excludeIds = new HashSet<int>(descendantIds) { excludeCategoryId };
 
         ParentCategories = categories
             .Where(c => !excludeIds.Contains(c.Id))
@@ -132,21 +132,5 @@ public class EditModel : PageModel
             Value = "",
             Text = "-- No Parent (Root Category) --"
         });
-    }
-
-    private async Task CollectDescendantIds(int categoryId, HashSet<int> ids)
-    {
-        var allCategories = await _categoryService.GetAllCategoriesAsync();
-        CollectDescendantsRecursive(categoryId, allCategories, ids);
-    }
-
-    private void CollectDescendantsRecursive(int categoryId, List<Category> allCategories, HashSet<int> ids)
-    {
-        var children = allCategories.Where(c => c.ParentCategoryId == categoryId);
-        foreach (var child in children)
-        {
-            ids.Add(child.Id);
-            CollectDescendantsRecursive(child.Id, allCategories, ids);
-        }
     }
 }
