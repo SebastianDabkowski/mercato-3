@@ -91,6 +91,69 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.ImageUrls" class="form-label"></label>
+                        <textarea asp-for="Input.ImageUrls" class="form-control" rows="2" placeholder="https://example.com/image1.jpg,https://example.com/image2.jpg"></textarea>
+                        <span asp-validation-for="Input.ImageUrls" class="text-danger"></span>
+                        <div class="form-text">Enter comma-separated image URLs for your product.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Shipping Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Input.Weight" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Input.Weight" class="form-control" type="number" step="0.01" min="0" max="1000" placeholder="0.00" />
+                                <span class="input-group-text">kg</span>
+                            </div>
+                            <span asp-validation-for="Input.Weight" class="text-danger"></span>
+                            <div class="form-text">Product weight for shipping calculation (optional).</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.Length" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Input.Length" class="form-control" type="number" step="0.1" min="0" max="500" placeholder="0" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                            <span asp-validation-for="Input.Length" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.Width" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Input.Width" class="form-control" type="number" step="0.1" min="0" max="500" placeholder="0" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                            <span asp-validation-for="Input.Width" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.Height" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Input.Height" class="form-control" type="number" step="0.1" min="0" max="500" placeholder="0" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                            <span asp-validation-for="Input.Height" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="form-text mb-3">Product dimensions for shipping calculation (optional).</div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.ShippingMethods" class="form-label"></label>
+                        <input asp-for="Input.ShippingMethods" class="form-control" placeholder="Standard,Express,Overnight" />
+                        <span asp-validation-for="Input.ShippingMethods" class="text-danger"></span>
+                        <div class="form-text">Enter comma-separated shipping methods available for this product (e.g., Standard,Express,Overnight).</div>
+                    </div>
                 </div>
             </div>
 

@@ -16,6 +16,37 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-8">
+                            @if (!string.IsNullOrEmpty(Model.Product.ImageUrls))
+                            {
+                                var imageList = Model.Product.ImageUrls.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                if (imageList.Length > 0)
+                                {
+                                    <div class="mb-3">
+                                        <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                                            <div class="carousel-inner">
+                                                @for (var i = 0; i < imageList.Length; i++)
+                                                {
+                                                    <div class="carousel-item @(i == 0 ? "active" : "")">
+                                                        <img src="@imageList[i]" class="d-block w-100 rounded" alt="@Model.Product.Title image @(i + 1)" style="max-height: 300px; object-fit: contain;" />
+                                                    </div>
+                                                }
+                                            </div>
+                                            @if (imageList.Length > 1)
+                                            {
+                                                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                    <span class="visually-hidden">Previous</span>
+                                                </button>
+                                                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                    <span class="visually-hidden">Next</span>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            
                             @if (!string.IsNullOrEmpty(Model.Product.Description))
                             {
                                 <p class="lead">@Model.Product.Description</p>
@@ -61,6 +92,42 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Shipping Information -->
+            @if (Model.Product.Weight.HasValue || Model.Product.Length.HasValue || Model.Product.Width.HasValue || Model.Product.Height.HasValue || !string.IsNullOrEmpty(Model.Product.ShippingMethods))
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Shipping Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            @if (Model.Product.Weight.HasValue)
+                            {
+                                <dt class="col-sm-3">Weight</dt>
+                                <dd class="col-sm-9">@Model.Product.Weight.Value kg</dd>
+                            }
+                            @if (Model.Product.Length.HasValue || Model.Product.Width.HasValue || Model.Product.Height.HasValue)
+                            {
+                                <dt class="col-sm-3">Dimensions</dt>
+                                <dd class="col-sm-9">
+                                    @(Model.Product.Length?.ToString() ?? "-") x @(Model.Product.Width?.ToString() ?? "-") x @(Model.Product.Height?.ToString() ?? "-") cm
+                                </dd>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Product.ShippingMethods))
+                            {
+                                <dt class="col-sm-3">Shipping Options</dt>
+                                <dd class="col-sm-9">
+                                    @foreach (var method in Model.Product.ShippingMethods.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                                    {
+                                        <span class="badge bg-info me-1">@method</span>
+                                    }
+                                </dd>
+                            }
+                        </dl>
+                    </div>
+                </div>
+            }
             
             <!-- Store Information -->
             @if (Model.Product.Store != null)

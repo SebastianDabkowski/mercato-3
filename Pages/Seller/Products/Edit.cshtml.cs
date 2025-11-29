@@ -63,6 +63,30 @@ public class EditModel : PageModel
         [Required(ErrorMessage = "Status is required.")]
         [Display(Name = "Status")]
         public ProductStatus Status { get; set; }
+
+        [Range(0, 1000, ErrorMessage = "Weight must be between 0 and 1000 kg.")]
+        [Display(Name = "Weight (kg)")]
+        public decimal? Weight { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Length must be between 0 and 500 cm.")]
+        [Display(Name = "Length (cm)")]
+        public decimal? Length { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Width must be between 0 and 500 cm.")]
+        [Display(Name = "Width (cm)")]
+        public decimal? Width { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Height must be between 0 and 500 cm.")]
+        [Display(Name = "Height (cm)")]
+        public decimal? Height { get; set; }
+
+        [MaxLength(500, ErrorMessage = "Shipping methods must be 500 characters or less.")]
+        [Display(Name = "Shipping Methods")]
+        public string? ShippingMethods { get; set; }
+
+        [MaxLength(2000, ErrorMessage = "Image URLs must be 2000 characters or less.")]
+        [Display(Name = "Image URLs")]
+        public string? ImageUrls { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync(int id)
@@ -102,7 +126,13 @@ public class EditModel : PageModel
             Price = Product.Price,
             Stock = Product.Stock,
             Category = Product.Category,
-            Status = Product.Status
+            Status = Product.Status,
+            Weight = Product.Weight,
+            Length = Product.Length,
+            Width = Product.Width,
+            Height = Product.Height,
+            ShippingMethods = Product.ShippingMethods,
+            ImageUrls = Product.ImageUrls
         };
 
         PopulateStatusOptions();
@@ -145,7 +175,13 @@ public class EditModel : PageModel
             Price = Input.Price,
             Stock = Input.Stock,
             Category = Input.Category,
-            Status = Input.Status
+            Status = Input.Status,
+            Weight = Input.Weight,
+            Length = Input.Length,
+            Width = Input.Width,
+            Height = Input.Height,
+            ShippingMethods = Input.ShippingMethods,
+            ImageUrls = Input.ImageUrls
         };
 
         var result = await _productService.UpdateProductAsync(id, Store.Id, data, userId.Value);

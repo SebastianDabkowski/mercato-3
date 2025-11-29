@@ -24,6 +24,12 @@ public class CreateProductData
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public required string Category { get; set; }
+    public decimal? Weight { get; set; }
+    public decimal? Length { get; set; }
+    public decimal? Width { get; set; }
+    public decimal? Height { get; set; }
+    public string? ShippingMethods { get; set; }
+    public string? ImageUrls { get; set; }
 }
 
 /// <summary>
@@ -37,6 +43,12 @@ public class UpdateProductData
     public int Stock { get; set; }
     public required string Category { get; set; }
     public ProductStatus Status { get; set; }
+    public decimal? Weight { get; set; }
+    public decimal? Length { get; set; }
+    public decimal? Width { get; set; }
+    public decimal? Height { get; set; }
+    public string? ShippingMethods { get; set; }
+    public string? ImageUrls { get; set; }
 }
 
 /// <summary>
@@ -115,6 +127,26 @@ public class ProductService : IProductService
     /// </summary>
     public const int MaxCategoryLength = 100;
 
+    /// <summary>
+    /// Maximum weight for a product in kilograms.
+    /// </summary>
+    public const decimal MaxWeight = 1000m;
+
+    /// <summary>
+    /// Maximum dimension (length, width, height) for a product in centimeters.
+    /// </summary>
+    public const decimal MaxDimension = 500m;
+
+    /// <summary>
+    /// Maximum length for shipping methods string.
+    /// </summary>
+    public const int MaxShippingMethodsLength = 500;
+
+    /// <summary>
+    /// Maximum length for image URLs string.
+    /// </summary>
+    public const int MaxImageUrlsLength = 2000;
+
     public ProductService(
         ApplicationDbContext context,
         ILogger<ProductService> logger)
@@ -177,6 +209,83 @@ public class ProductService : IProductService
         }
     }
 
+    /// <summary>
+    /// Validates shipping parameters and adds errors to the result.
+    /// </summary>
+    private static void ValidateShippingParameters(
+        decimal? weight,
+        decimal? length,
+        decimal? width,
+        decimal? height,
+        string? shippingMethods,
+        string? imageUrls,
+        ProductResult result)
+    {
+        // Validate weight
+        if (weight.HasValue)
+        {
+            if (weight.Value < 0)
+            {
+                result.Errors.Add("Weight cannot be negative.");
+            }
+            else if (weight.Value > MaxWeight)
+            {
+                result.Errors.Add($"Weight must be {MaxWeight} kg or less.");
+            }
+        }
+
+        // Validate length
+        if (length.HasValue)
+        {
+            if (length.Value < 0)
+            {
+                result.Errors.Add("Length cannot be negative.");
+            }
+            else if (length.Value > MaxDimension)
+            {
+                result.Errors.Add($"Length must be {MaxDimension} cm or less.");
+            }
+        }
+
+        // Validate width
+        if (width.HasValue)
+        {
+            if (width.Value < 0)
+            {
+                result.Errors.Add("Width cannot be negative.");
+            }
+            else if (width.Value > MaxDimension)
+            {
+                result.Errors.Add($"Width must be {MaxDimension} cm or less.");
+            }
+        }
+
+        // Validate height
+        if (height.HasValue)
+        {
+            if (height.Value < 0)
+            {
+                result.Errors.Add("Height cannot be negative.");
+            }
+            else if (height.Value > MaxDimension)
+            {
+                result.Errors.Add($"Height must be {MaxDimension} cm or less.");
+            }
+        }
+
+        // Validate shipping methods
+        if (shippingMethods?.Length > MaxShippingMethodsLength)
+        {
+            result.Errors.Add($"Shipping methods must be {MaxShippingMethodsLength} characters or less.");
+        }
+
+        // Validate image URLs
+        if (imageUrls?.Length > MaxImageUrlsLength)
+        {
+            result.Errors.Add($"Image URLs must be {MaxImageUrlsLength} characters or less.");
+        }
+    }
+
     /// <inheritdoc />
     public async Task<ProductResult> CreateProductAsync(int storeId, CreateProductData data)
     {
@@ -184,6 +293,7 @@ public class ProductService : IProductService
 
         // Validate fields
         ValidateProductFields(data.Title, data.Description, data.Price, data.Stock, data.Category, result);
+        ValidateShippingParameters(data.Weight, data.Length, data.Width, data.Height, data.ShippingMethods, data.ImageUrls, result);
 
         if (result.Errors.Count > 0)
         {
@@ -209,7 +319,13 @@ public class ProductService : IProductService
             Category = data.Category.Trim(),
             Status = ProductStatus.Draft,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            Weight = data.Weight,
+            Length = data.Length,
+            Width = data.Width,
+            Height = data.Height,
+            ShippingMethods = data.ShippingMethods?.Trim(),
+            ImageUrls = data.ImageUrls?.Trim()
         };
 
         _context.Products.Add(product);
@@ -287,9 +403,12 @@ public class ProductService : IProductService
         var trimmedTitle = data.Title?.Trim() ?? string.Empty;
         var trimmedDescription = data.Description?.Trim();
         var trimmedCategory = data.Category?.Trim() ?? string.Empty;
+        var trimmedShippingMethods = data.ShippingMethods?.Trim();
+        var trimmedImageUrls = data.ImageUrls?.Trim();
 
         // Validate input data using helper
         ValidateProductFields(trimmedTitle, trimmedDescription, data.Price, data.Stock, trimmedCategory, result);
+        ValidateShippingParameters(data.Weight, data.Length, data.Width, data.Height, trimmedShippingMethods, trimmedImageUrls, result);
 
         // Validate status transition - cannot set to Archived via update
         if (data.Status == ProductStatus.Archived)
@@ -328,6 +447,30 @@ public class ProductService : IProductService
         {
             changes.Add($"Status: {product.Status} -> {data.Status}");
         }
+        if (product.Weight != data.Weight)
+        {
+            changes.Add($"Weight: {product.Weight} -> {data.Weight}");
+        }
+        if (product.Length != data.Length)
+        {
+            changes.Add($"Length: {product.Length} -> {data.Length}");
+        }
+        if (product.Width != data.Width)
+        {
+            changes.Add($"Width: {product.Width} -> {data.Width}");
+        }
+        if (product.Height != data.Height)
+        {
+            changes.Add($"Height: {product.Height} -> {data.Height}");
+        }
+        if (product.ShippingMethods != trimmedShippingMethods)
+        {
+            changes.Add("Shipping methods changed");
+        }
+        if (product.ImageUrls != trimmedImageUrls)
+        {
+            changes.Add("Image URLs changed");
+        }
 
         // Update the product
         product.Title = trimmedTitle;
@@ -336,6 +479,12 @@ public class ProductService : IProductService
         product.Stock = data.Stock;
         product.Category = trimmedCategory;
         product.Status = data.Status;
+        product.Weight = data.Weight;
+        product.Length = data.Length;
+        product.Width = data.Width;
+        product.Height = data.Height;
+        product.ShippingMethods = trimmedShippingMethods;
+        product.ImageUrls = trimmedImageUrls;
         product.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

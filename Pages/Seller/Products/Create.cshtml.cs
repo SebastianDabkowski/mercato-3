@@ -55,6 +55,30 @@ public class CreateModel : PageModel
         [MaxLength(100, ErrorMessage = "Category must be 100 characters or less.")]
         [Display(Name = "Category")]
         public string Category { get; set; } = string.Empty;
+
+        [Range(0, 1000, ErrorMessage = "Weight must be between 0 and 1000 kg.")]
+        [Display(Name = "Weight (kg)")]
+        public decimal? Weight { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Length must be between 0 and 500 cm.")]
+        [Display(Name = "Length (cm)")]
+        public decimal? Length { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Width must be between 0 and 500 cm.")]
+        [Display(Name = "Width (cm)")]
+        public decimal? Width { get; set; }
+
+        [Range(0, 500, ErrorMessage = "Height must be between 0 and 500 cm.")]
+        [Display(Name = "Height (cm)")]
+        public decimal? Height { get; set; }
+
+        [MaxLength(500, ErrorMessage = "Shipping methods must be 500 characters or less.")]
+        [Display(Name = "Shipping Methods")]
+        public string? ShippingMethods { get; set; }
+
+        [MaxLength(2000, ErrorMessage = "Image URLs must be 2000 characters or less.")]
+        [Display(Name = "Image URLs")]
+        public string? ImageUrls { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -99,7 +123,13 @@ public class CreateModel : PageModel
             Description = Input.Description,
             Price = Input.Price,
             Stock = Input.Stock,
-            Category = Input.Category
+            Category = Input.Category,
+            Weight = Input.Weight,
+            Length = Input.Length,
+            Width = Input.Width,
+            Height = Input.Height,
+            ShippingMethods = Input.ShippingMethods,
+            ImageUrls = Input.ImageUrls
         };
 
         var result = await _productService.CreateProductAsync(Store.Id, data);
