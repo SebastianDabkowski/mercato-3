@@ -1,5 +1,6 @@
 @page "/store/{slug}"
 @model MercatoApp.Pages.StoreModel
+@using MercatoApp.Helpers
 @{
     ViewData["Title"] = Model.Store?.StoreName ?? "Store";
 }
@@ -52,13 +53,64 @@
                 </div>
             }
 
-            <!-- Placeholder for Products -->
+            <!-- Products by Category -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">Products</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-0">No products available yet. Check back soon!</p>
+                    @if (Model.Products.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No products available yet. Check back soon!</p>
+                    }
+                    else
+                    {
+                        @foreach (var category in Model.ProductsByCategory)
+                        {
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <span class="badge bg-secondary">@category.Key</span>
+                                <span class="text-muted small">(@category.Value.Count product@(category.Value.Count != 1 ? "s" : ""))</span>
+                            </h6>
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+                                @foreach (var product in category.Value)
+                                {
+                                    var firstImage = product.ImageUrls.GetFirstCommaSeparatedValue();
+                                    <div class="col">
+                                        <div class="card h-100">
+                                            @if (!string.IsNullOrEmpty(firstImage))
+                                            {
+                                                <img src="@firstImage" class="card-img-top" alt="@product.Title" style="height: 150px; object-fit: contain;" />
+                                            }
+                                            else
+                                            {
+                                                <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 150px;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-box text-muted" viewBox="0 0 16 16">
+                                                        <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"/>
+                                                    </svg>
+                                                </div>
+                                            }
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <a asp-page="/Product" asp-route-id="@product.Id" class="text-decoration-none stretched-link">@product.Title</a>
+                                                </h6>
+                                                <p class="card-text text-primary fw-bold mb-1">@product.Price.ToString("C")</p>
+                                                <p class="card-text small text-muted">
+                                                    @if (product.Stock > 0)
+                                                    {
+                                                        <span class="text-success">In Stock</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-danger">Out of Stock</span>
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
                 </div>
             </div>
         </div>

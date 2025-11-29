@@ -71,4 +71,45 @@ public class Product
     /// Gets or sets the date and time when the product was last updated.
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the product weight in kilograms.
+    /// Used for shipping cost calculation.
+    /// </summary>
+    [Range(0, 1000)]
+    public decimal? Weight { get; set; }
+
+    /// <summary>
+    /// Gets or sets the product length in centimeters.
+    /// Used for shipping cost calculation.
+    /// </summary>
+    [Range(0, 500)]
+    public decimal? Length { get; set; }
+
+    /// <summary>
+    /// Gets or sets the product width in centimeters.
+    /// Used for shipping cost calculation.
+    /// </summary>
+    [Range(0, 500)]
+    public decimal? Width { get; set; }
+
+    /// <summary>
+    /// Gets or sets the product height in centimeters.
+    /// Used for shipping cost calculation.
+    /// </summary>
+    [Range(0, 500)]
+    public decimal? Height { get; set; }
+
+    /// <summary>
+    /// Gets or sets the available shipping methods (comma-separated).
+    /// e.g., "Standard,Express,Overnight"
+    /// </summary>
+    [MaxLength(500)]
+    public string? ShippingMethods { get; set; }
+
+    /// <summary>
+    /// Gets or sets the comma-separated list of image URLs for this product.
+    /// </summary>
+    [MaxLength(2000)]
+    public string? ImageUrls { get; set; }
 }
