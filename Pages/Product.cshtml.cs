@@ -43,7 +43,7 @@ public class ProductModel : PageModel
             UnavailableMessage = Product.Status switch
             {
                 ProductStatus.Archived => "This product is no longer available.",
-                ProductStatus.Inactive => "This product is currently unavailable.",
+                ProductStatus.Suspended => "This product is currently unavailable.",
                 ProductStatus.Draft => "This product is not yet available for viewing.",
                 _ => "This product is currently unavailable."
             };

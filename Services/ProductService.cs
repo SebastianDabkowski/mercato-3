@@ -416,9 +416,35 @@ public class ProductService : IProductService
             result.Errors.Add("Use the archive function to archive a product.");
         }
 
+        // Validate workflow transition is allowed
+        if (product.Status != data.Status)
+        {
+            if (!ProductWorkflowService.IsTransitionAllowedStatic(product.Status, data.Status, isAdmin: false))
+            {
+                result.Errors.Add($"Cannot transition from '{product.Status}' to '{data.Status}'. This transition is not allowed.");
+            }
+        }
+
         if (result.Errors.Count > 0)
         {
             return result;
+        }
+
+        // If transitioning to Active, validate data quality requirements
+        if (data.Status == ProductStatus.Active && product.Status != ProductStatus.Active)
+        {
+            var activationErrors = ProductWorkflowService.ValidateForActivationStatic(
+                trimmedTitle,
+                trimmedDescription,
+                trimmedCategory,
+                data.Price,
+                data.Stock,
+                trimmedImageUrls);
+            if (activationErrors.Count > 0)
+            {
+                result.Errors.AddRange(activationErrors);
+                return result;
+            }
         }
 
         // Log changes for audit

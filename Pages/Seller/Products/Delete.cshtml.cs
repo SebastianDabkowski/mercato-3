@@ -109,7 +109,7 @@ public class DeleteModel : PageModel
         {
             ProductStatus.Draft => "bg-secondary",
             ProductStatus.Active => "bg-success",
-            ProductStatus.Inactive => "bg-warning",
+            ProductStatus.Suspended => "bg-warning",
             ProductStatus.Archived => "bg-dark",
             _ => "bg-secondary"
         };

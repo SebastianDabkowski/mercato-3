@@ -211,11 +211,44 @@ public class EditModel : PageModel
 
     private void PopulateStatusOptions()
     {
+        // Get allowed transitions from the current product status
+        var currentStatus = Product?.Status ?? ProductStatus.Draft;
+        var allowedTransitions = ProductWorkflowService.GetAllowedTransitionsStatic(currentStatus, isAdmin: false);
+
         StatusOptions = new List<SelectListItem>
         {
-            new SelectListItem { Value = ProductStatus.Draft.ToString(), Text = "Draft" },
-            new SelectListItem { Value = ProductStatus.Active.ToString(), Text = "Active" },
-            new SelectListItem { Value = ProductStatus.Inactive.ToString(), Text = "Inactive" }
+            // Always include current status as an option
+            new SelectListItem 
+            { 
+                Value = currentStatus.ToString(), 
+                Text = GetStatusDisplayText(currentStatus),
+                Selected = true
+            }
+        };
+
+        // Add allowed transitions
+        foreach (var status in allowedTransitions)
+        {
+            if (status != ProductStatus.Archived) // Archived handled separately via Delete page
+            {
+                StatusOptions.Add(new SelectListItem
+                {
+                    Value = status.ToString(),
+                    Text = GetStatusDisplayText(status)
+                });
+            }
+        }
+    }
+
+    private static string GetStatusDisplayText(ProductStatus status)
+    {
+        return status switch
+        {
+            ProductStatus.Draft => "Draft",
+            ProductStatus.Active => "Active",
+            ProductStatus.Suspended => "Suspended",
+            ProductStatus.Archived => "Archived",
+            _ => status.ToString()
         };
     }
 }
