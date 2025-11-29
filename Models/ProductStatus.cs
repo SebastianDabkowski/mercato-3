@@ -16,12 +16,14 @@ public enum ProductStatus
     Active,
 
     /// <summary>
-    /// Product is inactive/paused, not visible in public catalog.
+    /// Product is suspended, no longer available for new orders but may remain
+    /// visible where business rules allow (e.g., in order history).
     /// </summary>
-    Inactive,
+    Suspended,
 
     /// <summary>
-    /// Product has been archived.
+    /// Product has been archived, completely removed from public listings
+    /// and normal seller editing flows, but remains available for reporting and audit.
     /// </summary>
     Archived
 }
