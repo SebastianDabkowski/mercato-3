@@ -60,20 +60,35 @@
 
                     <div class="mb-3">
                         <label asp-for="Input.Category" class="form-label"></label>
-                        <select asp-for="Input.Category" class="form-select" aria-required="true">
-                            <option value="">Select a category</option>
-                            <option value="Electronics">Electronics</option>
-                            <option value="Fashion">Fashion</option>
-                            <option value="Home & Garden">Home & Garden</option>
-                            <option value="Sports & Outdoors">Sports & Outdoors</option>
-                            <option value="Books & Media">Books & Media</option>
-                            <option value="Health & Beauty">Health & Beauty</option>
-                            <option value="Toys & Games">Toys & Games</option>
-                            <option value="Automotive">Automotive</option>
-                            <option value="Food & Beverages">Food & Beverages</option>
-                            <option value="Art & Crafts">Art & Crafts</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        @if (Model.Categories.Count > 0)
+                        {
+                            <select id="category-select" class="form-select" aria-required="true">
+                                <option value="">Select a category</option>
+                                @foreach (var cat in Model.Categories)
+                                {
+                                    <option value="@cat.Value" data-name="@cat.Text.Split(" > ").Last()">@cat.Text</option>
+                                }
+                            </select>
+                            <input type="hidden" asp-for="Input.CategoryId" id="category-id-input" />
+                            <input type="hidden" asp-for="Input.Category" id="category-name-input" />
+                        }
+                        else
+                        {
+                            <select asp-for="Input.Category" class="form-select" aria-required="true">
+                                <option value="">Select a category</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Fashion">Fashion</option>
+                                <option value="Home & Garden">Home & Garden</option>
+                                <option value="Sports & Outdoors">Sports & Outdoors</option>
+                                <option value="Books & Media">Books & Media</option>
+                                <option value="Health & Beauty">Health & Beauty</option>
+                                <option value="Toys & Games">Toys & Games</option>
+                                <option value="Automotive">Automotive</option>
+                                <option value="Food & Beverages">Food & Beverages</option>
+                                <option value="Art & Crafts">Art & Crafts</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        }
                         <span asp-validation-for="Input.Category" class="text-danger"></span>
                         <div class="form-text">Select the category that best describes your product.</div>
                     </div>
@@ -157,4 +172,27 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    @if (Model.Categories.Count > 0)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var categorySelect = document.getElementById('category-select');
+                var categoryIdInput = document.getElementById('category-id-input');
+                var categoryNameInput = document.getElementById('category-name-input');
+                
+                if (categorySelect && categoryIdInput && categoryNameInput) {
+                    categorySelect.addEventListener('change', function() {
+                        var selectedOption = this.options[this.selectedIndex];
+                        if (selectedOption.value) {
+                            categoryIdInput.value = selectedOption.value;
+                            categoryNameInput.value = selectedOption.getAttribute('data-name') || selectedOption.text.split(' > ').pop();
+                        } else {
+                            categoryIdInput.value = '';
+                            categoryNameInput.value = '';
+                        }
+                    });
+                }
+            });
+        </script>
+    }
 }

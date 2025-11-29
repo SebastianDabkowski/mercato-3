@@ -1,0 +1,54 @@
+@model List<MercatoApp.Services.CategoryTreeItem>
+@{
+    var categories = Model;
+    var level = ViewData["Level"] as int? ?? 0;
+}
+
+@foreach (var category in categories)
+{
+    var indentStyle = level > 0 ? $"padding-left: {level * 24}px;" : "";
+    <tr>
+        <td style="@indentStyle">
+            @if (level > 0)
+            {
+                <span class="text-muted me-1">└</span>
+            }
+            <strong>@category.Name</strong>
+        </td>
+        <td class="text-center">@category.DisplayOrder</td>
+        <td class="text-center">
+            @if (category.ProductCount > 0)
+            {
+                <span class="badge bg-info">@category.ProductCount</span>
+            }
+            else
+            {
+                <span class="text-muted">0</span>
+            }
+        </td>
+        <td class="text-center">
+            @if (category.IsActive)
+            {
+                <span class="badge bg-success">Active</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">Inactive</span>
+            }
+        </td>
+        <td class="text-end">
+            <a asp-page="Edit" asp-route-id="@category.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+            <a asp-page="Delete" asp-route-id="@category.Id" class="btn btn-sm btn-outline-danger ms-1" title="Delete">
+                <i class="bi bi-trash"></i>
+            </a>
+        </td>
+    </tr>
+    @if (category.Children.Count > 0)
+    {
+        ViewData["Level"] = level + 1;
+        @await Html.PartialAsync("_CategoryTreeRows", category.Children, ViewData)
+        ViewData["Level"] = level;
+    }
+}

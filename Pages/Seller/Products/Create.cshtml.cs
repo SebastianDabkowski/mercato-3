@@ -5,6 +5,7 @@ using MercatoApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace MercatoApp.Pages.Seller.Products;
 
@@ -13,19 +14,24 @@ public class CreateModel : PageModel
 {
     private readonly IProductService _productService;
     private readonly IStoreProfileService _storeProfileService;
+    private readonly ICategoryService _categoryService;
 
     public CreateModel(
         IProductService productService,
-        IStoreProfileService storeProfileService)
+        IStoreProfileService storeProfileService,
+        ICategoryService categoryService)
     {
         _productService = productService;
         _storeProfileService = storeProfileService;
+        _categoryService = categoryService;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public Store? Store { get; set; }
+
+    public List<SelectListItem> Categories { get; set; } = new();
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -55,6 +61,9 @@ public class CreateModel : PageModel
         [MaxLength(100, ErrorMessage = "Category must be 100 characters or less.")]
         [Display(Name = "Category")]
         public string Category { get; set; } = string.Empty;
+
+        [Display(Name = "Category")]
+        public int? CategoryId { get; set; }
 
         [Range(0, 1000, ErrorMessage = "Weight must be between 0 and 1000 kg.")]
         [Display(Name = "Weight (kg)")]
@@ -95,6 +104,7 @@ public class CreateModel : PageModel
             return RedirectToPage("/Seller/OnboardingStep1");
         }
 
+        await LoadCategoriesAsync();
         return Page();
     }
 
@@ -114,6 +124,7 @@ public class CreateModel : PageModel
 
         if (!ModelState.IsValid)
         {
+            await LoadCategoriesAsync();
             return Page();
         }
 
@@ -124,6 +135,7 @@ public class CreateModel : PageModel
             Price = Input.Price,
             Stock = Input.Stock,
             Category = Input.Category,
+            CategoryId = Input.CategoryId,
             Weight = Input.Weight,
             Length = Input.Length,
             Width = Input.Width,
@@ -140,6 +152,7 @@ public class CreateModel : PageModel
             {
                 ModelState.AddModelError(string.Empty, error);
             }
+            await LoadCategoriesAsync();
             return Page();
         }
 
@@ -155,5 +168,17 @@ public class CreateModel : PageModel
             return userId;
         }
         return null;
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var categories = await _categoryService.GetActiveCategoriesForSelectionAsync();
+        Categories = categories
+            .Select(c => new SelectListItem
+            {
+                Value = c.Id.ToString(),
+                Text = c.FullPath
+            })
+            .ToList();
     }
 }

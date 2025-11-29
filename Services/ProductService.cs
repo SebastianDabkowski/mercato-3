@@ -24,6 +24,7 @@ public class CreateProductData
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public required string Category { get; set; }
+    public int? CategoryId { get; set; }
     public decimal? Weight { get; set; }
     public decimal? Length { get; set; }
     public decimal? Width { get; set; }
@@ -42,6 +43,7 @@ public class UpdateProductData
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public required string Category { get; set; }
+    public int? CategoryId { get; set; }
     public ProductStatus Status { get; set; }
     public decimal? Weight { get; set; }
     public decimal? Length { get; set; }
@@ -317,6 +319,7 @@ public class ProductService : IProductService
             Price = data.Price,
             Stock = data.Stock,
             Category = data.Category.Trim(),
+            CategoryId = data.CategoryId,
             Status = ProductStatus.Draft,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -497,6 +500,10 @@ public class ProductService : IProductService
         {
             changes.Add("Image URLs changed");
         }
+        if (product.CategoryId != data.CategoryId)
+        {
+            changes.Add($"CategoryId: {product.CategoryId} -> {data.CategoryId}");
+        }
 
         // Update the product
         product.Title = trimmedTitle;
@@ -504,6 +511,7 @@ public class ProductService : IProductService
         product.Price = data.Price;
         product.Stock = data.Stock;
         product.Category = trimmedCategory;
+        product.CategoryId = data.CategoryId;
         product.Status = data.Status;
         product.Weight = data.Weight;
         product.Length = data.Length;

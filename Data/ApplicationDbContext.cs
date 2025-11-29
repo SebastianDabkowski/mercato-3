@@ -67,6 +67,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<Product> Products { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the categories table.
+    /// </summary>
+    public DbSet<Category> Categories { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -240,15 +245,42 @@ public class ApplicationDbContext : DbContext
             // Composite index for finding products by store and status
             entity.HasIndex(e => new { e.StoreId, e.Status });
 
+            // Index on CategoryId for category-based queries
+            entity.HasIndex(e => e.CategoryId);
+
             // Configure relationship with Store
             entity.HasOne(e => e.Store)
                 .WithMany(s => s.Products)
                 .HasForeignKey(e => e.StoreId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Configure relationship with Category (optional)
+            entity.HasOne(e => e.CategoryEntity)
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Configure Price precision
             entity.Property(e => e.Price)
                 .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<Category>(entity =>
+        {
+            // Index on parent category ID for tree queries
+            entity.HasIndex(e => e.ParentCategoryId);
+
+            // Index on IsActive for filtering active categories
+            entity.HasIndex(e => e.IsActive);
+
+            // Composite index for ordering categories within a parent
+            entity.HasIndex(e => new { e.ParentCategoryId, e.DisplayOrder });
+
+            // Configure self-referencing relationship
+            entity.HasOne(e => e.ParentCategory)
+                .WithMany(e => e.ChildCategories)
+                .HasForeignKey(e => e.ParentCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
