@@ -99,6 +99,14 @@ public interface IProductService
     /// Gets a product for public view (only active, non-archived products).
     /// </summary>
     Task<Product?> GetProductForPublicViewAsync(int productId);
+
+    /// <summary>
+    /// Gets all active products for the specified category IDs (public view).
+    /// Only returns products with Active status.
+    /// </summary>
+    /// <param name="categoryIds">The list of category IDs to filter by.</param>
+    /// <returns>A list of active products in the specified categories, ordered by creation date (newest first).</returns>
+    Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds);
 }
 
 /// <summary>
@@ -378,6 +386,23 @@ public class ProductService : IProductService
         return await _context.Products
             .Include(p => p.Store)
             .FirstOrDefaultAsync(p => p.Id == productId && p.Status == ProductStatus.Active);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds)
+    {
+        // Return empty list if no category IDs provided
+        if (categoryIds == null || categoryIds.Count == 0)
+        {
+            return Enumerable.Empty<Product>().ToList();
+        }
+
+        return await _context.Products
+            .Include(p => p.Store)
+            .Include(p => p.CategoryEntity)
+            .Where(p => p.CategoryId.HasValue && categoryIds.Contains(p.CategoryId.Value) && p.Status == ProductStatus.Active)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
     }
 
     /// <inheritdoc />

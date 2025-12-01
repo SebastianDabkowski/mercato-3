@@ -4,7 +4,52 @@
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h1 class="display-4">Welcome to MercatoApp</h1>
+        <p class="lead">Your multi-vendor marketplace</p>
+    </div>
+
+    @if (Model.RootCategories.Count > 0)
+    {
+        <div class="mb-5">
+            <h2 class="mb-4">Browse by Category</h2>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                @foreach (var category in Model.RootCategories)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm hover-shadow transition">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a asp-page="/Category" asp-route-id="@category.Id" class="text-decoration-none stretched-link">
+                                        @category.Name
+                                    </a>
+                                </h5>
+                                @if (category.ProductCount > 0)
+                                {
+                                    <p class="card-text text-muted mb-0">
+                                        <small>@category.ProductCount product@(category.ProductCount != 1 ? "s" : "")</small>
+                                    </p>
+                                }
+                                @if (category.Children.Count > 0)
+                                {
+                                    <p class="card-text text-muted mb-0">
+                                        <small>@category.Children.Count subcategor@(category.Children.Count != 1 ? "ies" : "y")</small>
+                                    </p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">
+            <p class="mb-0">No categories available yet. Check back soon!</p>
+        </div>
+    }
 </div>
+
+
