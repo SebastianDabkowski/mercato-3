@@ -7,6 +7,7 @@
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/search-suggestions.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/MercatoApp.styles.css" asp-append-version="true" />
 </head>
 <body>
@@ -27,8 +28,8 @@
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
                     </ul>
-                    <form method="get" asp-page="/Search" class="d-flex mx-3" role="search">
-                        <input class="form-control me-2" type="search" name="query" placeholder="Search products..." aria-label="Search" maxlength="200">
+                    <form method="get" asp-page="/Search" class="d-flex mx-3 search-input-container" role="search">
+                        <input class="form-control me-2" type="search" name="query" placeholder="Search products..." aria-label="Search" maxlength="200" data-search-suggestions>
                         <button class="btn btn-outline-primary" type="submit">Search</button>
                     </form>
                     <ul class="navbar-nav">
@@ -72,6 +73,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/search-suggestions.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
