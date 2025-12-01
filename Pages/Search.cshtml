@@ -57,8 +57,139 @@
 
     @if (!string.IsNullOrWhiteSpace(Model.Query))
     {
-        @if (Model.Products.Count > 0)
-        {
+        <!-- Filter and Results Section -->
+        <div class="row">
+            <!-- Filter Sidebar -->
+            <div class="col-lg-3 mb-4">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-funnel me-2" viewBox="0 0 16 16">
+                                <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2h-11z"/>
+                            </svg>
+                            Filters
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="get" asp-page="/Search" id="filterForm">
+                            <input type="hidden" name="query" value="@Model.Query" />
+                            
+                            @if (Model.HasActiveFilters)
+                            {
+                                <div class="mb-3">
+                                    <a asp-page="/Search" asp-route-query="@Model.Query" class="btn btn-sm btn-outline-danger w-100">
+                                        Clear All Filters
+                                    </a>
+                                </div>
+                            }
+
+                            <!-- Price Range Filter -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold">Price Range</h6>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="number" 
+                                               name="MinPrice" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Min" 
+                                               value="@Model.MinPrice"
+                                               min="0"
+                                               step="0.01">
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" 
+                                               name="MaxPrice" 
+                                               class="form-control form-control-sm" 
+                                               placeholder="Max" 
+                                               value="@Model.MaxPrice"
+                                               min="0"
+                                               step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Condition Filter -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold">Condition</h6>
+                                @foreach (var condition in Enum.GetValues<ProductCondition>())
+                                {
+                                    var isChecked = Model.Conditions?.Contains(condition) ?? false;
+                                    <div class="form-check">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               name="Conditions" 
+                                               value="@condition" 
+                                               id="condition_@condition"
+                                               @(isChecked ? "checked" : "")>
+                                        <label class="form-check-label" for="condition_@condition">
+                                            @condition
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Category Filter -->
+                            @if (Model.AvailableCategories.Count > 0)
+                            {
+                                <div class="mb-4">
+                                    <h6 class="fw-bold">Category</h6>
+                                    <div style="max-height: 250px; overflow-y: auto;">
+                                        @foreach (var category in Model.AvailableCategories.Take(20))
+                                        {
+                                            var isChecked = Model.CategoryIds?.Contains(category.Id) ?? false;
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox" 
+                                                       name="CategoryIds" 
+                                                       value="@category.Id" 
+                                                       id="cat_@category.Id"
+                                                       @(isChecked ? "checked" : "")>
+                                                <label class="form-check-label" for="cat_@category.Id">
+                                                    @category.Name
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Seller Filter -->
+                            @if (Model.AvailableStores.Count > 0)
+                            {
+                                <div class="mb-4">
+                                    <h6 class="fw-bold">Seller</h6>
+                                    <div style="max-height: 250px; overflow-y: auto;">
+                                        @foreach (var store in Model.AvailableStores)
+                                        {
+                                            var isChecked = Model.StoreIds?.Contains(store.Id) ?? false;
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox" 
+                                                       name="StoreIds" 
+                                                       value="@store.Id" 
+                                                       id="store_@store.Id"
+                                                       @(isChecked ? "checked" : "")>
+                                                <label class="form-check-label" for="store_@store.Id">
+                                                    @store.StoreName
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                Apply Filters
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Column -->
+            <div class="col-lg-9">
+                @if (Model.Products.Count > 0)
+                {
             <!-- Products Grid -->
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 mb-4">
                 @foreach (var product in Model.Products)
@@ -109,7 +240,13 @@
                     <ul class="pagination justify-content-center">
                         <!-- Previous Button -->
                         <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-                            <a class="page-link" asp-page="/Search" asp-route-query="@Model.Query" asp-route-page="@(Model.CurrentPage - 1)" aria-label="Previous">
+                            <a class="page-link" 
+                               asp-page="/Search" 
+                               asp-route-query="@Model.Query" 
+                               asp-route-page="@(Model.CurrentPage - 1)"
+                               asp-route-minprice="@Model.MinPrice"
+                               asp-route-maxprice="@Model.MaxPrice"
+                               aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
@@ -123,7 +260,12 @@
                         @if (startPage > 1)
                         {
                             <li class="page-item">
-                                <a class="page-link" asp-page="/Search" asp-route-query="@Model.Query" asp-route-page="1">1</a>
+                                <a class="page-link" 
+                                   asp-page="/Search" 
+                                   asp-route-query="@Model.Query" 
+                                   asp-route-page="1"
+                                   asp-route-minprice="@Model.MinPrice"
+                                   asp-route-maxprice="@Model.MaxPrice">1</a>
                             </li>
                             @if (startPage > 2)
                             {
@@ -136,7 +278,12 @@
                         @for (var i = startPage; i <= endPage; i++)
                         {
                             <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                <a class="page-link" asp-page="/Search" asp-route-query="@Model.Query" asp-route-page="@i">@i</a>
+                                <a class="page-link" 
+                                   asp-page="/Search" 
+                                   asp-route-query="@Model.Query" 
+                                   asp-route-page="@i"
+                                   asp-route-minprice="@Model.MinPrice"
+                                   asp-route-maxprice="@Model.MaxPrice">@i</a>
                             </li>
                         }
 
@@ -149,46 +296,71 @@
                                 </li>
                             }
                             <li class="page-item">
-                                <a class="page-link" asp-page="/Search" asp-route-query="@Model.Query" asp-route-page="@Model.TotalPages">@Model.TotalPages</a>
+                                <a class="page-link" 
+                                   asp-page="/Search" 
+                                   asp-route-query="@Model.Query" 
+                                   asp-route-page="@Model.TotalPages"
+                                   asp-route-minprice="@Model.MinPrice"
+                                   asp-route-maxprice="@Model.MaxPrice">@Model.TotalPages</a>
                             </li>
                         }
 
                         <!-- Next Button -->
                         <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
-                            <a class="page-link" asp-page="/Search" asp-route-query="@Model.Query" asp-route-page="@(Model.CurrentPage + 1)" aria-label="Next">
+                            <a class="page-link" 
+                               asp-page="/Search" 
+                               asp-route-query="@Model.Query" 
+                               asp-route-page="@(Model.CurrentPage + 1)"
+                               asp-route-minprice="@Model.MinPrice"
+                               asp-route-maxprice="@Model.MaxPrice"
+                               aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
                     </ul>
                 </nav>
             }
-        }
-        else
-        {
-            <!-- Empty State -->
-            <div class="text-center py-5">
-                <div class="mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-search text-muted" viewBox="0 0 16 16">
-                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-                    </svg>
-                </div>
-                <h3>No Products Found</h3>
-                <p class="text-muted mb-4">
-                    We couldn't find any products matching "@Model.Query".
-                </p>
-                
-                <div class="mb-4">
-                    <p class="mb-2"><strong>Try adjusting your search:</strong></p>
-                    <ul class="list-unstyled text-muted">
-                        <li>• Check your spelling</li>
-                        <li>• Try more general keywords</li>
-                        <li>• Try different keywords</li>
-                    </ul>
-                </div>
-                
-                <a asp-page="/Index" class="btn btn-primary">Browse Categories</a>
+                }
+                else
+                {
+                    <!-- Empty State -->
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-search text-muted" viewBox="0 0 16 16">
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                            </svg>
+                        </div>
+                        <h3>No Products Found</h3>
+                        <p class="text-muted mb-4">
+                            We couldn't find any products matching "@Model.Query"@(Model.HasActiveFilters ? " with the selected filters" : "").
+                        </p>
+                        
+                        @if (Model.HasActiveFilters)
+                        {
+                            <div class="mb-4">
+                                <p class="mb-2"><strong>Active filters are limiting results.</strong></p>
+                                <a asp-page="/Search" asp-route-query="@Model.Query" class="btn btn-outline-danger">
+                                    Clear All Filters
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-4">
+                                <p class="mb-2"><strong>Try adjusting your search:</strong></p>
+                                <ul class="list-unstyled text-muted">
+                                    <li>• Check your spelling</li>
+                                    <li>• Try more general keywords</li>
+                                    <li>• Try different keywords</li>
+                                </ul>
+                            </div>
+                        }
+                        
+                        <a asp-page="/Index" class="btn btn-primary">Browse Categories</a>
+                    </div>
+                }
             </div>
-        }
+        </div>
     }
     else
     {

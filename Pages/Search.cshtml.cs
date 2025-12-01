@@ -8,24 +8,47 @@ namespace MercatoApp.Pages;
 public class SearchModel : PageModel
 {
     private readonly IProductService _productService;
+    private readonly ICategoryService _categoryService;
     private readonly ILogger<SearchModel> _logger;
 
     public SearchModel(
         IProductService productService,
+        ICategoryService categoryService,
         ILogger<SearchModel> logger)
     {
         _productService = productService;
+        _categoryService = categoryService;
         _logger = logger;
     }
 
     [BindProperty(SupportsGet = true)]
     public string? Query { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public List<int>? CategoryIds { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public decimal? MinPrice { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public decimal? MaxPrice { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public List<ProductCondition>? Conditions { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public List<int>? StoreIds { get; set; }
+
     public List<Product> Products { get; set; } = new();
     public int TotalProducts { get; set; }
     public int CurrentPage { get; set; } = 1;
     public int PageSize { get; set; } = 12;
     public int TotalPages { get; set; }
+    public bool HasActiveFilters { get; set; }
+
+    // Available filter options
+    public List<CategoryTreeItem> AvailableCategories { get; set; } = new();
+    public List<Store> AvailableStores { get; set; } = new();
 
     /// <summary>
     /// Gets the start index (1-based) for the current page.
@@ -52,9 +75,37 @@ public class SearchModel : PageModel
             return Page();
         }
 
-        // Search for products
-        var allProducts = await _productService.SearchProductsAsync(Query);
+        // Build filter
+        var filter = new ProductFilter
+        {
+            CategoryIds = CategoryIds,
+            MinPrice = MinPrice,
+            MaxPrice = MaxPrice,
+            Conditions = Conditions,
+            StoreIds = StoreIds
+        };
+
+        HasActiveFilters = filter.HasActiveFilters;
+
+        // Search for products with filters
+        var allProducts = await _productService.SearchProductsAsync(Query, filter);
         TotalProducts = allProducts.Count;
+
+        // Load available filter options from search results
+        if (allProducts.Count > 0)
+        {
+            // Get unique stores from results
+            AvailableStores = allProducts
+                .Where(p => p.Store != null)
+                .Select(p => p.Store)
+                .DistinctBy(s => s.Id)
+                .OrderBy(s => s.StoreName)
+                .ToList();
+
+            // Get categories
+            var categoryTree = await _categoryService.GetCategoryTreeAsync();
+            AvailableCategories = FlattenCategoryTree(categoryTree).Where(c => c.IsActive).ToList();
+        }
 
         // Calculate pagination
         TotalPages = (int)Math.Ceiling(TotalProducts / (double)PageSize);
@@ -72,5 +123,19 @@ public class SearchModel : PageModel
             .ToList();
 
         return Page();
+    }
+
+    private static List<CategoryTreeItem> FlattenCategoryTree(List<CategoryTreeItem> tree)
+    {
+        var result = new List<CategoryTreeItem>();
+        foreach (var item in tree)
+        {
+            result.Add(item);
+            if (item.Children.Count > 0)
+            {
+                result.AddRange(FlattenCategoryTree(item.Children));
+            }
+        }
+        return result;
     }
 }

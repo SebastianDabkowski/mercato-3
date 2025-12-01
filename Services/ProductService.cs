@@ -25,6 +25,7 @@ public class CreateProductData
     public int Stock { get; set; }
     public required string Category { get; set; }
     public int? CategoryId { get; set; }
+    public ProductCondition Condition { get; set; } = ProductCondition.New;
     public decimal? Weight { get; set; }
     public decimal? Length { get; set; }
     public decimal? Width { get; set; }
@@ -45,6 +46,7 @@ public class UpdateProductData
     public required string Category { get; set; }
     public int? CategoryId { get; set; }
     public ProductStatus Status { get; set; }
+    public ProductCondition Condition { get; set; }
     public decimal? Weight { get; set; }
     public decimal? Length { get; set; }
     public decimal? Width { get; set; }
@@ -115,6 +117,24 @@ public interface IProductService
     /// <param name="query">The search query keyword.</param>
     /// <returns>A list of products matching the search query, ordered by relevance (title matches first, then description matches).</returns>
     Task<List<Product>> SearchProductsAsync(string query);
+
+    /// <summary>
+    /// Searches for products by keyword with optional filters.
+    /// Only returns active, non-archived, non-suspended products.
+    /// </summary>
+    /// <param name="query">The search query keyword.</param>
+    /// <param name="filter">Optional filter criteria.</param>
+    /// <returns>A list of products matching the search query and filters, ordered by relevance.</returns>
+    Task<List<Product>> SearchProductsAsync(string query, ProductFilter? filter);
+
+    /// <summary>
+    /// Gets all active products for the specified category IDs with optional filters (public view).
+    /// Only returns products with Active status.
+    /// </summary>
+    /// <param name="categoryIds">The list of category IDs to filter by.</param>
+    /// <param name="filter">Optional filter criteria.</param>
+    /// <returns>A list of active products in the specified categories, ordered by creation date (newest first).</returns>
+    Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds, ProductFilter? filter);
 }
 
 /// <summary>
@@ -337,6 +357,7 @@ public class ProductService : IProductService
             Category = data.Category.Trim(),
             CategoryId = data.CategoryId,
             Status = ProductStatus.Draft,
+            Condition = data.Condition,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             Weight = data.Weight,
@@ -537,6 +558,10 @@ public class ProductService : IProductService
         {
             changes.Add($"CategoryId: {product.CategoryId} -> {data.CategoryId}");
         }
+        if (product.Condition != data.Condition)
+        {
+            changes.Add($"Condition: {product.Condition} -> {data.Condition}");
+        }
 
         // Update the product
         product.Title = trimmedTitle;
@@ -546,6 +571,7 @@ public class ProductService : IProductService
         product.Category = trimmedCategory;
         product.CategoryId = data.CategoryId;
         product.Status = data.Status;
+        product.Condition = data.Condition;
         product.Weight = data.Weight;
         product.Length = data.Length;
         product.Width = data.Width;
@@ -654,5 +680,119 @@ public class ProductService : IProductService
             sorted.Count);
 
         return sorted;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<Product>> SearchProductsAsync(string query, ProductFilter? filter)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return new List<Product>();
+        }
+
+        // Sanitize query by trimming and removing excessive whitespace
+        var sanitizedQuery = query.Trim();
+        
+        // Limit query length to prevent abuse
+        const int maxQueryLength = 200;
+        if (sanitizedQuery.Length > maxQueryLength)
+        {
+            sanitizedQuery = sanitizedQuery.Substring(0, maxQueryLength);
+        }
+
+        // Convert to lowercase for case-insensitive search
+        var lowerQuery = sanitizedQuery.ToLower();
+
+        // Search in title and description
+        // Only return Active status products (not Draft, Suspended, or Archived)
+        var queryable = _context.Products
+            .Include(p => p.Store)
+            .Include(p => p.CategoryEntity)
+            .Where(p => p.Status == ProductStatus.Active &&
+                       (p.Title.ToLower().Contains(lowerQuery) ||
+                        (p.Description != null && p.Description.ToLower().Contains(lowerQuery))));
+
+        // Apply filters
+        queryable = ApplyFilters(queryable, filter);
+
+        var products = await queryable.ToListAsync();
+
+        // Sort by relevance: title matches first, then description matches
+        var sorted = products
+            .OrderByDescending(p => p.Title.ToLower().Contains(lowerQuery))
+            .ThenByDescending(p => p.CreatedAt)
+            .ToList();
+
+        _logger.LogInformation(
+            "Search for query '{Query}' with filters returned {Count} products",
+            sanitizedQuery,
+            sorted.Count);
+
+        return sorted;
+    }
+
+    /// <summary>
+    /// Applies filter criteria to a product queryable.
+    /// </summary>
+    private static IQueryable<Product> ApplyFilters(IQueryable<Product> queryable, ProductFilter? filter)
+    {
+        if (filter == null || !filter.HasActiveFilters)
+        {
+            return queryable;
+        }
+
+        // Filter by category IDs
+        if (filter.CategoryIds != null && filter.CategoryIds.Count > 0)
+        {
+            queryable = queryable.Where(p => p.CategoryId.HasValue && filter.CategoryIds.Contains(p.CategoryId.Value));
+        }
+
+        // Filter by minimum price
+        if (filter.MinPrice.HasValue)
+        {
+            queryable = queryable.Where(p => p.Price >= filter.MinPrice.Value);
+        }
+
+        // Filter by maximum price
+        if (filter.MaxPrice.HasValue)
+        {
+            queryable = queryable.Where(p => p.Price <= filter.MaxPrice.Value);
+        }
+
+        // Filter by conditions
+        if (filter.Conditions != null && filter.Conditions.Count > 0)
+        {
+            queryable = queryable.Where(p => filter.Conditions.Contains(p.Condition));
+        }
+
+        // Filter by store IDs (sellers)
+        if (filter.StoreIds != null && filter.StoreIds.Count > 0)
+        {
+            queryable = queryable.Where(p => filter.StoreIds.Contains(p.StoreId));
+        }
+
+        return queryable;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds, ProductFilter? filter)
+    {
+        // Return empty list if no category IDs provided
+        if (categoryIds == null || categoryIds.Count == 0)
+        {
+            return Enumerable.Empty<Product>().ToList();
+        }
+
+        var queryable = _context.Products
+            .Include(p => p.Store)
+            .Include(p => p.CategoryEntity)
+            .Where(p => p.CategoryId.HasValue && categoryIds.Contains(p.CategoryId.Value) && p.Status == ProductStatus.Active);
+
+        // Apply filters
+        queryable = ApplyFilters(queryable, filter);
+
+        return await queryable
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
     }
 }
