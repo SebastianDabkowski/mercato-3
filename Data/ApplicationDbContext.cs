@@ -264,9 +264,10 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.CategoryId);
 
             // Composite unique index on StoreId and SKU (SKU must be unique within a store)
-            // Note: In-memory database doesn't support filtered indexes, so this is a simple unique constraint
-            entity.HasIndex(e => new { e.StoreId, e.Sku })
-                .IsUnique();
+            // Note: In-memory database doesn't support filtered indexes
+            // Null SKUs are allowed and don't participate in uniqueness check
+            // This is enforced programmatically in the service layer
+            entity.HasIndex(e => new { e.StoreId, e.Sku });
 
             // Configure relationship with Store
             entity.HasOne(e => e.Store)

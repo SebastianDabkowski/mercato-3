@@ -145,7 +145,7 @@ public class ProductImportService : IProductImportService
         else if (extension == ".xlsx" || extension == ".xls")
         {
             result.FileType = "Excel";
-            return await ParseExcelAsync(fileStream);
+            return ParseExcelAsync(fileStream);
         }
         else
         {
@@ -219,7 +219,7 @@ public class ProductImportService : IProductImportService
         return result;
     }
 
-    private async Task<ParsedImportFile> ParseExcelAsync(Stream fileStream)
+    private ParsedImportFile ParseExcelAsync(Stream fileStream)
     {
         var result = new ParsedImportFile { FileType = "Excel" };
 
@@ -293,7 +293,6 @@ public class ProductImportService : IProductImportService
             result.Errors.Add($"Error parsing Excel file: {ex.Message}");
         }
 
-        await Task.CompletedTask;
         return result;
     }
 
@@ -366,6 +365,37 @@ public class ProductImportService : IProductImportService
         {
             TotalRows = rows.Count
         };
+
+        // Check for duplicate SKUs within the import file
+        var skuGroups = rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.Sku))
+            .GroupBy(r => r.Sku, StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .ToList();
+
+        if (skuGroups.Any())
+        {
+            var duplicateSkus = string.Join(", ", skuGroups.Select(g => g.Key));
+            foreach (var row in rows)
+            {
+                if (!string.IsNullOrWhiteSpace(row.Sku) && skuGroups.Any(g => g.Key!.Equals(row.Sku, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var validationResult = new ProductImportResult
+                    {
+                        RowNumber = row.RowNumber,
+                        Sku = row.Sku,
+                        Title = row.Title,
+                        Success = false,
+                        ErrorMessage = $"Duplicate SKU '{row.Sku}' found in import file. SKUs must be unique."
+                    };
+                    result.ValidationResults.Add(validationResult);
+                }
+            }
+            
+            // Process remaining rows that don't have duplicate SKUs
+            rows = rows.Where(r => string.IsNullOrWhiteSpace(r.Sku) || 
+                !skuGroups.Any(g => g.Key!.Equals(r.Sku, StringComparison.OrdinalIgnoreCase))).ToList();
+        }
 
         // Load existing products by SKU for this store
         var skusToCheck = rows.Where(r => !string.IsNullOrWhiteSpace(r.Sku)).Select(r => r.Sku!).Distinct().ToList();
@@ -620,7 +650,11 @@ public class ProductImportService : IProductImportService
                 .ToDictionaryAsync(p => p.Sku!);
 
             // Process only successful validation results
-            foreach (var importResult in job.Results.Where(r => r.Success))
+            var successfulResults = job.Results.Where(r => r.Success).ToList();
+            int saveCounter = 0;
+            const int batchSize = 100; // Save every 100 products
+
+            foreach (var importResult in successfulResults)
             {
                 try
                 {
@@ -657,14 +691,11 @@ public class ProductImportService : IProductImportService
                         };
 
                         _context.Products.Add(product);
-                        await _context.SaveChangesAsync();
-
-                        importResult.ProductId = product.Id;
                         importResult.IsCreate = true;
                         result.CreatedCount++;
 
-                        _logger.LogInformation("Created product {ProductId} from import job {JobId}, row {RowNumber}", 
-                            product.Id, jobId, importResult.RowNumber);
+                        _logger.LogInformation("Prepared product creation from import job {JobId}, row {RowNumber}", 
+                            jobId, importResult.RowNumber);
                     }
                     else if (product != null)
                     {
@@ -681,14 +712,31 @@ public class ProductImportService : IProductImportService
                         product.ShippingMethods = importResult.ShippingMethods ?? product.ShippingMethods;
                         product.UpdatedAt = DateTime.UtcNow;
 
-                        await _context.SaveChangesAsync();
-
-                        importResult.ProductId = product.Id;
                         importResult.IsCreate = false;
                         result.UpdatedCount++;
 
-                        _logger.LogInformation("Updated product {ProductId} from import job {JobId}, row {RowNumber}", 
-                            product.Id, jobId, importResult.RowNumber);
+                        _logger.LogInformation("Prepared product update from import job {JobId}, row {RowNumber}", 
+                            jobId, importResult.RowNumber);
+                    }
+
+                    // Batch save for performance
+                    saveCounter++;
+                    if (saveCounter >= batchSize)
+                    {
+                        await _context.SaveChangesAsync();
+                        
+                        // Update ProductId for created products
+                        foreach (var res in job.Results.Where(r => r.Success && r.ProductId == null && r.IsCreate == true))
+                        {
+                            var createdProduct = _context.Products.Local.FirstOrDefault(p => p.Sku == res.Sku && p.StoreId == job.StoreId);
+                            if (createdProduct != null)
+                            {
+                                res.ProductId = createdProduct.Id;
+                            }
+                        }
+                        
+                        saveCounter = 0;
+                        _logger.LogInformation("Saved batch of {Count} products for import job {JobId}", batchSize, jobId);
                     }
                 }
                 catch (Exception ex)
@@ -698,6 +746,24 @@ public class ProductImportService : IProductImportService
                     importResult.ErrorMessage = $"Error: {ex.Message}";
                     result.FailedCount++;
                 }
+            }
+
+            // Save remaining products
+            if (saveCounter > 0)
+            {
+                await _context.SaveChangesAsync();
+                
+                // Update ProductId for created products
+                foreach (var res in job.Results.Where(r => r.Success && r.ProductId == null && r.IsCreate == true))
+                {
+                    var createdProduct = _context.Products.Local.FirstOrDefault(p => p.Sku == res.Sku && p.StoreId == job.StoreId);
+                    if (createdProduct != null)
+                    {
+                        res.ProductId = createdProduct.Id;
+                    }
+                }
+                
+                _logger.LogInformation("Saved final batch of {Count} products for import job {JobId}", saveCounter, jobId);
             }
 
             await _context.SaveChangesAsync();
