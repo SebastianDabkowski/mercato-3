@@ -246,12 +246,6 @@
                                asp-route-page="@(Model.CurrentPage - 1)"
                                asp-route-minprice="@Model.MinPrice"
                                asp-route-maxprice="@Model.MaxPrice"
-                               asp-all-route-data="@(new Dictionary<string, string>
-                               {
-                                   ["categoryIds"] = Model.CategoryIds != null ? string.Join(",", Model.CategoryIds) : "",
-                                   ["conditions"] = Model.Conditions != null ? string.Join(",", Model.Conditions.Select(c => (int)c)) : "",
-                                   ["storeIds"] = Model.StoreIds != null ? string.Join(",", Model.StoreIds) : ""
-                               })"
                                aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
