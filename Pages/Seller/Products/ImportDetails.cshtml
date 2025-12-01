@@ -1,0 +1,201 @@
+@page "{id:int}"
+@model MercatoApp.Pages.Seller.Products.ImportDetailsModel
+@{
+    ViewData["Title"] = "Import Details";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-12 col-lg-10">
+        <div class="mb-4">
+            <h1>Import Details</h1>
+            <p class="text-muted mb-0">View the details of import job #@Model.Job?.Id</p>
+        </div>
+
+        @if (Model.Job == null)
+        {
+            <div class="alert alert-danger" role="alert">
+                Import job not found.
+            </div>
+            <a asp-page="ImportHistory" class="btn btn-outline-secondary">← Back to Import History</a>
+        }
+        else
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Job Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Job ID:</dt>
+                                <dd class="col-sm-8">@Model.Job.Id</dd>
+
+                                <dt class="col-sm-4">File Name:</dt>
+                                <dd class="col-sm-8">@Model.Job.FileName</dd>
+
+                                <dt class="col-sm-4">File Type:</dt>
+                                <dd class="col-sm-8">@Model.Job.FileType</dd>
+
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge @ImportHistoryModel.GetStatusBadgeClass(Model.Job.Status)">
+                                        @Model.Job.Status
+                                    </span>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">@Model.Job.CreatedAt.ToString("MMM d, yyyy HH:mm:ss")</dd>
+
+                                @if (Model.Job.StartedAt.HasValue)
+                                {
+                                    <dt class="col-sm-4">Started:</dt>
+                                    <dd class="col-sm-8">@Model.Job.StartedAt.Value.ToString("MMM d, yyyy HH:mm:ss")</dd>
+                                }
+
+                                @if (Model.Job.CompletedAt.HasValue)
+                                {
+                                    <dt class="col-sm-4">Completed:</dt>
+                                    <dd class="col-sm-8">@Model.Job.CompletedAt.Value.ToString("MMM d, yyyy HH:mm:ss")</dd>
+                                }
+
+                                @if (!string.IsNullOrEmpty(Model.Job.ErrorMessage))
+                                {
+                                    <dt class="col-sm-4">Error:</dt>
+                                    <dd class="col-sm-8 text-danger">@Model.Job.ErrorMessage</dd>
+                                }
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="mb-0">@Model.Job.TotalRows</h3>
+                            <p class="text-muted mb-0">Total Rows</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="mb-0 text-success">@Model.Job.CreatedCount</h3>
+                            <p class="text-muted mb-0">Created</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="mb-0 text-info">@Model.Job.UpdatedCount</h3>
+                            <p class="text-muted mb-0">Updated</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="mb-0 text-danger">@Model.Job.FailedCount</h3>
+                            <p class="text-muted mb-0">Failed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Job.Results.Any(r => !r.Success))
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Failed Rows</h5>
+                        @if (Model.Job.FailedCount > 0)
+                        {
+                            <a asp-page-handler="DownloadErrors" asp-route-id="@Model.Job.Id" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-download"></i> Download Error Report
+                            </a>
+                        }
+                    </div>
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Row</th>
+                                    <th>SKU</th>
+                                    <th>Title</th>
+                                    <th>Error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var result in Model.Job.Results.Where(r => !r.Success).OrderBy(r => r.RowNumber))
+                                {
+                                    <tr>
+                                        <td>@result.RowNumber</td>
+                                        <td>@(result.Sku ?? "-")</td>
+                                        <td>@(result.Title ?? "-")</td>
+                                        <td class="text-danger">@result.ErrorMessage</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            @if (Model.Job.Results.Any(r => r.Success))
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Successfully Imported Rows</h5>
+                    </div>
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Row</th>
+                                    <th>SKU</th>
+                                    <th>Title</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Action</th>
+                                    <th>Product ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var result in Model.Job.Results.Where(r => r.Success).OrderBy(r => r.RowNumber))
+                                {
+                                    <tr>
+                                        <td>@result.RowNumber</td>
+                                        <td>@(result.Sku ?? "-")</td>
+                                        <td>@result.Title</td>
+                                        <td>@result.Price?.ToString("C")</td>
+                                        <td>@result.Stock</td>
+                                        <td>
+                                            @if (result.IsCreate == true)
+                                            {
+                                                <span class="badge bg-success">Created</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info">Updated</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (result.ProductId.HasValue)
+                                            {
+                                                <a asp-page="Edit" asp-route-id="@result.ProductId.Value" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i> View
+                                                </a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <div class="mt-4">
+                <a asp-page="ImportHistory" class="btn btn-outline-secondary">
+                    ← Back to Import History
+                </a>
+            </div>
+        }
+    </div>
+</div>

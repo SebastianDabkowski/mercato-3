@@ -50,6 +50,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductWorkflowService, ProductWorkflowService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductImageService, ProductImageService>();
+builder.Services.AddScoped<IProductImportService, ProductImportService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Configure role-based authorization policies
