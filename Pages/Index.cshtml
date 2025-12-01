@@ -10,6 +10,11 @@
         <p class="lead">Your multi-vendor marketplace</p>
     </div>
 
+    <!-- Recently Viewed Products -->
+    <div class="mb-5">
+        @await Component.InvokeAsync("RecentlyViewed", new { maxItems = 10 })
+    </div>
+
     @if (Model.RootCategories.Count > 0)
     {
         <div class="mb-5">

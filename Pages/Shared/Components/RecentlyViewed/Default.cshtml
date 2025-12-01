@@ -1,0 +1,41 @@
+@model List<MercatoApp.Models.Product>
+@using MercatoApp.Helpers
+
+@if (Model != null && Model.Count > 0)
+{
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Recently Viewed</h5>
+        </div>
+        <div class="card-body">
+            <div class="row row-cols-1 g-3">
+                @foreach (var product in Model)
+                {
+                    var imageList = product.ImageUrls.ParseCommaSeparated();
+                    var imageUrl = imageList.Count > 0 ? imageList[0] : null;
+                    
+                    <div class="col">
+                        <div class="d-flex">
+                            @if (!string.IsNullOrEmpty(imageUrl))
+                            {
+                                <a asp-page="/Product" asp-route-id="@product.Id" class="me-3 flex-shrink-0">
+                                    <img src="@imageUrl" alt="@product.Title" class="rounded" style="width: 80px; height: 80px; object-fit: cover;" />
+                                </a>
+                            }
+                            <div class="flex-grow-1">
+                                <a asp-page="/Product" asp-route-id="@product.Id" class="text-decoration-none">
+                                    <h6 class="mb-1">@product.Title</h6>
+                                </a>
+                                <p class="mb-1 text-primary fw-bold">@product.Price.ToString("C")</p>
+                                @if (product.Store != null)
+                                {
+                                    <small class="text-muted">by @product.Store.StoreName</small>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
