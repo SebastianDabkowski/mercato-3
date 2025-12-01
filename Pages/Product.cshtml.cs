@@ -36,6 +36,16 @@ public class ProductModel : PageModel
     /// </summary>
     public string? UnavailableMessage { get; private set; }
 
+    /// <summary>
+    /// Gets the referrer URL for "Back to results" navigation.
+    /// </summary>
+    public string? ReferrerUrl { get; private set; }
+
+    /// <summary>
+    /// Gets a value indicating whether there is a valid referrer URL.
+    /// </summary>
+    public bool HasReferrer => !string.IsNullOrEmpty(ReferrerUrl);
+
     public async Task<IActionResult> OnGetAsync(int id, int? variantId = null)
     {
         // Try to get the product - we want to handle the case where a product
@@ -45,6 +55,17 @@ public class ProductModel : PageModel
         if (Product == null)
         {
             return NotFound();
+        }
+
+        // Capture referrer URL for "Back to results" navigation
+        // Only use referrer if it's from the same site (search or category pages)
+        var referer = Request.Headers.Referer.ToString();
+        if (!string.IsNullOrEmpty(referer) && 
+            (referer.Contains("/Search", StringComparison.OrdinalIgnoreCase) || 
+             referer.Contains("/Category/", StringComparison.OrdinalIgnoreCase) ||
+             referer.Contains("/category/", StringComparison.OrdinalIgnoreCase)))
+        {
+            ReferrerUrl = referer;
         }
 
         // Load variant data if the product has variants

@@ -8,6 +8,20 @@
 @if (Model.Product != null && Model.IsProductAvailable)
 {
     var imageList = Model.Product.ImageUrls.ParseCommaSeparated();
+    
+    <!-- Back to Results Button -->
+    @if (Model.HasReferrer)
+    {
+        <div class="mb-3">
+            <a href="@Model.ReferrerUrl" class="btn btn-outline-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left me-1" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+                </svg>
+                Back to Results
+            </a>
+        </div>
+    }
+    
     <div class="row">
         <div class="col-lg-8">
             <!-- Product Details -->
@@ -53,7 +67,16 @@
                             <dl class="row">
                                 <dt class="col-sm-3">Category</dt>
                                 <dd class="col-sm-9">
-                                    <span class="badge bg-secondary">@Model.Product.Category</span>
+                                    @if (Model.Product.CategoryId.HasValue && Model.Product.CategoryEntity != null)
+                                    {
+                                        <a asp-page="/Category" asp-route-id="@Model.Product.CategoryId.Value" class="badge bg-secondary text-decoration-none">
+                                            @Model.Product.Category
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">@Model.Product.Category</span>
+                                    }
                                 </dd>
                                 
                                 @if (!Model.Product.HasVariants)
