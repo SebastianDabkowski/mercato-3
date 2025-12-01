@@ -27,6 +27,10 @@
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
                     </ul>
+                    <form method="get" asp-page="/Search" class="d-flex mx-3" role="search">
+                        <input class="form-control me-2" type="search" name="query" placeholder="Search products..." aria-label="Search" maxlength="200">
+                        <button class="btn btn-outline-primary" type="submit">Search</button>
+                    </form>
                     <ul class="navbar-nav">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
