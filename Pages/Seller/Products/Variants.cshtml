@@ -1,0 +1,285 @@
+@page "{id:int}"
+@model MercatoApp.Pages.Seller.Products.VariantsModel
+@{
+    ViewData["Title"] = "Manage Variants";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-page="Index">Products</a></li>
+                    <li class="breadcrumb-item"><a asp-page="Edit" asp-route-id="@Model.Product?.Id">@Model.Product?.Title</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Manage Variants</li>
+                </ol>
+            </nav>
+            <h1>Manage Product Variants</h1>
+            <p class="text-muted">Configure variant attributes and manage variant combinations for this product.</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (Model.Product != null)
+        {
+            @if (!Model.Product.HasVariants)
+            {
+                <!-- Enable Variants Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Enable Variants</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle"></i> This product does not have variants enabled. Enable variants to allow buyers to select options like size, color, or material.
+                        </div>
+                        
+                        <form method="post" asp-page-handler="EnableVariants" asp-route-id="@Model.Product.Id">
+                            <div id="variantAttributesContainer">
+                                <div class="variant-attribute mb-3">
+                                    <label class="form-label">Attribute Name (e.g., Size, Color)</label>
+                                    <input type="text" name="AttributeNames" class="form-control mb-2" placeholder="e.g., Size" required />
+                                    <label class="form-label">Values (comma-separated)</label>
+                                    <input type="text" name="AttributeValues" class="form-control" placeholder="e.g., Small, Medium, Large" required />
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="addAttributeBtn">
+                                <i class="bi bi-plus-circle"></i> Add Another Attribute
+                            </button>
+                            
+                            <div class="d-flex justify-content-between">
+                                <a asp-page="Edit" asp-route-id="@Model.Product.Id" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-primary">Enable Variants</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Variant Attributes -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Variant Attributes</h5>
+                        <form method="post" asp-page-handler="DisableVariants" asp-route-id="@Model.Product.Id" class="d-inline" onsubmit="return confirm('Are you sure you want to disable variants? This will delete all variant data.');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-x-circle"></i> Disable Variants
+                            </button>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.VariantAttributes.Count > 0)
+                        {
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Attribute</th>
+                                            <th>Values</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var attr in Model.VariantAttributes)
+                                        {
+                                            <tr>
+                                                <td><strong>@attr.Name</strong></td>
+                                                <td>
+                                                    @string.Join(", ", attr.Values.Select(v => v.Value))
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No variant attributes defined.</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Variants List -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Variants (@Model.Variants.Count)</h5>
+                        <form method="post" asp-page-handler="GenerateVariants" asp-route-id="@Model.Product.Id">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-grid-3x3"></i> Generate All Combinations
+                            </button>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Variants.Count > 0)
+                        {
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Variant</th>
+                                            <th>SKU</th>
+                                            <th>Price</th>
+                                            <th>Stock</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var variant in Model.Variants)
+                                        {
+                                            var variantName = string.Join(" / ", variant.Options.Select(o => o.AttributeValue.Value));
+                                            var price = variant.PriceOverride ?? Model.Product.Price;
+                                            
+                                            <tr>
+                                                <td>@variantName</td>
+                                                <td>@(variant.Sku ?? "-")</td>
+                                                <td>@price.ToString("C")</td>
+                                                <td>
+                                                    <form method="post" asp-page-handler="UpdateVariantStock" asp-route-id="@Model.Product.Id" asp-route-variantId="@variant.Id" class="d-inline">
+                                                        <div class="input-group input-group-sm" style="width: 120px;">
+                                                            <input type="number" name="stock" value="@variant.Stock" class="form-control" min="0" required />
+                                                            <button type="submit" class="btn btn-outline-primary">
+                                                                <i class="bi bi-check"></i>
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </td>
+                                                <td>
+                                                    @if (variant.IsEnabled)
+                                                    {
+                                                        <span class="badge bg-success">Enabled</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">Disabled</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editVariantModal@(variant.Id)">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <form method="post" asp-page-handler="DeleteVariant" asp-route-id="@Model.Product.Id" asp-route-variantId="@variant.Id" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this variant?');">
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Edit Variant Modal -->
+                                            <div class="modal fade" id="editVariantModal@(variant.Id)" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form method="post" asp-page-handler="UpdateVariant" asp-route-id="@Model.Product.Id" asp-route-variantId="@variant.Id">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Edit Variant: @variantName</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">SKU</label>
+                                                                    <input type="text" name="sku" value="@variant.Sku" class="form-control" />
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Stock</label>
+                                                                    <input type="number" name="stock" value="@variant.Stock" class="form-control" min="0" required />
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Price Override</label>
+                                                                    <div class="input-group">
+                                                                        <span class="input-group-text">$</span>
+                                                                        <input type="number" name="priceOverride" value="@variant.PriceOverride" class="form-control" step="0.01" min="0.01" max="999999.99" placeholder="Leave empty to use product price" />
+                                                                    </div>
+                                                                    <div class="form-text">Leave empty to use the product's default price of @Model.Product.Price.ToString("C")</div>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <div class="form-check">
+                                                                        <input type="checkbox" name="isEnabled" value="true" checked="@variant.IsEnabled" class="form-check-input" id="isEnabled@(variant.Id)" />
+                                                                        <label class="form-check-label" for="isEnabled@(variant.Id)">
+                                                                            Enabled (visible to buyers)
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-info-circle"></i> No variants created yet. Click "Generate All Combinations" to automatically create variants based on your attributes.
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a asp-page="Edit" asp-route-id="@Model.Product.Id" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Product
+                    </a>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let attributeCount = 1;
+            const addAttributeBtn = document.getElementById('addAttributeBtn');
+            const container = document.getElementById('variantAttributesContainer');
+
+            if (addAttributeBtn && container) {
+                addAttributeBtn.addEventListener('click', function() {
+                    const newAttribute = document.createElement('div');
+                    newAttribute.className = 'variant-attribute mb-3 border-top pt-3';
+                    newAttribute.innerHTML = `
+                        <label class="form-label">Attribute Name</label>
+                        <input type="text" name="AttributeNames" class="form-control mb-2" placeholder="e.g., Color" required />
+                        <label class="form-label">Values (comma-separated)</label>
+                        <input type="text" name="AttributeValues" class="form-control mb-2" placeholder="e.g., Red, Blue, Green" required />
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-attribute-btn">
+                            <i class="bi bi-trash"></i> Remove
+                        </button>
+                    `;
+                    container.appendChild(newAttribute);
+                    attributeCount++;
+
+                    // Add event listener to remove button
+                    newAttribute.querySelector('.remove-attribute-btn').addEventListener('click', function() {
+                        newAttribute.remove();
+                        attributeCount--;
+                    });
+                });
+            }
+        });
+    </script>
+}

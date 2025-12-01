@@ -56,29 +56,99 @@
                                     <span class="badge bg-secondary">@Model.Product.Category</span>
                                 </dd>
                                 
-                                <dt class="col-sm-3">Availability</dt>
-                                <dd class="col-sm-9">
-                                    @if (Model.Product.Stock > 0)
-                                    {
-                                        <span class="text-success">@Model.Product.Stock in stock</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-danger">Out of stock</span>
-                                    }
-                                </dd>
+                                @if (!Model.Product.HasVariants)
+                                {
+                                    <dt class="col-sm-3">Availability</dt>
+                                    <dd class="col-sm-9">
+                                        @if (Model.Product.Stock > 0)
+                                        {
+                                            <span class="text-success">@Model.Product.Stock in stock</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger">Out of stock</span>
+                                        }
+                                    </dd>
+                                }
                             </dl>
+
+                            @if (Model.Product.HasVariants && Model.VariantAttributes.Count > 0)
+                            {
+                                <div class="border-top pt-3 mt-3">
+                                    <h5 class="mb-3">Select Options</h5>
+                                    <form method="get" id="variantSelectionForm">
+                                        <input type="hidden" name="id" value="@Model.Product.Id" />
+                                        @foreach (var attr in Model.VariantAttributes)
+                                        {
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">@attr.Name</label>
+                                                <div class="btn-group-vertical d-md-flex flex-md-wrap gap-2" role="group">
+                                                    @foreach (var value in attr.Values)
+                                                    {
+                                                        <button type="button" class="btn btn-outline-primary variant-option-btn" 
+                                                                data-attribute="@attr.Name" 
+                                                                data-value="@value.Value">
+                                                            @value.Value
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                        <input type="hidden" name="variantId" id="selectedVariantId" />
+                                    </form>
+                                    
+                                    <div id="variantInfo" class="alert alert-info mt-3" style="display: none;">
+                                        <div id="variantStock"></div>
+                                        <div id="variantPrice"></div>
+                                    </div>
+                                    
+                                    <div id="variantWarning" class="alert alert-warning mt-3" style="display: none;">
+                                        Please select all options to view availability.
+                                    </div>
+                                </div>
+                            }
                         </div>
                         <div class="col-md-4 text-center text-md-end">
                             <div class="mb-3">
-                                <span class="h2 text-primary">@Model.Product.Price.ToString("C")</span>
+                                @if (Model.Product.HasVariants && Model.SelectedVariant != null)
+                                {
+                                    var variantPrice = Model.SelectedVariant.PriceOverride ?? Model.Product.Price;
+                                    <span class="h2 text-primary">@variantPrice.ToString("C")</span>
+                                }
+                                else if (!Model.Product.HasVariants)
+                                {
+                                    <span class="h2 text-primary">@Model.Product.Price.ToString("C")</span>
+                                }
+                                else
+                                {
+                                    <span class="h2 text-muted">Select options</span>
+                                }
                             </div>
-                            @if (Model.Product.Stock > 0)
+                            
+                            @{
+                                var hasStock = false;
+                                if (Model.Product.HasVariants && Model.SelectedVariant != null)
+                                {
+                                    hasStock = Model.SelectedVariant.Stock > 0 && Model.SelectedVariant.IsEnabled;
+                                }
+                                else if (!Model.Product.HasVariants)
+                                {
+                                    hasStock = Model.Product.Stock > 0;
+                                }
+                            }
+                            
+                            @if (hasStock)
                             {
                                 <button type="button" class="btn btn-primary btn-lg" disabled aria-label="Add to Cart - Cart functionality coming soon">
                                     <i class="bi bi-cart-plus"></i> Add to Cart
                                 </button>
                                 <p class="text-muted small mt-2">Cart functionality coming soon</p>
+                            }
+                            else if (Model.Product.HasVariants && Model.SelectedVariant == null)
+                            {
+                                <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                    Select Options
+                                </button>
                             }
                             else
                             {
@@ -199,3 +269,139 @@ else
         <a asp-page="/Index" class="btn btn-primary">Go to Home</a>
     </div>
 }
+
+@section Scripts {
+    @if (Model.Product?.HasVariants == true)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const variants = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Variants.Select(v => new {
+                    id = v.Id,
+                    stock = v.Stock,
+                    price = v.PriceOverride ?? Model.Product.Price,
+                    isEnabled = v.IsEnabled,
+                    options = v.Options.Select(o => new { 
+                        attribute = o.AttributeValue.VariantAttribute.Name,
+                        value = o.AttributeValue.Value 
+                    }).ToList()
+                }).ToList()));
+
+                const selectedOptions = {};
+                const variantButtons = document.querySelectorAll('.variant-option-btn');
+                const variantInfo = document.getElementById('variantInfo');
+                const variantWarning = document.getElementById('variantWarning');
+                const variantStock = document.getElementById('variantStock');
+                const variantPrice = document.getElementById('variantPrice');
+                const selectedVariantId = document.getElementById('selectedVariantId');
+
+                variantButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const attribute = this.getAttribute('data-attribute');
+                        const value = this.getAttribute('data-value');
+
+                        // Update selected options
+                        selectedOptions[attribute] = value;
+
+                        // Update button states for this attribute
+                        document.querySelectorAll(`[data-attribute="${attribute}"]`).forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        this.classList.add('active');
+
+                        // Find matching variant
+                        const matchingVariant = findMatchingVariant();
+                        
+                        if (matchingVariant) {
+                            // Update variant info
+                            variantInfo.style.display = 'block';
+                            variantWarning.style.display = 'none';
+                            
+                            if (matchingVariant.isEnabled && matchingVariant.stock > 0) {
+                                variantStock.innerHTML = `<i class="bi bi-check-circle text-success"></i> <strong>${matchingVariant.stock}</strong> in stock`;
+                            } else if (!matchingVariant.isEnabled) {
+                                variantStock.innerHTML = '<i class="bi bi-x-circle text-danger"></i> This variant is not available';
+                            } else {
+                                variantStock.innerHTML = '<i class="bi bi-x-circle text-danger"></i> Out of stock';
+                            }
+                            
+                            variantPrice.innerHTML = `<strong>Price:</strong> ${formatCurrency(matchingVariant.price)}`;
+                            selectedVariantId.value = matchingVariant.id;
+                            
+                            // Reload page with selected variant
+                            window.location.href = `?id=${@Model.Product.Id}&variantId=${matchingVariant.id}`;
+                        } else {
+                            // Check if all options are selected
+                            const allOptionsSelected = Object.keys(selectedOptions).length === @Model.VariantAttributes.Count;
+                            
+                            if (allOptionsSelected) {
+                                variantInfo.style.display = 'block';
+                                variantWarning.style.display = 'none';
+                                variantStock.innerHTML = '<i class="bi bi-x-circle text-danger"></i> This combination is not available';
+                                variantPrice.innerHTML = '';
+                                selectedVariantId.value = '';
+                            } else {
+                                variantInfo.style.display = 'none';
+                                variantWarning.style.display = 'block';
+                            }
+                        }
+                    });
+                });
+
+                function findMatchingVariant() {
+                    return variants.find(variant => {
+                        return variant.options.every(option => {
+                            return selectedOptions[option.attribute] === option.value;
+                        });
+                    });
+                }
+
+                function formatCurrency(value) {
+                    return new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD'
+                    }).format(value);
+                }
+
+                // Pre-select variant if one is already selected
+                @if (Model.SelectedVariant != null)
+                {
+                    <text>
+                    @foreach (var option in Model.SelectedVariant.Options)
+                    {
+                        <text>
+                        selectedOptions['@option.AttributeValue.VariantAttribute.Name'] = '@option.AttributeValue.Value';
+                        document.querySelector(`[data-attribute="@option.AttributeValue.VariantAttribute.Name"][data-value="@option.AttributeValue.Value"]`)?.classList.add('active');
+                        </text>
+                    }
+                    
+                    variantInfo.style.display = 'block';
+                    variantWarning.style.display = 'none';
+                    
+                    @if (Model.SelectedVariant.IsEnabled && Model.SelectedVariant.Stock > 0)
+                    {
+                        <text>
+                        variantStock.innerHTML = '<i class="bi bi-check-circle text-success"></i> <strong>@Model.SelectedVariant.Stock</strong> in stock';
+                        </text>
+                    }
+                    else if (!Model.SelectedVariant.IsEnabled)
+                    {
+                        <text>
+                        variantStock.innerHTML = '<i class="bi bi-x-circle text-danger"></i> This variant is not available';
+                        </text>
+                    }
+                    else
+                    {
+                        <text>
+                        variantStock.innerHTML = '<i class="bi bi-x-circle text-danger"></i> Out of stock';
+                        </text>
+                    }
+                    
+                    variantPrice.innerHTML = '<strong>Price:</strong> @((Model.SelectedVariant.PriceOverride ?? Model.Product.Price).ToString("C"))';
+                    selectedVariantId.value = '@Model.SelectedVariant.Id';
+                    </text>
+                }
+            });
+        </script>
+    }
+}
+

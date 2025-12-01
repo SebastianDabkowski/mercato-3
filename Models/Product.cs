@@ -138,4 +138,23 @@ public class Product
     /// Gets or sets the images for this product (navigation property).
     /// </summary>
     public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+
+    /// <summary>
+    /// Gets or sets whether this product has variants enabled.
+    /// When false, this is a simple product with a single SKU.
+    /// When true, stock and pricing are managed at the variant level.
+    /// </summary>
+    public bool HasVariants { get; set; }
+
+    /// <summary>
+    /// Gets or sets the variant attributes for this product (navigation property).
+    /// Only used when HasVariants is true.
+    /// </summary>
+    public ICollection<ProductVariantAttribute> VariantAttributes { get; set; } = new List<ProductVariantAttribute>();
+
+    /// <summary>
+    /// Gets or sets the variants for this product (navigation property).
+    /// Only used when HasVariants is true.
+    /// </summary>
+    public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
 }

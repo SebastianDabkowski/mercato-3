@@ -8,13 +8,20 @@ namespace MercatoApp.Pages;
 public class ProductModel : PageModel
 {
     private readonly IProductService _productService;
+    private readonly IProductVariantService _variantService;
 
-    public ProductModel(IProductService productService)
+    public ProductModel(
+        IProductService productService,
+        IProductVariantService variantService)
     {
         _productService = productService;
+        _variantService = variantService;
     }
 
     public Product? Product { get; set; }
+    public List<ProductVariantAttribute> VariantAttributes { get; set; } = new();
+    public List<ProductVariant> Variants { get; set; } = new();
+    public ProductVariant? SelectedVariant { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether the product is publicly viewable (Active status).
@@ -26,7 +33,7 @@ public class ProductModel : PageModel
     /// </summary>
     public string? UnavailableMessage { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(int id)
+    public async Task<IActionResult> OnGetAsync(int id, int? variantId = null)
     {
         // Try to get the product - we want to handle the case where a product
         // exists but is not available (archived/inactive) vs doesn't exist at all
@@ -35,6 +42,19 @@ public class ProductModel : PageModel
         if (Product == null)
         {
             return NotFound();
+        }
+
+        // Load variant data if the product has variants
+        if (Product.HasVariants)
+        {
+            VariantAttributes = await _variantService.GetVariantAttributesAsync(id, null);
+            Variants = await _variantService.GetVariantsAsync(id, null);
+
+            // If a specific variant is selected, load it
+            if (variantId.HasValue)
+            {
+                SelectedVariant = await _variantService.GetVariantByIdAsync(variantId.Value, null);
+            }
         }
 
         // Handle products that are not publicly viewable
