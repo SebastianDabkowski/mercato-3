@@ -69,8 +69,8 @@ public interface IProductVariantService
     /// Gets all variant attributes for a product with their values.
     /// </summary>
     /// <param name="productId">The product ID.</param>
-    /// <param name="storeId">The store ID for ownership verification.</param>
-    Task<List<ProductVariantAttribute>> GetVariantAttributesAsync(int productId, int storeId);
+    /// <param name="storeId">The store ID for ownership verification (null for public access).</param>
+    Task<List<ProductVariantAttribute>> GetVariantAttributesAsync(int productId, int? storeId = null);
 
     /// <summary>
     /// Gets all variants for a product.
@@ -271,13 +271,18 @@ public class ProductVariantService : IProductVariantService
     }
 
     /// <inheritdoc />
-    public async Task<List<ProductVariantAttribute>> GetVariantAttributesAsync(int productId, int storeId)
+    public async Task<List<ProductVariantAttribute>> GetVariantAttributesAsync(int productId, int? storeId = null)
     {
-        return await _context.ProductVariantAttributes
+        var query = _context.ProductVariantAttributes
             .Include(a => a.Values.OrderBy(v => v.DisplayOrder))
-            .Where(a => a.ProductId == productId && a.Product.StoreId == storeId)
-            .OrderBy(a => a.DisplayOrder)
-            .ToListAsync();
+            .Where(a => a.ProductId == productId);
+
+        if (storeId.HasValue)
+        {
+            query = query.Where(a => a.Product.StoreId == storeId.Value);
+        }
+
+        return await query.OrderBy(a => a.DisplayOrder).ToListAsync();
     }
 
     /// <inheritdoc />

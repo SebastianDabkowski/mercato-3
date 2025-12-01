@@ -259,6 +259,11 @@
                 </div>
             </div>
 
+            <div class="alert alert-info" role="alert">
+                <i class="bi bi-info-circle"></i> <strong>Product Variants:</strong> This product @(Model.Product?.HasVariants == true ? "has" : "does not have") variants enabled. 
+                <a asp-page="Variants" asp-route-id="@Model.Product?.Id" class="alert-link">@(Model.Product?.HasVariants == true ? "Manage variants" : "Enable variants")</a> to allow buyers to select options like size or color.
+            </div>
+
             <div class="alert alert-warning" role="alert">
                 <strong>Note:</strong> Changes to price or stock may affect pending orders. Please review carefully before saving.
             </div>
