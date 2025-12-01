@@ -106,7 +106,7 @@ public class ProductExportService : IProductExportService
                 ));
             }
 
-            var fileName = $"products_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
+            var fileName = $"products_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}_utc.csv";
             result.FileData = Encoding.UTF8.GetBytes(csv.ToString());
             result.FileName = fileName;
             result.ContentType = "text/csv";
@@ -183,7 +183,7 @@ public class ProductExportService : IProductExportService
             // Auto-fit columns
             worksheet.Cells.AutoFitColumns();
 
-            var fileName = $"products_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
+            var fileName = $"products_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}_utc.xlsx";
             result.FileData = package.GetAsByteArray();
             result.FileName = fileName;
             result.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

@@ -87,7 +87,7 @@ public class ExportModel : PageModel
                 result = await _exportService.ExportToCsvAsync(store.Id, productIdsToExport);
             }
 
-            if (!result.Success || result.FileData == null)
+            if (!result.Success || result.FileData == null || result.FileName == null || result.ContentType == null)
             {
                 ErrorMessages.AddRange(result.Errors);
                 return Page();
@@ -97,7 +97,7 @@ public class ExportModel : PageModel
                 userId.Value, store.Id, ExportFormat);
 
             // Return the file for download
-            return File(result.FileData, result.ContentType!, result.FileName!);
+            return File(result.FileData, result.ContentType, result.FileName);
         }
         catch (Exception ex)
         {
