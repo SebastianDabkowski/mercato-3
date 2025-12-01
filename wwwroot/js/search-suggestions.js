@@ -8,9 +8,7 @@
     // Configuration
     const CONFIG = {
         minCharacters: 2,
-        debounceDelay: 300, // milliseconds
-        apiEndpoint: '/Api/SearchSuggestions',
-        maxRetries: 2
+        debounceDelay: 300 // milliseconds
     };
 
     // State
@@ -112,18 +110,20 @@
         if (!dropdown || dropdown.style.display === 'none') return;
 
         const items = dropdown.querySelectorAll('.suggestion-item');
+        if (items.length === 0) return;
+
         const currentActive = dropdown.querySelector('.suggestion-item.active');
-        let currentIndex = Array.from(items).indexOf(currentActive);
+        let currentIndex = currentActive ? Array.from(items).indexOf(currentActive) : -1;
 
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                currentIndex = Math.min(currentIndex + 1, items.length - 1);
+                currentIndex = currentIndex < items.length - 1 ? currentIndex + 1 : currentIndex;
                 setActiveItem(items, currentIndex);
                 break;
             case 'ArrowUp':
                 e.preventDefault();
-                currentIndex = Math.max(currentIndex - 1, 0);
+                currentIndex = currentIndex > 0 ? currentIndex - 1 : 0;
                 setActiveItem(items, currentIndex);
                 break;
             case 'Enter':
@@ -172,7 +172,7 @@
         currentRequest = controller;
 
         try {
-            const url = `${CONFIG.apiEndpoint}?q=${encodeURIComponent(query)}`;
+            const url = `/Api/SearchSuggestions?q=${encodeURIComponent(query)}`;
             const response = await fetch(url, {
                 signal: controller.signal,
                 headers: {
@@ -327,6 +327,11 @@
      */
     function showDropdown(dropdown) {
         dropdown.style.display = 'block';
+        // Add class to container for styling
+        const container = dropdown.parentElement;
+        if (container) {
+            container.classList.add('suggestions-active');
+        }
     }
 
     /**
@@ -335,6 +340,11 @@
      */
     function hideDropdown(dropdown) {
         dropdown.style.display = 'none';
+        // Remove class from container
+        const container = dropdown.parentElement;
+        if (container) {
+            container.classList.remove('suggestions-active');
+        }
     }
 
     // Initialize on DOM ready

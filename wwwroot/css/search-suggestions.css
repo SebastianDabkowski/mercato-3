@@ -77,7 +77,8 @@
 }
 
 /* Adjust search input border radius when dropdown is visible */
-.search-input-container:has(.search-suggestions-dropdown[style*="display: block"]) input {
+/* Note: Using a class-based approach for better browser compatibility */
+.search-input-container.suggestions-active input {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 }

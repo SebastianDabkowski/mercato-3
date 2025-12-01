@@ -138,7 +138,7 @@ public class SearchSuggestionService : ISearchSuggestionService
     private async Task<List<SearchSuggestion>> GetCategorySuggestionsAsync(string lowerQuery)
     {
         var matchingCategories = await _context.Categories
-            .Where(c => c.IsActive && c.Name.ToLower().Contains(lowerQuery))
+            .Where(c => c.IsActive && EF.Functions.Like(c.Name, $"%{lowerQuery}%"))
             .OrderBy(c => c.Name)
             .Take(_settings.MaxCategorySuggestions)
             .Select(c => new SearchSuggestion
@@ -160,7 +160,7 @@ public class SearchSuggestionService : ISearchSuggestionService
     {
         var matchingProducts = await _context.Products
             .Where(p => p.Status == ProductStatus.Active &&
-                       p.Title.ToLower().Contains(lowerQuery))
+                       EF.Functions.Like(p.Title, $"%{lowerQuery}%"))
             .OrderByDescending(p => p.CreatedAt)
             .Take(_settings.MaxProductSuggestions)
             .Select(p => new SearchSuggestion
