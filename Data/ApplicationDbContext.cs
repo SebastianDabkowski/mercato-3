@@ -345,6 +345,8 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Configure relationship with Variant (optional)
+            // Restrict delete to prevent accidental image deletion when variant is removed
+            // Images will remain associated with the product even if variant is deleted
             entity.HasOne(e => e.Variant)
                 .WithMany(v => v.Images)
                 .HasForeignKey(e => e.VariantId)
@@ -463,6 +465,8 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Configure relationship with AttributeValue
+            // Restrict delete to prevent removing attribute values that are used by variants
+            // Attribute values should only be deleted when the parent attribute is deleted
             entity.HasOne(e => e.AttributeValue)
                 .WithMany(av => av.VariantOptions)
                 .HasForeignKey(e => e.AttributeValueId)

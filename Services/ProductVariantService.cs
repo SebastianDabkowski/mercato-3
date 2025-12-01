@@ -600,15 +600,47 @@ public class ProductVariantService : IProductVariantService
                     };
 
                     _context.ProductVariants.Add(variant);
-                    await _context.SaveChangesAsync();
+                }
+            }
 
-                    foreach (var valueId in valueIds)
+            // Save all new variants at once
+            await _context.SaveChangesAsync();
+
+            // Get the newly created variants (those without options)
+            var newVariants = await _context.ProductVariants
+                .Where(v => v.ProductId == productId)
+                .Include(v => v.Options)
+                .ToListAsync();
+
+            // Create options for variants that don't have them yet
+            foreach (var combination in combinations)
+            {
+                var valueIds = combination.Select(v => v.Id).OrderBy(id => id).ToList();
+                
+                // Check if this combination already has a variant with options
+                var variantWithOptions = newVariants.FirstOrDefault(v =>
+                {
+                    if (v.Options.Count == 0) return false;
+                    var existingValueIds = v.Options.Select(o => o.AttributeValueId).OrderBy(id => id).ToList();
+                    return existingValueIds.SequenceEqual(valueIds);
+                });
+
+                if (variantWithOptions == null)
+                {
+                    // Find a variant without options
+                    var variantWithoutOptions = newVariants.FirstOrDefault(v => v.Options.Count == 0);
+                    if (variantWithoutOptions != null)
                     {
-                        _context.ProductVariantOptions.Add(new ProductVariantOption
+                        foreach (var valueId in valueIds)
                         {
-                            ProductVariantId = variant.Id,
-                            AttributeValueId = valueId
-                        });
+                            var option = new ProductVariantOption
+                            {
+                                ProductVariantId = variantWithoutOptions.Id,
+                                AttributeValueId = valueId
+                            };
+                            _context.ProductVariantOptions.Add(option);
+                            variantWithoutOptions.Options.Add(option);
+                        }
                     }
                 }
             }
