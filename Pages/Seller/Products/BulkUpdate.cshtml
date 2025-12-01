@@ -1,0 +1,190 @@
+@page
+@model MercatoApp.Pages.Seller.Products.BulkUpdateModel
+@{
+    ViewData["Title"] = "Bulk Update Products";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-12 col-lg-10">
+        <div class="mb-4">
+            <h1>Bulk Update Products</h1>
+            <p class="text-muted">Update price or stock for multiple products at once.</p>
+        </div>
+
+        @if (Model.SuccessMessage != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (Model.ErrorMessages.Count > 0)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Error:</strong>
+                <ul class="mb-0">
+                    @foreach (var error in Model.ErrorMessages)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (Model.SelectedProductIds.Count == 0)
+        {
+            <div class="alert alert-warning">
+                No products selected. Please <a asp-page="Index" class="alert-link">go back to the product list</a> and select products to update.
+            </div>
+        }
+        else
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Selected Products (@Model.SelectedProductIds.Count)</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        @foreach (var productId in Model.SelectedProductIds)
+                        {
+                            <input type="hidden" name="SelectedProductIds" value="@productId" />
+                        }
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="updateType" class="form-label">Update Type</label>
+                                <select class="form-select" id="updateType" name="UpdateType" asp-for="UpdateType" required>
+                                    <option value="0">Price</option>
+                                    <option value="1">Stock</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="operation" class="form-label">Operation</label>
+                                <select class="form-select" id="operation" name="Operation" asp-for="Operation" required>
+                                    <option value="0">Set to value</option>
+                                    <option value="1">Increase by amount</option>
+                                    <option value="2">Decrease by amount</option>
+                                    <option value="3">Increase by percentage</option>
+                                    <option value="4">Decrease by percentage</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="value" class="form-label">Value</label>
+                            <input type="number" step="0.01" class="form-control" id="value" name="Value" asp-for="Value" required />
+                            <small class="form-text text-muted">
+                                For percentage operations, enter the percentage value (e.g., 10 for 10%, 20 for 20%).
+                            </small>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" asp-page-handler="Preview" class="btn btn-primary">
+                                <i class="bi bi-eye"></i> Preview Changes
+                            </button>
+                            <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.PreviewItems.Count > 0)
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Preview of Changes</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Current Value</th>
+                                    <th class="text-end">New Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.PreviewItems)
+                                {
+                                    <tr class="@(item.IsValid ? "" : "table-danger")">
+                                        <td>@item.ProductTitle</td>
+                                        <td class="text-end">
+                                            @if (Model.UpdateType == MercatoApp.Models.BulkUpdateType.Price)
+                                            {
+                                                @item.CurrentValue.ToString("C")
+                                            }
+                                            else
+                                            {
+                                                @((int)item.CurrentValue)
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            @if (Model.UpdateType == MercatoApp.Models.BulkUpdateType.Price)
+                                            {
+                                                @item.NewValue.ToString("C")
+                                            }
+                                            else
+                                            {
+                                                @((int)item.NewValue)
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.IsValid)
+                                            {
+                                                <span class="badge bg-success">Valid</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Invalid</span>
+                                                <small class="text-danger d-block">@item.ErrorMessage</small>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Summary:</strong>
+                                @Model.PreviewItems.Count(p => p.IsValid) valid, 
+                                @Model.PreviewItems.Count(p => !p.IsValid) invalid
+                            </div>
+                            @if (Model.PreviewItems.Any(p => p.IsValid))
+                            {
+                                <form method="post">
+                                    @foreach (var productId in Model.SelectedProductIds)
+                                    {
+                                        <input type="hidden" name="SelectedProductIds" value="@productId" />
+                                    }
+                                    <input type="hidden" name="UpdateType" value="@((int)Model.UpdateType)" />
+                                    <input type="hidden" name="Operation" value="@((int)Model.Operation)" />
+                                    <input type="hidden" name="Value" value="@Model.Value" />
+                                    <button type="submit" asp-page-handler="Execute" class="btn btn-success">
+                                        <i class="bi bi-check-circle"></i> Confirm and Update
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-success" disabled>
+                                    <i class="bi bi-check-circle"></i> Confirm and Update
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="mt-4">
+            <a asp-page="Index" class="btn btn-outline-secondary">
+                ← Back to Products
+            </a>
+        </div>
+    </div>
+</div>
