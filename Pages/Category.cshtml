@@ -1,0 +1,206 @@
+@page "/category/{id:int}"
+@model MercatoApp.Pages.CategoryModel
+@{
+    ViewData["Title"] = Model.Category?.Name ?? "Category";
+}
+
+@if (Model.Category != null)
+{
+    <div class="container py-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-page="/Index">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Category.Name</li>
+            </ol>
+        </nav>
+
+        <!-- Category Header -->
+        <div class="mb-4">
+            <h1 class="display-5 mb-3">@Model.Category.Name</h1>
+            
+            <!-- Subcategories -->
+            @if (Model.Subcategories.Count > 0)
+            {
+                <div class="mb-4">
+                    <h5 class="mb-3">Browse Subcategories</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var subcategory in Model.Subcategories)
+                        {
+                            <a asp-page="/Category" asp-route-id="@subcategory.Id" class="btn btn-outline-primary">
+                                @subcategory.Name
+                                @if (subcategory.ProductCount > 0)
+                                {
+                                    <span class="badge bg-secondary ms-1">@subcategory.ProductCount</span>
+                                }
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Product count and pagination info -->
+            @if (Model.TotalProducts > 0)
+            {
+                <p class="text-muted">
+                    Showing @Model.StartIndex - @Model.EndIndex of @Model.TotalProducts products
+                </p>
+            }
+        </div>
+
+        <!-- Products Grid -->
+        @if (Model.Products.Count > 0)
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 mb-4">
+                @foreach (var product in Model.Products)
+                {
+                    var imageList = product.ImageUrls?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() ?? new List<string>();
+                    var imageUrl = imageList.Count > 0 ? imageList[0] : "/images/placeholder-product.png";
+                    
+                    <div class="col">
+                        <div class="card h-100 shadow-sm hover-shadow transition">
+                            <a asp-page="/Product" asp-route-id="@product.Id" class="text-decoration-none text-dark">
+                                <img src="@imageUrl" class="card-img-top" alt="@product.Title" style="height: 200px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h6 class="card-title text-truncate" title="@product.Title">@product.Title</h6>
+                                    <p class="card-text text-muted small mb-2">
+                                        @if (product.Store != null)
+                                        {
+                                            <span>by @product.Store.StoreName</span>
+                                        }
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="h5 mb-0 text-primary">@product.Price.ToString("C")</span>
+                                        @if (product.Stock > 0)
+                                        {
+                                            <small class="text-success">In Stock</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-danger">Out of Stock</small>
+                                        }
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Product pagination">
+                    <ul class="pagination justify-content-center">
+                        <!-- Previous Button -->
+                        <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-page="/Category" asp-route-id="@Model.Category.Id" asp-route-page="@(Model.CurrentPage - 1)" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+
+                        <!-- Page Numbers -->
+                        @{
+                            var startPage = Math.Max(1, Model.CurrentPage - 2);
+                            var endPage = Math.Min(Model.TotalPages, Model.CurrentPage + 2);
+                        }
+
+                        @if (startPage > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-page="/Category" asp-route-id="@Model.Category.Id" asp-route-page="1">1</a>
+                            </li>
+                            @if (startPage > 2)
+                            {
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            }
+                        }
+
+                        @for (var i = startPage; i <= endPage; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" asp-page="/Category" asp-route-id="@Model.Category.Id" asp-route-page="@i">@i</a>
+                            </li>
+                        }
+
+                        @if (endPage < Model.TotalPages)
+                        {
+                            @if (endPage < Model.TotalPages - 1)
+                            {
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            }
+                            <li class="page-item">
+                                <a class="page-link" asp-page="/Category" asp-route-id="@Model.Category.Id" asp-route-page="@Model.TotalPages">@Model.TotalPages</a>
+                            </li>
+                        }
+
+                        <!-- Next Button -->
+                        <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-page="/Category" asp-route-id="@Model.Category.Id" asp-route-page="@(Model.CurrentPage + 1)" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-inbox text-muted" viewBox="0 0 16 16">
+                        <path d="M4.98 4a.5.5 0 0 0-.39.188L1.54 8H6a.5.5 0 0 1 .5.5 1.5 1.5 0 1 0 3 0A.5.5 0 0 1 10 8h4.46l-3.05-3.812A.5.5 0 0 0 11.02 4H4.98zm9.954 5H10.45a2.5 2.5 0 0 1-4.9 0H1.066l.32 2.562a.5.5 0 0 0 .497.438h12.234a.5.5 0 0 0 .496-.438L14.933 9zM3.809 3.563A1.5 1.5 0 0 1 4.981 3h6.038a1.5 1.5 0 0 1 1.172.563l3.7 4.625a.5.5 0 0 1 .105.374l-.39 3.124A1.5 1.5 0 0 1 14.117 13H1.883a1.5 1.5 0 0 1-1.489-1.314l-.39-3.124a.5.5 0 0 1 .106-.374l3.7-4.625z"/>
+                    </svg>
+                </div>
+                <h3>No Products Found</h3>
+                <p class="text-muted mb-4">
+                    There are currently no products in this category.
+                </p>
+                
+                @if (Model.Subcategories.Count > 0)
+                {
+                    <p class="mb-3">Try browsing these subcategories:</p>
+                    <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
+                        @foreach (var subcategory in Model.Subcategories.Take(5))
+                        {
+                            <a asp-page="/Category" asp-route-id="@subcategory.Id" class="btn btn-outline-primary">
+                                @subcategory.Name
+                            </a>
+                        }
+                    </div>
+                }
+                
+                <a asp-page="/Index" class="btn btn-primary">Go to Home</a>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="container py-5">
+        <div class="text-center">
+            <h2>Category Not Found</h2>
+            <p class="text-muted">The category you're looking for doesn't exist or is no longer available.</p>
+            <a asp-page="/Index" class="btn btn-primary">Go to Home</a>
+        </div>
+    </div>
+}
+
+<style>
+    .hover-shadow {
+        transition: box-shadow 0.3s ease-in-out;
+    }
+    
+    .hover-shadow:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    .transition {
+        transition: all 0.3s ease-in-out;
+    }
+</style>
