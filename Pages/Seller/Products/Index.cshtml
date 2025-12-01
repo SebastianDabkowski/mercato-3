@@ -12,6 +12,9 @@
                 <p class="text-muted mb-0">Manage your product catalog.</p>
             </div>
             <div>
+                <a asp-page="Export" class="btn btn-outline-success me-2">
+                    <i class="bi bi-download"></i> Export
+                </a>
                 <a asp-page="Import" class="btn btn-outline-primary me-2">
                     <i class="bi bi-upload"></i> Import
                 </a>
@@ -57,9 +60,14 @@
                         <div>
                             <span id="selectedCount">0</span> product(s) selected
                         </div>
-                        <button type="button" id="bulkUpdateBtn" class="btn btn-primary" disabled>
-                            <i class="bi bi-pencil-square"></i> Bulk Update
-                        </button>
+                        <div>
+                            <button type="button" id="exportSelectedBtn" class="btn btn-outline-success me-2" disabled>
+                                <i class="bi bi-download"></i> Export Selected
+                            </button>
+                            <button type="button" id="bulkUpdateBtn" class="btn btn-primary" disabled>
+                                <i class="bi bi-pencil-square"></i> Bulk Update
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -159,12 +167,14 @@
             const selectAllCheckbox = document.getElementById('selectAll');
             const productCheckboxes = document.querySelectorAll('.product-checkbox');
             const bulkUpdateBtn = document.getElementById('bulkUpdateBtn');
+            const exportSelectedBtn = document.getElementById('exportSelectedBtn');
             const selectedCountSpan = document.getElementById('selectedCount');
 
             function updateSelectedCount() {
                 const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
                 selectedCountSpan.textContent = checkedBoxes.length;
                 bulkUpdateBtn.disabled = checkedBoxes.length === 0;
+                exportSelectedBtn.disabled = checkedBoxes.length === 0;
             }
 
             if (selectAllCheckbox) {
@@ -199,6 +209,19 @@
                         const params = new URLSearchParams();
                         productIds.forEach(id => params.append('productIds', id));
                         window.location.href = '@Url.Page("BulkUpdate")?' + params.toString();
+                    }
+                });
+            }
+
+            if (exportSelectedBtn) {
+                exportSelectedBtn.addEventListener('click', function() {
+                    const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+                    const productIds = Array.from(checkedBoxes).map(cb => encodeURIComponent(cb.value));
+                    
+                    if (productIds.length > 0) {
+                        const params = new URLSearchParams();
+                        productIds.forEach(id => params.append('selectedProductIds', id));
+                        window.location.href = '@Url.Page("Export")?' + params.toString();
                     }
                 });
             }

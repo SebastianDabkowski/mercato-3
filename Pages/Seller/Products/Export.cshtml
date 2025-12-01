@@ -1,0 +1,107 @@
+@page
+@model MercatoApp.Pages.Seller.Products.ExportModel
+@{
+    ViewData["Title"] = "Export Products";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="mb-4">
+            <h1>Export Products</h1>
+            <p class="text-muted">Export your product catalog to CSV or Excel format.</p>
+        </div>
+
+        @if (Model.ErrorMessages.Count > 0)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Error</strong>
+                <ul class="mb-0">
+                    @foreach (var error in Model.ErrorMessages)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Export Options</h5>
+                <p class="text-muted">Choose the format and products you want to export.</p>
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Export Format</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="ExportFormat" id="formatCsv" value="csv" checked>
+                            <label class="form-check-label" for="formatCsv">
+                                <strong>CSV (Comma-Separated Values)</strong>
+                                <p class="text-muted mb-0 small">Compatible with Excel, Google Sheets, and most spreadsheet applications</p>
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="ExportFormat" id="formatExcel" value="excel">
+                            <label class="form-check-label" for="formatExcel">
+                                <strong>Excel (.xlsx)</strong>
+                                <p class="text-muted mb-0 small">Microsoft Excel native format with formatting</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    @if (Model.HasSelectedProducts)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Products to Export</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="ExportScope" id="scopeSelected" value="selected" checked>
+                                <label class="form-check-label" for="scopeSelected">
+                                    <strong>Selected Products Only (@Model.SelectedProductIds.Count products)</strong>
+                                </label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="radio" name="ExportScope" id="scopeAll" value="all">
+                                <label class="form-check-label" for="scopeAll">
+                                    <strong>All Products</strong>
+                                </label>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> All active products (excluding archived) will be exported.
+                        </div>
+                    }
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-download"></i> Download Export
+                        </button>
+                        <a asp-page="Index" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Export Information</h5>
+                <ul class="mb-0">
+                    <li>The exported file will include all product fields compatible with the import format.</li>
+                    <li>You can edit the exported file and re-import it to update products in bulk.</li>
+                    <li>Only active and draft products are exported (archived products are excluded).</li>
+                    <li>Export respects your store boundaries - only your products are included.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a asp-page="Index" class="btn btn-outline-secondary">
+                ← Back to Products
+            </a>
+        </div>
+    </div>
+</div>
