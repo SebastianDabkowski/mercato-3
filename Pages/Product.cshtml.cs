@@ -61,10 +61,9 @@ public class ProductModel : PageModel
         // Only use referrer if it's from the same origin (security consideration)
         var refererUri = Request.GetTypedHeaders().Referer;
         if (refererUri != null && 
-            string.Equals(refererUri.Host, Request.Host.Host, StringComparison.OrdinalIgnoreCase) &&
-            (refererUri.AbsolutePath.Contains("/Search", StringComparison.OrdinalIgnoreCase) || 
-             refererUri.AbsolutePath.StartsWith("/Category/", StringComparison.OrdinalIgnoreCase) ||
-             refererUri.AbsolutePath.StartsWith("/category/", StringComparison.OrdinalIgnoreCase)))
+            string.Equals(refererUri.Authority, Request.Host.Value, StringComparison.OrdinalIgnoreCase) &&
+            (refererUri.AbsolutePath.StartsWith("/Search", StringComparison.OrdinalIgnoreCase) || 
+             refererUri.AbsolutePath.StartsWith("/Category/", StringComparison.OrdinalIgnoreCase)))
         {
             ReferrerUrl = refererUri.ToString();
         }
