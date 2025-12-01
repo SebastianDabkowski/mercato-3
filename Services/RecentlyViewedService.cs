@@ -223,7 +223,7 @@ public class RecentlyViewedService : IRecentlyViewedService
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = false, // Allow JavaScript to read if needed
-                Secure = true, // HTTPS only
+                Secure = httpContext.Request.IsHttps, // HTTPS only in production
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTime.UtcNow.AddDays(CookieExpirationDays),
                 IsEssential = false // Not essential for GDPR compliance
