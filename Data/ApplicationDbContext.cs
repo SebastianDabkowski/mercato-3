@@ -72,6 +72,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<Category> Categories { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the product images table.
+    /// </summary>
+    public DbSet<ProductImage> ProductImages { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -281,6 +286,24 @@ public class ApplicationDbContext : DbContext
                 .WithMany(e => e.ChildCategories)
                 .HasForeignKey(e => e.ParentCategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductImage>(entity =>
+        {
+            // Index on product ID for finding all images for a product
+            entity.HasIndex(e => e.ProductId);
+
+            // Composite index for finding the main image of a product
+            entity.HasIndex(e => new { e.ProductId, e.IsMain });
+
+            // Composite index for ordering images within a product
+            entity.HasIndex(e => new { e.ProductId, e.DisplayOrder });
+
+            // Configure relationship with Product
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.Images)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

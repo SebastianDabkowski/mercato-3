@@ -12,17 +12,21 @@ public class IndexModel : PageModel
 {
     private readonly IProductService _productService;
     private readonly IStoreProfileService _storeProfileService;
+    private readonly IProductImageService _productImageService;
 
     public IndexModel(
         IProductService productService,
-        IStoreProfileService storeProfileService)
+        IStoreProfileService storeProfileService,
+        IProductImageService productImageService)
     {
         _productService = productService;
         _storeProfileService = storeProfileService;
+        _productImageService = productImageService;
     }
 
     public Store? Store { get; set; }
     public List<Product> Products { get; set; } = new();
+    public Dictionary<int, ProductImage?> ProductMainImages { get; set; } = new();
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -45,6 +49,10 @@ public class IndexModel : PageModel
         }
 
         Products = await _productService.GetProductsByStoreIdAsync(Store.Id);
+
+        // Load main images for all products in a single query
+        var productIds = Products.Select(p => p.Id);
+        ProductMainImages = await _productImageService.GetMainImagesAsync(productIds);
 
         return Page();
     }
