@@ -54,6 +54,7 @@ builder.Services.AddScoped<IProductImportService, ProductImportService>();
 builder.Services.AddScoped<IProductExportService, ProductExportService>();
 builder.Services.AddScoped<IBulkProductUpdateService, BulkProductUpdateService>();
 builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
+builder.Services.AddScoped<ISearchSuggestionService, SearchSuggestionService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Configure role-based authorization policies
