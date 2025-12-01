@@ -51,11 +51,27 @@
         }
         else
         {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span id="selectedCount">0</span> product(s) selected
+                        </div>
+                        <button type="button" id="bulkUpdateBtn" class="btn btn-primary" disabled>
+                            <i class="bi bi-pencil-square"></i> Bulk Update
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" class="form-check-input" id="selectAll" title="Select all">
+                                </th>
                                 <th style="width: 60px;"></th>
                                 <th>Title</th>
                                 <th>Category</th>
@@ -70,7 +86,14 @@
                             @foreach (var product in Model.Products)
                             {
                                 var mainImage = Model.ProductMainImages.GetValueOrDefault(product.Id);
-                                <tr>
+                                var isArchived = product.Status == MercatoApp.Models.ProductStatus.Archived;
+                                <tr class="@(isArchived ? "table-secondary" : "")">
+                                    <td>
+                                        @if (!isArchived)
+                                        {
+                                            <input type="checkbox" class="form-check-input product-checkbox" value="@product.Id" data-product-id="@product.Id">
+                                        }
+                                    </td>
                                     <td>
                                         @if (mainImage != null)
                                         {
@@ -96,7 +119,7 @@
                                     </td>
                                     <td>@product.CreatedAt.ToString("MMM d, yyyy")</td>
                                     <td class="text-end">
-                                        @if (product.Status != MercatoApp.Models.ProductStatus.Archived)
+                                        @if (!isArchived)
                                         {
                                             <a asp-page="Edit" asp-route-id="@product.Id" class="btn btn-sm btn-outline-primary" title="Edit">
                                                 <i class="bi bi-pencil"></i> Edit
@@ -129,3 +152,59 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const productCheckboxes = document.querySelectorAll('.product-checkbox');
+            const bulkUpdateBtn = document.getElementById('bulkUpdateBtn');
+            const selectedCountSpan = document.getElementById('selectedCount');
+
+            function updateSelectedCount() {
+                const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+                selectedCountSpan.textContent = checkedBoxes.length;
+                bulkUpdateBtn.disabled = checkedBoxes.length === 0;
+            }
+
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    productCheckboxes.forEach(checkbox => {
+                        checkbox.checked = selectAllCheckbox.checked;
+                    });
+                    updateSelectedCount();
+                });
+            }
+
+            productCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateSelectedCount();
+                    
+                    // Update "select all" checkbox state
+                    const allChecked = Array.from(productCheckboxes).every(cb => cb.checked);
+                    const someChecked = Array.from(productCheckboxes).some(cb => cb.checked);
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = allChecked;
+                        selectAllCheckbox.indeterminate = someChecked && !allChecked;
+                    }
+                });
+            });
+
+            if (bulkUpdateBtn) {
+                bulkUpdateBtn.addEventListener('click', function() {
+                    const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+                    const productIds = Array.from(checkedBoxes).map(cb => cb.value);
+                    
+                    if (productIds.length > 0) {
+                        const params = new URLSearchParams();
+                        productIds.forEach(id => params.append('productIds', id));
+                        window.location.href = '@Url.Page("BulkUpdate")?' + params.toString();
+                    }
+                });
+            }
+
+            // Initialize count
+            updateSelectedCount();
+        });
+    </script>
+}
