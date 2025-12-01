@@ -1,0 +1,177 @@
+@page
+@model MercatoApp.Pages.CartModel
+@{
+    ViewData["Title"] = "Shopping Cart";
+}
+
+<div class="container my-4">
+    <h1 class="mb-4">
+        <i class="bi bi-cart"></i> Shopping Cart
+    </h1>
+
+    @if (!Model.ItemsBySeller.Any())
+    {
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-cart-x text-muted" viewBox="0 0 16 16">
+                    <path d="M7.354 5.646a.5.5 0 1 0-.708.708L7.793 7.5 6.646 8.646a.5.5 0 1 0 .708.708L8.5 8.207l1.146 1.147a.5.5 0 0 0 .708-.708L9.207 7.5l1.147-1.146a.5.5 0 0 0-.708-.708L8.5 6.793z"/>
+                    <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1zm3.915 10L3.102 4h10.796l-1.313 7zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0m7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                </svg>
+            </div>
+            <h2>Your cart is empty</h2>
+            <p class="text-muted">Start shopping to add items to your cart.</p>
+            <a asp-page="/Index" class="btn btn-primary">Continue Shopping</a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                @foreach (var sellerGroup in Model.ItemsBySeller)
+                {
+                    var store = sellerGroup.Key;
+                    var items = sellerGroup.Value;
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="bi bi-shop"></i> 
+                                <a asp-page="/Store" asp-route-slug="@store.Slug" class="text-decoration-none">
+                                    @store.StoreName
+                                </a>
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Product</th>
+                                            <th class="text-center">Price</th>
+                                            <th class="text-center">Quantity</th>
+                                            <th class="text-end">Subtotal</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in items)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div>
+                                                            <a asp-page="/Product" asp-route-id="@item.ProductId" 
+                                                               asp-route-variantId="@item.ProductVariantId" 
+                                                               class="text-decoration-none fw-bold">
+                                                                @item.Product.Title
+                                                            </a>
+                                                            @if (item.ProductVariant != null)
+                                                            {
+                                                                <div class="text-muted small">
+                                                                    @foreach (var option in item.ProductVariant.Options)
+                                                                    {
+                                                                        <span class="badge bg-secondary me-1">
+                                                                            @option.AttributeValue.VariantAttribute.Name: @option.AttributeValue.Value
+                                                                        </span>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    @item.PriceAtAdd.ToString("C")
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    <form method="post" asp-page-handler="UpdateQuantity" class="d-inline">
+                                                        <input type="hidden" name="cartItemId" value="@item.Id" />
+                                                        <div class="input-group input-group-sm" style="width: 120px; margin: 0 auto;">
+                                                            <button type="submit" name="quantity" value="@(item.Quantity - 1)" 
+                                                                    class="btn btn-outline-secondary" 
+                                                                    @(item.Quantity <= 1 ? "disabled" : "")>
+                                                                <i class="bi bi-dash"></i>
+                                                            </button>
+                                                            <input type="number" class="form-control text-center" 
+                                                                   value="@item.Quantity" min="1" readonly />
+                                                            <button type="submit" name="quantity" value="@(item.Quantity + 1)" 
+                                                                    class="btn btn-outline-secondary">
+                                                                <i class="bi bi-plus"></i>
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end align-middle">
+                                                    <strong>@((item.PriceAtAdd * item.Quantity).ToString("C"))</strong>
+                                                </td>
+                                                <td class="text-end align-middle">
+                                                    <form method="post" asp-page-handler="RemoveItem" class="d-inline">
+                                                        <input type="hidden" name="cartItemId" value="@item.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                                title="Remove from cart">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <a asp-page="/Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Continue Shopping
+                    </a>
+                    <form method="post" asp-page-handler="ClearCart" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger" 
+                                onclick="return confirm('Are you sure you want to clear your cart?');">
+                            <i class="bi bi-trash"></i> Clear Cart
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-6">Items:</dt>
+                            <dd class="col-6 text-end">@Model.TotalItems</dd>
+
+                            <dt class="col-6">Subtotal:</dt>
+                            <dd class="col-6 text-end">@Model.TotalAmount.ToString("C")</dd>
+
+                            <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
+                            <dd class="col-6 text-end border-top pt-2 mt-2">
+                                <strong class="text-primary h5">@Model.TotalAmount.ToString("C")</strong>
+                            </dd>
+                        </dl>
+
+                        <button type="button" class="btn btn-primary w-100 mt-3" disabled>
+                            <i class="bi bi-lock"></i> Proceed to Checkout
+                        </button>
+                        <p class="text-muted small text-center mt-2 mb-0">Checkout functionality coming soon</p>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="bi bi-info-circle"></i> Multi-Seller Cart
+                        </h6>
+                        <p class="card-text small text-muted mb-0">
+                            Your cart contains items from @Model.ItemsBySeller.Count seller(s). 
+                            At checkout, your order will be split into separate shipments from each seller.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

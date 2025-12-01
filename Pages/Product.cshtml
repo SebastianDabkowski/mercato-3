@@ -5,6 +5,22 @@
     ViewData["Title"] = Model.Product?.Title ?? "Product";
 }
 
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 @if (Model.Product != null && Model.IsProductAvailable)
 {
     var imageList = Model.Product.ImageUrls.ParseCommaSeparated();
@@ -162,10 +178,14 @@
                             
                             @if (hasStock)
                             {
-                                <button type="button" class="btn btn-primary btn-lg" disabled aria-label="Add to Cart - Cart functionality coming soon">
-                                    <i class="bi bi-cart-plus"></i> Add to Cart
-                                </button>
-                                <p class="text-muted small mt-2">Cart functionality coming soon</p>
+                                <form method="post" asp-page-handler="AddToCart">
+                                    <input type="hidden" name="id" value="@Model.Product.Id" />
+                                    <input type="hidden" name="variantId" value="@Model.SelectedVariant?.Id" />
+                                    <input type="hidden" name="quantity" value="1" />
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-cart-plus"></i> Add to Cart
+                                    </button>
+                                </form>
                             }
                             else if (Model.Product.HasVariants && Model.SelectedVariant == null)
                             {
