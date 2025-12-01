@@ -58,14 +58,15 @@ public class ProductModel : PageModel
         }
 
         // Capture referrer URL for "Back to results" navigation
-        // Only use referrer if it's from the same site (search or category pages)
-        var referer = Request.Headers.Referer.ToString();
-        if (!string.IsNullOrEmpty(referer) && 
-            (referer.Contains("/Search", StringComparison.OrdinalIgnoreCase) || 
-             referer.Contains("/Category/", StringComparison.OrdinalIgnoreCase) ||
-             referer.Contains("/category/", StringComparison.OrdinalIgnoreCase)))
+        // Only use referrer if it's from the same origin (security consideration)
+        var refererUri = Request.GetTypedHeaders().Referer;
+        if (refererUri != null && 
+            string.Equals(refererUri.Host, Request.Host.Host, StringComparison.OrdinalIgnoreCase) &&
+            (refererUri.AbsolutePath.Contains("/Search", StringComparison.OrdinalIgnoreCase) || 
+             refererUri.AbsolutePath.StartsWith("/Category/", StringComparison.OrdinalIgnoreCase) ||
+             refererUri.AbsolutePath.StartsWith("/category/", StringComparison.OrdinalIgnoreCase)))
         {
-            ReferrerUrl = referer;
+            ReferrerUrl = refererUri.ToString();
         }
 
         // Load variant data if the product has variants
