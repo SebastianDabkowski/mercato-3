@@ -39,6 +39,9 @@ public class SearchModel : PageModel
     [BindProperty(SupportsGet = true)]
     public List<int>? StoreIds { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public ProductSortOption? SortBy { get; set; }
+
     public List<Product> Products { get; set; } = new();
     public int TotalProducts { get; set; }
     public int CurrentPage { get; set; } = 1;
@@ -82,7 +85,8 @@ public class SearchModel : PageModel
             MinPrice = MinPrice,
             MaxPrice = MaxPrice,
             Conditions = Conditions,
-            StoreIds = StoreIds
+            StoreIds = StoreIds,
+            SortBy = SortBy
         };
 
         HasActiveFilters = filter.HasActiveFilters;

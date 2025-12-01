@@ -42,6 +42,9 @@ public class CategoryModel : PageModel
     [BindProperty(SupportsGet = true)]
     public List<int>? StoreIds { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public ProductSortOption? SortBy { get; set; }
+
     // Available filter options
     public List<Store> AvailableStores { get; set; } = new();
 
@@ -96,7 +99,8 @@ public class CategoryModel : PageModel
             MinPrice = MinPrice,
             MaxPrice = MaxPrice,
             Conditions = Conditions,
-            StoreIds = StoreIds
+            StoreIds = StoreIds,
+            SortBy = SortBy
         };
 
         HasActiveFilters = filter.HasActiveFilters;
