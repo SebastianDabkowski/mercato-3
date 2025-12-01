@@ -201,6 +201,13 @@ public interface IProductImageService
     Task<ProductImage?> GetMainImageAsync(int productId);
 
     /// <summary>
+    /// Gets the main images for multiple products in a single query.
+    /// </summary>
+    /// <param name="productIds">The product IDs.</param>
+    /// <returns>Dictionary mapping product ID to main image (null if no image).</returns>
+    Task<Dictionary<int, ProductImage?>> GetMainImagesAsync(IEnumerable<int> productIds);
+
+    /// <summary>
     /// Validates an image file without uploading it.
     /// </summary>
     /// <param name="fileName">The file name.</param>
@@ -443,25 +450,25 @@ public class ProductImageService : IProductImageService
 
             // Remove from database
             _context.ProductImages.Remove(image);
-            await _context.SaveChangesAsync();
 
             // If the deleted image was the main image, set another as main
             if (wasMain)
             {
                 var nextImage = await _context.ProductImages
-                    .Where(i => i.ProductId == productId)
+                    .Where(i => i.ProductId == productId && i.Id != imageId)
                     .OrderBy(i => i.DisplayOrder)
                     .FirstOrDefaultAsync();
 
                 if (nextImage != null)
                 {
                     nextImage.IsMain = true;
-                    await _context.SaveChangesAsync();
                 }
             }
 
             // Update the product's ImageUrls field for backward compatibility
             await UpdateProductImageUrlsAsync(productId);
+
+            // Save all changes in a single transaction
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Deleted image {ImageId} for product {ProductId}", imageId, productId);
@@ -596,6 +603,23 @@ public class ProductImageService : IProductImageService
         return await _context.ProductImages
             .Where(i => i.ProductId == productId && i.IsMain)
             .FirstOrDefaultAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<Dictionary<int, ProductImage?>> GetMainImagesAsync(IEnumerable<int> productIds)
+    {
+        var productIdList = productIds.ToList();
+        var mainImages = await _context.ProductImages
+            .Where(i => productIdList.Contains(i.ProductId) && i.IsMain)
+            .ToListAsync();
+
+        var result = new Dictionary<int, ProductImage?>();
+        foreach (var productId in productIdList)
+        {
+            result[productId] = mainImages.FirstOrDefault(i => i.ProductId == productId);
+        }
+
+        return result;
     }
 
     /// <summary>

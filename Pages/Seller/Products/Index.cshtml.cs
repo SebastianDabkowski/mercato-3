@@ -50,12 +50,9 @@ public class IndexModel : PageModel
 
         Products = await _productService.GetProductsByStoreIdAsync(Store.Id);
 
-        // Load main images for all products
-        foreach (var product in Products)
-        {
-            var mainImage = await _productImageService.GetMainImageAsync(product.Id);
-            ProductMainImages[product.Id] = mainImage;
-        }
+        // Load main images for all products in a single query
+        var productIds = Products.Select(p => p.Id);
+        ProductMainImages = await _productImageService.GetMainImagesAsync(productIds);
 
         return Page();
     }
