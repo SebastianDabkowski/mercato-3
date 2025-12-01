@@ -401,19 +401,25 @@ public class ProductVariantService : IProductVariantService
             };
 
             _context.ProductVariants.Add(variant);
-            await _context.SaveChangesAsync();
-
-            // Create variant options
+            
+            // Create variant options (will use variant.Id once saved)
+            var options = new List<ProductVariantOption>();
             foreach (var valueId in attributeValueIds)
             {
-                _context.ProductVariantOptions.Add(new ProductVariantOption
+                options.Add(new ProductVariantOption
                 {
                     ProductVariantId = variant.Id,
                     AttributeValueId = valueId
                 });
             }
 
+            // Save variant first to get ID, then add options
             await _context.SaveChangesAsync();
+            
+            // Now add options with the variant ID
+            _context.ProductVariantOptions.AddRange(options);
+            await _context.SaveChangesAsync();
+            
             result.Success = true;
 
             _logger.LogInformation("Created variant {VariantId} for product {ProductId}", variant.Id, productId);

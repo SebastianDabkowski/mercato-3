@@ -345,12 +345,12 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Configure relationship with Variant (optional)
-            // Restrict delete to prevent accidental image deletion when variant is removed
-            // Images will remain associated with the product even if variant is deleted
+            // SetNull behavior: When variant is deleted, image remains for product but VariantId is cleared
+            // This preserves images that may be useful for the main product listing
             entity.HasOne(e => e.Variant)
                 .WithMany(v => v.Images)
                 .HasForeignKey(e => e.VariantId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<ProductImportJob>(entity =>

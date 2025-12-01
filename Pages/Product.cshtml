@@ -284,9 +284,7 @@ else
                         attribute = o.AttributeValue.VariantAttribute.Name,
                         value = o.AttributeValue.Value 
                     }).ToList()
-                }).ToList(), new System.Text.Json.JsonSerializerOptions { 
-                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
-                }));
+                }).ToList()));
 
                 const selectedOptions = {};
                 const variantButtons = document.querySelectorAll('.variant-option-btn');
