@@ -394,7 +394,7 @@ public class ProductService : IProductService
         // Return empty list if no category IDs provided
         if (categoryIds == null || categoryIds.Count == 0)
         {
-            return new List<Product>();
+            return Enumerable.Empty<Product>().ToList();
         }
 
         return await _context.Products

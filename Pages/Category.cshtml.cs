@@ -71,9 +71,8 @@ public class CategoryModel : PageModel
         }
 
         // Get products for this category (including subcategories)
-        var categoryIds = new HashSet<int> { id };
         var descendantIds = await _categoryService.GetDescendantCategoryIdsAsync(id);
-        categoryIds.UnionWith(descendantIds);
+        var categoryIds = new HashSet<int>(descendantIds) { id };
 
         var allProducts = await _productService.GetProductsByCategoryIdsAsync(categoryIds.ToList());
         TotalProducts = allProducts.Count;
