@@ -107,6 +107,14 @@ public interface IProductService
     /// <param name="categoryIds">The list of category IDs to filter by.</param>
     /// <returns>A list of active products in the specified categories, ordered by creation date (newest first).</returns>
     Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds);
+
+    /// <summary>
+    /// Searches for products by keyword in title and description.
+    /// Only returns active, non-archived, non-suspended products.
+    /// </summary>
+    /// <param name="query">The search query keyword.</param>
+    /// <returns>A list of products matching the search query, ordered by relevance (title matches first, then description matches).</returns>
+    Task<List<Product>> SearchProductsAsync(string query);
 }
 
 /// <summary>
@@ -601,5 +609,50 @@ public class ProductService : IProductService
         result.Success = true;
         result.Product = product;
         return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<Product>> SearchProductsAsync(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return new List<Product>();
+        }
+
+        // Sanitize query by trimming and removing excessive whitespace
+        var sanitizedQuery = query.Trim();
+        
+        // Limit query length to prevent abuse
+        const int maxQueryLength = 200;
+        if (sanitizedQuery.Length > maxQueryLength)
+        {
+            sanitizedQuery = sanitizedQuery.Substring(0, maxQueryLength);
+        }
+
+        // Convert to lowercase for case-insensitive search
+        var lowerQuery = sanitizedQuery.ToLower();
+
+        // Search in title and description
+        // Only return Active status products (not Draft, Suspended, or Archived)
+        var products = await _context.Products
+            .Include(p => p.Store)
+            .Include(p => p.CategoryEntity)
+            .Where(p => p.Status == ProductStatus.Active &&
+                       (p.Title.ToLower().Contains(lowerQuery) ||
+                        (p.Description != null && p.Description.ToLower().Contains(lowerQuery))))
+            .ToListAsync();
+
+        // Sort by relevance: title matches first, then description matches
+        var sorted = products
+            .OrderByDescending(p => p.Title.ToLower().Contains(lowerQuery))
+            .ThenByDescending(p => p.CreatedAt)
+            .ToList();
+
+        _logger.LogInformation(
+            "Search for query '{Query}' returned {Count} products",
+            sanitizedQuery,
+            sorted.Count);
+
+        return sorted;
     }
 }
