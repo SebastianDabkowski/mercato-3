@@ -50,6 +50,14 @@ public class Product
     public int Stock { get; set; }
 
     /// <summary>
+    /// Gets or sets the merchant SKU (Stock Keeping Unit).
+    /// Used for inventory management and import/export operations.
+    /// Must be unique within the store.
+    /// </summary>
+    [MaxLength(100)]
+    public string? Sku { get; set; }
+
+    /// <summary>
     /// Gets or sets the product category name.
     /// This is the display name stored for backward compatibility.
     /// </summary>

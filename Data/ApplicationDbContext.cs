@@ -77,6 +77,16 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ProductImage> ProductImages { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the product import jobs table.
+    /// </summary>
+    public DbSet<ProductImportJob> ProductImportJobs { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the product import results table.
+    /// </summary>
+    public DbSet<ProductImportResult> ProductImportResults { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -253,6 +263,12 @@ public class ApplicationDbContext : DbContext
             // Index on CategoryId for category-based queries
             entity.HasIndex(e => e.CategoryId);
 
+            // Composite unique index on StoreId and SKU (SKU must be unique within a store)
+            // Note: In-memory database doesn't support filtered indexes
+            // Null SKUs are allowed and don't participate in uniqueness check
+            // This is enforced programmatically in the service layer
+            entity.HasIndex(e => new { e.StoreId, e.Sku });
+
             // Configure relationship with Store
             entity.HasOne(e => e.Store)
                 .WithMany(s => s.Products)
@@ -303,6 +319,51 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Product)
                 .WithMany(p => p.Images)
                 .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductImportJob>(entity =>
+        {
+            // Index on store ID for finding all import jobs for a store
+            entity.HasIndex(e => e.StoreId);
+
+            // Index on user ID for finding all import jobs by a user
+            entity.HasIndex(e => e.UserId);
+
+            // Index on status for filtering jobs by status
+            entity.HasIndex(e => e.Status);
+
+            // Composite index for ordering jobs by store and date
+            entity.HasIndex(e => new { e.StoreId, e.CreatedAt });
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductImportResult>(entity =>
+        {
+            // Index on job ID for finding all results for a job
+            entity.HasIndex(e => e.JobId);
+
+            // Composite index for ordering results within a job
+            entity.HasIndex(e => new { e.JobId, e.RowNumber });
+
+            // Composite index for finding failed results
+            entity.HasIndex(e => new { e.JobId, e.Success });
+
+            // Configure relationship with Job
+            entity.HasOne(e => e.Job)
+                .WithMany(j => j.Results)
+                .HasForeignKey(e => e.JobId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
