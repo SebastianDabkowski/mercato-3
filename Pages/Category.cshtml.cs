@@ -71,11 +71,11 @@ public class CategoryModel : PageModel
         }
 
         // Get products for this category (including subcategories)
-        var categoryIds = new List<int> { id };
+        var categoryIds = new HashSet<int> { id };
         var descendantIds = await _categoryService.GetDescendantCategoryIdsAsync(id);
-        categoryIds.AddRange(descendantIds);
+        categoryIds.UnionWith(descendantIds);
 
-        var allProducts = await _productService.GetProductsByCategoryIdsAsync(categoryIds);
+        var allProducts = await _productService.GetProductsByCategoryIdsAsync(categoryIds.ToList());
         TotalProducts = allProducts.Count;
 
         // Calculate pagination

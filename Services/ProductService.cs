@@ -391,6 +391,12 @@ public class ProductService : IProductService
     /// <inheritdoc />
     public async Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds)
     {
+        // Return empty list if no category IDs provided
+        if (categoryIds == null || categoryIds.Count == 0)
+        {
+            return new List<Product>();
+        }
+
         return await _context.Products
             .Include(p => p.Store)
             .Include(p => p.CategoryEntity)
