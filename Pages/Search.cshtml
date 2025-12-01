@@ -293,12 +293,7 @@
                         <!-- Previous Button -->
                         <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
                             <a class="page-link" 
-                               asp-page="/Search" 
-                               asp-route-query="@Model.Query" 
-                               asp-route-page="@(Model.CurrentPage - 1)"
-                               asp-route-minprice="@Model.MinPrice"
-                               asp-route-maxprice="@Model.MaxPrice"
-                               asp-route-sortby="@Model.SortBy"
+                               href="@Model.GetPageUrl(Model.CurrentPage - 1)"
                                aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
@@ -314,12 +309,7 @@
                         {
                             <li class="page-item">
                                 <a class="page-link" 
-                                   asp-page="/Search" 
-                                   asp-route-query="@Model.Query" 
-                                   asp-route-page="1"
-                                   asp-route-minprice="@Model.MinPrice"
-                                   asp-route-maxprice="@Model.MaxPrice"
-                                   asp-route-sortby="@Model.SortBy">1</a>
+                                   href="@Model.GetPageUrl(1)">1</a>
                             </li>
                             @if (startPage > 2)
                             {
@@ -333,12 +323,7 @@
                         {
                             <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
                                 <a class="page-link" 
-                                   asp-page="/Search" 
-                                   asp-route-query="@Model.Query" 
-                                   asp-route-page="@i"
-                                   asp-route-minprice="@Model.MinPrice"
-                                   asp-route-maxprice="@Model.MaxPrice"
-                                   asp-route-sortby="@Model.SortBy">@i</a>
+                                   href="@Model.GetPageUrl(i)">@i</a>
                             </li>
                         }
 
@@ -352,30 +337,34 @@
                             }
                             <li class="page-item">
                                 <a class="page-link" 
-                                   asp-page="/Search" 
-                                   asp-route-query="@Model.Query" 
-                                   asp-route-page="@Model.TotalPages"
-                                   asp-route-minprice="@Model.MinPrice"
-                                   asp-route-maxprice="@Model.MaxPrice"
-                                   asp-route-sortby="@Model.SortBy">@Model.TotalPages</a>
+                                   href="@Model.GetPageUrl(Model.TotalPages)">@Model.TotalPages</a>
                             </li>
                         }
 
                         <!-- Next Button -->
                         <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
                             <a class="page-link" 
-                               asp-page="/Search" 
-                               asp-route-query="@Model.Query" 
-                               asp-route-page="@(Model.CurrentPage + 1)"
-                               asp-route-minprice="@Model.MinPrice"
-                               asp-route-maxprice="@Model.MaxPrice"
-                               asp-route-sortby="@Model.SortBy"
+                               href="@Model.GetPageUrl(Model.CurrentPage + 1)"
                                aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
                     </ul>
                 </nav>
+                
+                <!-- End of Results Indicator -->
+                @if (Model.CurrentPage >= Model.TotalPages)
+                {
+                    <div class="text-center text-muted mt-3">
+                        <small>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle me-1" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+                            </svg>
+                            You've reached the end of the results
+                        </small>
+                    </div>
+                }
             }
                 }
                 else

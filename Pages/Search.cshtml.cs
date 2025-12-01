@@ -63,6 +63,62 @@ public class SearchModel : PageModel
     /// </summary>
     public int EndIndex => Math.Min(CurrentPage * PageSize, TotalProducts);
 
+    /// <summary>
+    /// Builds a URL for the specified page number with all current filters preserved.
+    /// </summary>
+    public string GetPageUrl(int pageNumber)
+    {
+        var queryParams = new List<string>();
+        
+        if (!string.IsNullOrWhiteSpace(Query))
+        {
+            queryParams.Add($"query={Uri.EscapeDataString(Query)}");
+        }
+        
+        queryParams.Add($"page={pageNumber}");
+        
+        if (SortBy.HasValue)
+        {
+            queryParams.Add($"sortby={SortBy.Value}");
+        }
+        
+        if (MinPrice.HasValue)
+        {
+            queryParams.Add($"minprice={MinPrice.Value}");
+        }
+        
+        if (MaxPrice.HasValue)
+        {
+            queryParams.Add($"maxprice={MaxPrice.Value}");
+        }
+        
+        if (CategoryIds != null)
+        {
+            foreach (var catId in CategoryIds)
+            {
+                queryParams.Add($"CategoryIds={catId}");
+            }
+        }
+        
+        if (Conditions != null)
+        {
+            foreach (var condition in Conditions)
+            {
+                queryParams.Add($"Conditions={condition}");
+            }
+        }
+        
+        if (StoreIds != null)
+        {
+            foreach (var storeId in StoreIds)
+            {
+                queryParams.Add($"StoreIds={storeId}");
+            }
+        }
+        
+        return $"/Search?{string.Join("&", queryParams)}";
+    }
+
     public async Task<IActionResult> OnGetAsync(int page = 1)
     {
         if (page < 1)
