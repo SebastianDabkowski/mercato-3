@@ -15,22 +15,29 @@ public class EditModel : PageModel
     private readonly IProductService _productService;
     private readonly IStoreProfileService _storeProfileService;
     private readonly ICategoryService _categoryService;
+    private readonly IProductImageService _productImageService;
 
     public EditModel(
         IProductService productService,
         IStoreProfileService storeProfileService,
-        ICategoryService categoryService)
+        ICategoryService categoryService,
+        IProductImageService productImageService)
     {
         _productService = productService;
         _storeProfileService = storeProfileService;
         _categoryService = categoryService;
+        _productImageService = productImageService;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
+    [BindProperty]
+    public List<IFormFile>? UploadedImages { get; set; }
+
     public Store? Store { get; set; }
     public Product? Product { get; set; }
+    public List<ProductImage> ProductImages { get; set; } = new();
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -136,6 +143,9 @@ public class EditModel : PageModel
             return RedirectToPage("Index");
         }
 
+        // Load product images
+        ProductImages = await _productImageService.GetProductImagesAsync(id, Store.Id);
+
         // Populate the form
         Input = new InputModel
         {
@@ -181,6 +191,9 @@ public class EditModel : PageModel
             return RedirectToPage("Index");
         }
 
+        // Load product images
+        ProductImages = await _productImageService.GetProductImagesAsync(id, Store.Id);
+
         PopulateStatusOptions();
         await LoadCategoriesAsync();
 
@@ -219,6 +232,124 @@ public class EditModel : PageModel
 
         TempData["SuccessMessage"] = "Product updated successfully.";
         return RedirectToPage("Index");
+    }
+
+    public async Task<IActionResult> OnPostUploadImagesAsync(int id)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return RedirectToPage("/Account/Login");
+        }
+
+        Store = await _storeProfileService.GetStoreAsync(userId.Value);
+        if (Store == null)
+        {
+            return RedirectToPage("/Seller/OnboardingStep1");
+        }
+
+        Product = await _productService.GetProductByIdAsync(id, Store.Id);
+        if (Product == null)
+        {
+            TempData["ErrorMessage"] = "Product not found.";
+            return RedirectToPage("Index");
+        }
+
+        if (UploadedImages == null || UploadedImages.Count == 0)
+        {
+            TempData["ErrorMessage"] = "Please select at least one image to upload.";
+            return RedirectToPage("Edit", new { id });
+        }
+
+        var uploadErrors = new List<string>();
+        var uploadedCount = 0;
+
+        foreach (var file in UploadedImages)
+        {
+            using var stream = file.OpenReadStream();
+            var result = await _productImageService.UploadImageAsync(
+                id,
+                Store.Id,
+                stream,
+                file.FileName,
+                file.ContentType,
+                file.Length);
+
+            if (result.Success)
+            {
+                uploadedCount++;
+            }
+            else
+            {
+                uploadErrors.AddRange(result.Errors.Select(e => $"{file.FileName}: {e}"));
+            }
+        }
+
+        if (uploadedCount > 0)
+        {
+            TempData["SuccessMessage"] = $"Successfully uploaded {uploadedCount} image(s).";
+        }
+
+        if (uploadErrors.Count > 0)
+        {
+            TempData["ErrorMessage"] = string.Join(" ", uploadErrors);
+        }
+
+        return RedirectToPage("Edit", new { id });
+    }
+
+    public async Task<IActionResult> OnPostDeleteImageAsync(int id, int imageId)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return RedirectToPage("/Account/Login");
+        }
+
+        Store = await _storeProfileService.GetStoreAsync(userId.Value);
+        if (Store == null)
+        {
+            return RedirectToPage("/Seller/OnboardingStep1");
+        }
+
+        var result = await _productImageService.DeleteImageAsync(imageId, Store.Id);
+        if (result.Success)
+        {
+            TempData["SuccessMessage"] = "Image deleted successfully.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = string.Join(" ", result.Errors);
+        }
+
+        return RedirectToPage("Edit", new { id });
+    }
+
+    public async Task<IActionResult> OnPostSetMainImageAsync(int id, int imageId)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return RedirectToPage("/Account/Login");
+        }
+
+        Store = await _storeProfileService.GetStoreAsync(userId.Value);
+        if (Store == null)
+        {
+            return RedirectToPage("/Seller/OnboardingStep1");
+        }
+
+        var result = await _productImageService.SetMainImageAsync(imageId, Store.Id);
+        if (result.Success)
+        {
+            TempData["SuccessMessage"] = "Main image updated successfully.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = string.Join(" ", result.Errors);
+        }
+
+        return RedirectToPage("Edit", new { id });
     }
 
     private int? GetCurrentUserId()

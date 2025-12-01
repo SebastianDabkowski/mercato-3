@@ -121,7 +121,13 @@ public class Product
 
     /// <summary>
     /// Gets or sets the comma-separated list of image URLs for this product.
+    /// This is maintained for backward compatibility.
     /// </summary>
     [MaxLength(2000)]
     public string? ImageUrls { get; set; }
+
+    /// <summary>
+    /// Gets or sets the images for this product (navigation property).
+    /// </summary>
+    public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
 }

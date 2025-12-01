@@ -52,3 +52,7 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Uploaded product images (keep folder structure, exclude images)
+wwwroot/uploads/products/*
+!wwwroot/uploads/products/.gitkeep

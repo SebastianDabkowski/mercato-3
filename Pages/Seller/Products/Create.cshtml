@@ -93,11 +93,8 @@
                         <div class="form-text">Select the category that best describes your product.</div>
                     </div>
 
-                    <div class="mb-3">
-                        <label asp-for="Input.ImageUrls" class="form-label"></label>
-                        <textarea asp-for="Input.ImageUrls" class="form-control" rows="2" placeholder="https://example.com/image1.jpg,https://example.com/image2.jpg"></textarea>
-                        <span asp-validation-for="Input.ImageUrls" class="text-danger"></span>
-                        <div class="form-text">Enter comma-separated image URLs for your product.</div>
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i> Product images can be uploaded after creating the product from the Edit page.
                     </div>
                 </div>
             </div>
