@@ -51,6 +51,7 @@ builder.Services.AddScoped<IProductWorkflowService, ProductWorkflowService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductImageService, ProductImageService>();
 builder.Services.AddScoped<IProductImportService, ProductImportService>();
+builder.Services.AddScoped<IProductExportService, ProductExportService>();
 builder.Services.AddScoped<IBulkProductUpdateService, BulkProductUpdateService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
