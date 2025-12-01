@@ -31,6 +31,11 @@ public class ProductFilter
     public List<int>? StoreIds { get; set; }
 
     /// <summary>
+    /// Gets or sets the sort option for product results.
+    /// </summary>
+    public ProductSortOption? SortBy { get; set; }
+
+    /// <summary>
     /// Gets a value indicating whether any filters are active.
     /// </summary>
     public bool HasActiveFilters =>

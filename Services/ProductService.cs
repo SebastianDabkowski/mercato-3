@@ -107,24 +107,26 @@ public interface IProductService
     /// Only returns products with Active status.
     /// </summary>
     /// <param name="categoryIds">The list of category IDs to filter by.</param>
-    /// <returns>A list of active products in the specified categories, ordered by creation date (newest first).</returns>
-    Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds);
+    /// <param name="sortBy">Optional sort option. Defaults to Newest.</param>
+    /// <returns>A list of active products in the specified categories, ordered by the specified sort option.</returns>
+    Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds, ProductSortOption? sortBy = null);
 
     /// <summary>
     /// Searches for products by keyword in title and description.
     /// Only returns active, non-archived, non-suspended products.
     /// </summary>
     /// <param name="query">The search query keyword.</param>
-    /// <returns>A list of products matching the search query, ordered by relevance (title matches first, then description matches).</returns>
-    Task<List<Product>> SearchProductsAsync(string query);
+    /// <param name="sortBy">Optional sort option. Defaults to Relevance.</param>
+    /// <returns>A list of products matching the search query, ordered by the specified sort option.</returns>
+    Task<List<Product>> SearchProductsAsync(string query, ProductSortOption? sortBy = null);
 
     /// <summary>
     /// Searches for products by keyword with optional filters.
     /// Only returns active, non-archived, non-suspended products.
     /// </summary>
     /// <param name="query">The search query keyword.</param>
-    /// <param name="filter">Optional filter criteria.</param>
-    /// <returns>A list of products matching the search query and filters, ordered by relevance.</returns>
+    /// <param name="filter">Optional filter criteria (includes sort option).</param>
+    /// <returns>A list of products matching the search query and filters, ordered by the specified sort option in filter or by relevance if not specified.</returns>
     Task<List<Product>> SearchProductsAsync(string query, ProductFilter? filter);
 
     /// <summary>
@@ -132,8 +134,8 @@ public interface IProductService
     /// Only returns products with Active status.
     /// </summary>
     /// <param name="categoryIds">The list of category IDs to filter by.</param>
-    /// <param name="filter">Optional filter criteria.</param>
-    /// <returns>A list of active products in the specified categories, ordered by creation date (newest first).</returns>
+    /// <param name="filter">Optional filter criteria (includes sort option).</param>
+    /// <returns>A list of active products in the specified categories, ordered by the specified sort option in filter or by newest if not specified.</returns>
     Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds, ProductFilter? filter);
 }
 
@@ -418,7 +420,7 @@ public class ProductService : IProductService
     }
 
     /// <inheritdoc />
-    public async Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds)
+    public async Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds, ProductSortOption? sortBy = null)
     {
         // Return empty list if no category IDs provided
         if (categoryIds == null || categoryIds.Count == 0)
@@ -426,12 +428,15 @@ public class ProductService : IProductService
             return Enumerable.Empty<Product>().ToList();
         }
 
-        return await _context.Products
+        var queryable = _context.Products
             .Include(p => p.Store)
             .Include(p => p.CategoryEntity)
-            .Where(p => p.CategoryId.HasValue && categoryIds.Contains(p.CategoryId.Value) && p.Status == ProductStatus.Active)
-            .OrderByDescending(p => p.CreatedAt)
-            .ToListAsync();
+            .Where(p => p.CategoryId.HasValue && categoryIds.Contains(p.CategoryId.Value) && p.Status == ProductStatus.Active);
+
+        var products = await queryable.ToListAsync();
+
+        // Apply sorting
+        return ApplySort(products, sortBy ?? ProductSortOption.Newest, null);
     }
 
     /// <inheritdoc />
@@ -638,7 +643,7 @@ public class ProductService : IProductService
     }
 
     /// <inheritdoc />
-    public async Task<List<Product>> SearchProductsAsync(string query)
+    public async Task<List<Product>> SearchProductsAsync(string query, ProductSortOption? sortBy = null)
     {
         if (string.IsNullOrWhiteSpace(query))
         {
@@ -668,11 +673,8 @@ public class ProductService : IProductService
                         (p.Description != null && p.Description.ToLower().Contains(lowerQuery))))
             .ToListAsync();
 
-        // Sort by relevance: title matches first, then description matches
-        var sorted = products
-            .OrderByDescending(p => p.Title.ToLower().Contains(lowerQuery))
-            .ThenByDescending(p => p.CreatedAt)
-            .ToList();
+        // Apply sorting
+        var sorted = ApplySort(products, sortBy ?? ProductSortOption.Relevance, lowerQuery);
 
         _logger.LogInformation(
             "Search for query '{Query}' returned {Count} products",
@@ -717,11 +719,9 @@ public class ProductService : IProductService
 
         var products = await queryable.ToListAsync();
 
-        // Sort by relevance: title matches first, then description matches
-        var sorted = products
-            .OrderByDescending(p => p.Title.ToLower().Contains(lowerQuery))
-            .ThenByDescending(p => p.CreatedAt)
-            .ToList();
+        // Apply sorting - use sort from filter if provided, otherwise default to Relevance
+        var sortBy = filter?.SortBy ?? ProductSortOption.Relevance;
+        var sorted = ApplySort(products, sortBy, lowerQuery);
 
         _logger.LogInformation(
             "Search for query '{Query}' with filters returned {Count} products",
@@ -774,6 +774,51 @@ public class ProductService : IProductService
         return queryable;
     }
 
+    /// <summary>
+    /// Applies sorting to a list of products based on the specified sort option.
+    /// </summary>
+    /// <param name="products">The list of products to sort.</param>
+    /// <param name="sortBy">The sort option to apply.</param>
+    /// <param name="searchQuery">Optional search query for relevance sorting (lowercase).</param>
+    /// <returns>A sorted list of products.</returns>
+    private static List<Product> ApplySort(List<Product> products, ProductSortOption sortBy, string? searchQuery)
+    {
+        return sortBy switch
+        {
+            ProductSortOption.Relevance when !string.IsNullOrEmpty(searchQuery) =>
+                // Sort by relevance: title matches first, then by creation date
+                products
+                    .OrderByDescending(p => p.Title.ToLower().Contains(searchQuery))
+                    .ThenByDescending(p => p.CreatedAt)
+                    .ToList(),
+
+            ProductSortOption.Newest =>
+                // Sort by creation date descending (newest first)
+                products
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToList(),
+
+            ProductSortOption.PriceAscending =>
+                // Sort by price ascending (low to high)
+                products
+                    .OrderBy(p => p.Price)
+                    .ThenByDescending(p => p.CreatedAt)
+                    .ToList(),
+
+            ProductSortOption.PriceDescending =>
+                // Sort by price descending (high to low)
+                products
+                    .OrderByDescending(p => p.Price)
+                    .ThenByDescending(p => p.CreatedAt)
+                    .ToList(),
+
+            // Default to newest if relevance is selected without a search query
+            _ => products
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToList()
+        };
+    }
+
     /// <inheritdoc />
     public async Task<List<Product>> GetProductsByCategoryIdsAsync(List<int> categoryIds, ProductFilter? filter)
     {
@@ -791,8 +836,10 @@ public class ProductService : IProductService
         // Apply filters
         queryable = ApplyFilters(queryable, filter);
 
-        return await queryable
-            .OrderByDescending(p => p.CreatedAt)
-            .ToListAsync();
+        var products = await queryable.ToListAsync();
+
+        // Apply sorting - use sort from filter if provided, otherwise default to Newest
+        var sortBy = filter?.SortBy ?? ProductSortOption.Newest;
+        return ApplySort(products, sortBy, null);
     }
 }
