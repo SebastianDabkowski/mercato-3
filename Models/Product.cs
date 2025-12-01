@@ -83,6 +83,12 @@ public class Product
     public ProductStatus Status { get; set; } = ProductStatus.Draft;
 
     /// <summary>
+    /// Gets or sets the product condition.
+    /// Defaults to New for new products.
+    /// </summary>
+    public ProductCondition Condition { get; set; } = ProductCondition.New;
+
+    /// <summary>
     /// Gets or sets the date and time when the product was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

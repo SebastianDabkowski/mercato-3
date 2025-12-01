@@ -28,6 +28,22 @@ public class CategoryModel : PageModel
     public int CurrentPage { get; set; } = 1;
     public int PageSize { get; set; } = 12;
     public int TotalPages { get; set; }
+    public bool HasActiveFilters { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public decimal? MinPrice { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public decimal? MaxPrice { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public List<ProductCondition>? Conditions { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public List<int>? StoreIds { get; set; }
+
+    // Available filter options
+    public List<Store> AvailableStores { get; set; } = new();
 
     /// <summary>
     /// Gets the start index (1-based) for the current page.
@@ -74,8 +90,31 @@ public class CategoryModel : PageModel
         var descendantIds = await _categoryService.GetDescendantCategoryIdsAsync(id);
         var categoryIds = new HashSet<int>(descendantIds) { id };
 
-        var allProducts = await _productService.GetProductsByCategoryIdsAsync(categoryIds.ToList());
+        // Build filter
+        var filter = new ProductFilter
+        {
+            MinPrice = MinPrice,
+            MaxPrice = MaxPrice,
+            Conditions = Conditions,
+            StoreIds = StoreIds
+        };
+
+        HasActiveFilters = filter.HasActiveFilters;
+
+        var allProducts = await _productService.GetProductsByCategoryIdsAsync(categoryIds.ToList(), filter);
         TotalProducts = allProducts.Count;
+
+        // Load available filter options from search results
+        if (allProducts.Count > 0)
+        {
+            // Get unique stores from results
+            AvailableStores = allProducts
+                .Where(p => p.Store != null)
+                .Select(p => p.Store)
+                .DistinctBy(s => s.Id)
+                .OrderBy(s => s.StoreName)
+                .ToList();
+        }
 
         // Calculate pagination
         TotalPages = (int)Math.Ceiling(TotalProducts / (double)PageSize);

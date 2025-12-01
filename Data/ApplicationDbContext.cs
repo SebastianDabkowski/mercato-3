@@ -283,6 +283,9 @@ public class ApplicationDbContext : DbContext
             // Index on CategoryId for category-based queries
             entity.HasIndex(e => e.CategoryId);
 
+            // Index on Condition for filtering products by condition
+            entity.HasIndex(e => e.Condition);
+
             // Composite unique index on StoreId and SKU (SKU must be unique within a store)
             // Note: In-memory database doesn't support filtered indexes
             // Null SKUs are allowed and don't participate in uniqueness check
