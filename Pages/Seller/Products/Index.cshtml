@@ -193,7 +193,7 @@
             if (bulkUpdateBtn) {
                 bulkUpdateBtn.addEventListener('click', function() {
                     const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
-                    const productIds = Array.from(checkedBoxes).map(cb => cb.value);
+                    const productIds = Array.from(checkedBoxes).map(cb => encodeURIComponent(cb.value));
                     
                     if (productIds.length > 0) {
                         const params = new URLSearchParams();

@@ -137,8 +137,9 @@ public class BulkProductUpdateService : IBulkProductUpdateService
     /// <inheritdoc />
     public async Task<List<BulkUpdatePreviewItem>> PreviewBulkUpdateAsync(int storeId, BulkUpdateRequest request)
     {
+        var productIdsSet = request.ProductIds.ToHashSet();
         var products = await _context.Products
-            .Where(p => request.ProductIds.Contains(p.Id) && p.StoreId == storeId)
+            .Where(p => productIdsSet.Contains(p.Id) && p.StoreId == storeId)
             .ToListAsync();
 
         var preview = new List<BulkUpdatePreviewItem>();
@@ -192,8 +193,9 @@ public class BulkProductUpdateService : IBulkProductUpdateService
         }
 
         // Get all products belonging to this store
+        var productIdsSet = request.ProductIds.ToHashSet();
         var products = await _context.Products
-            .Where(p => request.ProductIds.Contains(p.Id) && p.StoreId == storeId && p.Status != ProductStatus.Archived)
+            .Where(p => productIdsSet.Contains(p.Id) && p.StoreId == storeId && p.Status != ProductStatus.Archived)
             .ToListAsync();
 
         if (products.Count == 0)
@@ -295,7 +297,7 @@ public class BulkProductUpdateService : IBulkProductUpdateService
             }
             if (newValue > ProductService.MaxPrice)
             {
-                return (false, $"Price must be less than or equal to {ProductService.MaxPrice:N0}.");
+                return (false, $"Price must be less than {ProductService.MaxPrice + 0.01m:N0}.");
             }
         }
         else // Stock
