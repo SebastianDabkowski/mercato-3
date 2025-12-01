@@ -1,0 +1,3 @@
+SKU,Title,Description,Price,Stock,Category,Weight,Length,Width,Height,ShippingMethods
+SAMPLE-001,Sample Product 1,Description for sample product 1,29.99,100,Electronics,0.5,20,15,10,Standard;Express
+SAMPLE-002,Sample Product 2,Description for sample product 2,49.99,50,Clothing,0.3,30,25,5,Standard
