@@ -231,7 +231,7 @@
         
         <div class="col-lg-4">
             <!-- Product Info Sidebar -->
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">Product Info</h5>
                 </div>
@@ -245,6 +245,9 @@
                     </dl>
                 </div>
             </div>
+            
+            <!-- Recently Viewed Products -->
+            @await Component.InvokeAsync("RecentlyViewed", new { maxItems = 5, currentProductId = Model.Product.Id })
         </div>
     </div>
 }

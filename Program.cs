@@ -29,6 +29,9 @@ builder.Services.AddAntiforgery(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseInMemoryDatabase("MercatoDb"));
 
+// Add HTTP context accessor for cookie access
+builder.Services.AddHttpContextAccessor();
+
 // Add application services
 builder.Services.AddScoped<IPasswordValidationService, PasswordValidationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -55,6 +58,7 @@ builder.Services.AddScoped<IProductExportService, ProductExportService>();
 builder.Services.AddScoped<IBulkProductUpdateService, BulkProductUpdateService>();
 builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
 builder.Services.AddScoped<ISearchSuggestionService, SearchSuggestionService>();
+builder.Services.AddScoped<IRecentlyViewedService, RecentlyViewedService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Configure role-based authorization policies
@@ -153,6 +157,14 @@ if (!string.IsNullOrEmpty(facebookAppId) && !string.IsNullOrEmpty(facebookAppSec
 }
 
 var app = builder.Build();
+
+// Seed test data in development
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await TestDataSeeder.SeedTestDataAsync(context);
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

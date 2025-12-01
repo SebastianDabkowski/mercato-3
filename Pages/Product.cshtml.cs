@@ -9,13 +9,16 @@ public class ProductModel : PageModel
 {
     private readonly IProductService _productService;
     private readonly IProductVariantService _variantService;
+    private readonly IRecentlyViewedService _recentlyViewedService;
 
     public ProductModel(
         IProductService productService,
-        IProductVariantService variantService)
+        IProductVariantService variantService,
+        IRecentlyViewedService recentlyViewedService)
     {
         _productService = productService;
         _variantService = variantService;
+        _recentlyViewedService = recentlyViewedService;
     }
 
     public Product? Product { get; set; }
@@ -67,6 +70,11 @@ public class ProductModel : PageModel
                 ProductStatus.Draft => "This product is not yet available for viewing.",
                 _ => "This product is currently unavailable."
             };
+        }
+        else
+        {
+            // Track the product view only if the product is available
+            _recentlyViewedService.TrackProductView(id);
         }
 
         return Page();
