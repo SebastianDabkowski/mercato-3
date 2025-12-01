@@ -23,6 +23,17 @@ public class ProductImage
     public Product Product { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the variant ID this image is specific to.
+    /// If null, the image is for the main product.
+    /// </summary>
+    public int? VariantId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the variant this image is specific to (navigation property).
+    /// </summary>
+    public ProductVariant? Variant { get; set; }
+
+    /// <summary>
     /// Gets or sets the original file name of the uploaded image.
     /// </summary>
     [Required]

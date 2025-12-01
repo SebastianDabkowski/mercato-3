@@ -87,6 +87,26 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ProductImportResult> ProductImportResults { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the product variant attributes table.
+    /// </summary>
+    public DbSet<ProductVariantAttribute> ProductVariantAttributes { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the product variant attribute values table.
+    /// </summary>
+    public DbSet<ProductVariantAttributeValue> ProductVariantAttributeValues { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the product variants table.
+    /// </summary>
+    public DbSet<ProductVariant> ProductVariants { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the product variant options table.
+    /// </summary>
+    public DbSet<ProductVariantOption> ProductVariantOptions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -315,11 +335,20 @@ public class ApplicationDbContext : DbContext
             // Composite index for ordering images within a product
             entity.HasIndex(e => new { e.ProductId, e.DisplayOrder });
 
+            // Index on variant ID for finding images specific to a variant
+            entity.HasIndex(e => e.VariantId);
+
             // Configure relationship with Product
             entity.HasOne(e => e.Product)
                 .WithMany(p => p.Images)
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with Variant (optional)
+            entity.HasOne(e => e.Variant)
+                .WithMany(v => v.Images)
+                .HasForeignKey(e => e.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ProductImportJob>(entity =>
@@ -365,6 +394,79 @@ public class ApplicationDbContext : DbContext
                 .WithMany(j => j.Results)
                 .HasForeignKey(e => e.JobId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductVariantAttribute>(entity =>
+        {
+            // Index on product ID for finding all attributes for a product
+            entity.HasIndex(e => e.ProductId);
+
+            // Composite index for ordering attributes within a product
+            entity.HasIndex(e => new { e.ProductId, e.DisplayOrder });
+
+            // Configure relationship with Product
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.VariantAttributes)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductVariantAttributeValue>(entity =>
+        {
+            // Index on variant attribute ID for finding all values for an attribute
+            entity.HasIndex(e => e.VariantAttributeId);
+
+            // Composite index for ordering values within an attribute
+            entity.HasIndex(e => new { e.VariantAttributeId, e.DisplayOrder });
+
+            // Configure relationship with VariantAttribute
+            entity.HasOne(e => e.VariantAttribute)
+                .WithMany(a => a.Values)
+                .HasForeignKey(e => e.VariantAttributeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductVariant>(entity =>
+        {
+            // Index on product ID for finding all variants for a product
+            entity.HasIndex(e => e.ProductId);
+
+            // Index for finding enabled variants
+            entity.HasIndex(e => new { e.ProductId, e.IsEnabled });
+
+            // Composite unique index on ProductId and SKU (SKU must be unique within a product if set)
+            entity.HasIndex(e => new { e.ProductId, e.Sku });
+
+            // Configure relationship with Product
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.Variants)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure PriceOverride precision
+            entity.Property(e => e.PriceOverride)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<ProductVariantOption>(entity =>
+        {
+            // Index on product variant ID for finding all options for a variant
+            entity.HasIndex(e => e.ProductVariantId);
+
+            // Composite unique index - one attribute value per variant
+            entity.HasIndex(e => new { e.ProductVariantId, e.AttributeValueId }).IsUnique();
+
+            // Configure relationship with ProductVariant
+            entity.HasOne(e => e.ProductVariant)
+                .WithMany(v => v.Options)
+                .HasForeignKey(e => e.ProductVariantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with AttributeValue
+            entity.HasOne(e => e.AttributeValue)
+                .WithMany(av => av.VariantOptions)
+                .HasForeignKey(e => e.AttributeValueId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
