@@ -175,19 +175,18 @@ public class BulkProductUpdateService : IBulkProductUpdateService
             return result;
         }
 
-        if (request.Value < 0 && (request.Operation == BulkUpdateOperation.SetValue || 
-                                   request.Operation == BulkUpdateOperation.IncreaseBy))
+        if (request.Value < 0 && request.Operation == BulkUpdateOperation.SetValue)
         {
-            result.GeneralErrors.Add("Value cannot be negative for this operation.");
+            result.GeneralErrors.Add("Value cannot be negative when setting to a fixed value.");
             return result;
         }
 
         if (request.Operation == BulkUpdateOperation.IncreaseByPercent || 
             request.Operation == BulkUpdateOperation.DecreaseByPercent)
         {
-            if (request.Value < 0 || request.Value > 100)
+            if (request.Value < 0)
             {
-                result.GeneralErrors.Add("Percentage must be between 0 and 100.");
+                result.GeneralErrors.Add("Percentage cannot be negative.");
                 return result;
             }
         }
@@ -296,7 +295,7 @@ public class BulkProductUpdateService : IBulkProductUpdateService
             }
             if (newValue > ProductService.MaxPrice)
             {
-                return (false, $"Price must be less than {ProductService.MaxPrice + 0.01m:N0}.");
+                return (false, $"Price must be less than or equal to {ProductService.MaxPrice:N0}.");
             }
         }
         else // Stock
