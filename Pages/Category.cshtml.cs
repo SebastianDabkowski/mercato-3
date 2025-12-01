@@ -63,6 +63,11 @@ public class CategoryModel : PageModel
     /// </summary>
     public string GetPageUrl(int pageNumber)
     {
+        if (Category == null)
+        {
+            return "/";
+        }
+        
         var queryParams = new List<string>();
         
         queryParams.Add($"page={pageNumber}");
@@ -98,7 +103,7 @@ public class CategoryModel : PageModel
             }
         }
         
-        return $"/category/{Category?.Id}?{string.Join("&", queryParams)}";
+        return $"/category/{Category.Id}?{string.Join("&", queryParams)}";
     }
 
     public async Task<IActionResult> OnGetAsync(int id, int page = 1)
