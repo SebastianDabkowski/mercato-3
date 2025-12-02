@@ -146,7 +146,9 @@
                                 var requestIcon = request.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "exclamation-triangle" : "arrow-return-left";
                                 var messageCount = request.Messages?.Count ?? 0;
                                 var caseAge = (DateTime.UtcNow - request.RequestedAt).Days;
-                                var buyerAlias = $"{request.Buyer.FirstName} {request.Buyer.LastName.Substring(0, 1)}.";
+                                var buyerAlias = !string.IsNullOrEmpty(request.Buyer.LastName) && request.Buyer.LastName.Length > 0
+                                    ? $"{request.Buyer.FirstName} {request.Buyer.LastName.Substring(0, 1)}."
+                                    : request.Buyer.FirstName;
                                 var rowClass = request.Status == MercatoApp.Models.ReturnStatus.UnderAdminReview ? "table-warning" : "";
 
                                 <tr class="@rowClass">

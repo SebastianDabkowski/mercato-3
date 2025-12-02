@@ -709,6 +709,8 @@ public class ReturnRequestService : IReturnRequestService
             return (false, "Cannot escalate a completed case.");
         }
 
+        var previousStatus = returnRequest.Status;
+
         // Update the return request with escalation details
         returnRequest.Status = ReturnStatus.UnderAdminReview;
         returnRequest.EscalationReason = escalationReason;
@@ -728,7 +730,7 @@ public class ReturnRequestService : IReturnRequestService
                     : escalationReason == EscalationReason.AdminManualFlag
                         ? AdminActionType.ManualFlag
                         : AdminActionType.Escalated,
-                PreviousStatus = returnRequest.Status,
+                PreviousStatus = previousStatus,
                 NewStatus = ReturnStatus.UnderAdminReview,
                 Notes = adminNotes,
                 ActionTakenAt = DateTime.UtcNow,

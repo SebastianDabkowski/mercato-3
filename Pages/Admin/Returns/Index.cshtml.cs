@@ -99,13 +99,13 @@ public class IndexModel : PageModel
 
         if (!string.IsNullOrWhiteSpace(SearchQuery))
         {
-            var searchLower = SearchQuery.ToLower();
+            // Apply search filter - case insensitive comparison
             query = query.Where(rr =>
-                rr.ReturnNumber.ToLower().Contains(searchLower) ||
-                rr.Buyer.FirstName.ToLower().Contains(searchLower) ||
-                rr.Buyer.LastName.ToLower().Contains(searchLower) ||
-                rr.Buyer.Email.ToLower().Contains(searchLower) ||
-                rr.SubOrder.Store.StoreName.ToLower().Contains(searchLower));
+                EF.Functions.Like(rr.ReturnNumber, $"%{SearchQuery}%") ||
+                EF.Functions.Like(rr.Buyer.FirstName, $"%{SearchQuery}%") ||
+                EF.Functions.Like(rr.Buyer.LastName, $"%{SearchQuery}%") ||
+                EF.Functions.Like(rr.Buyer.Email, $"%{SearchQuery}%") ||
+                EF.Functions.Like(rr.SubOrder.Store.StoreName, $"%{SearchQuery}%"));
         }
 
         ReturnRequests = await query
