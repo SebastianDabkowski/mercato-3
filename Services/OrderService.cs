@@ -169,14 +169,16 @@ public class OrderService : IOrderService
     {
         // Generate a unique order number in format: ORD-YYYYMMDD-XXXXX
         var date = DateTime.UtcNow.ToString("yyyyMMdd");
-        var random = new Random();
         
         string orderNumber;
         bool isUnique;
         
         do
         {
-            var sequence = random.Next(10000, 99999);
+            // Use cryptographically secure random number generation
+            var randomBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(4);
+            var randomNumber = BitConverter.ToUInt32(randomBytes, 0);
+            var sequence = (randomNumber % 90000) + 10000; // Generate number between 10000 and 99999
             orderNumber = $"ORD-{date}-{sequence}";
             
             // Check if this order number already exists
