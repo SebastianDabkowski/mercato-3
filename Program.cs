@@ -243,6 +243,9 @@ if (app.Environment.IsDevelopment())
     // Run seller reputation test scenario
     var reputationService = scope.ServiceProvider.GetRequiredService<ISellerReputationService>();
     await SellerReputationTestScenario.RunTestAsync(context, reputationService);
+
+    // Run comprehensive reputation test with sample data
+    await SellerReputationComprehensiveTest.RunTestAsync(context, reputationService);
 }
 
 // Configure the HTTP request pipeline.
