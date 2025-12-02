@@ -27,6 +27,7 @@ public class ConfirmationModel : PageModel
     public Order? Order { get; set; }
     public PaymentTransaction? LatestPaymentTransaction { get; set; }
     public bool EmailSent { get; set; }
+    public List<SellerSubOrder> SubOrders { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(int orderId)
     {
@@ -37,6 +38,9 @@ public class ConfirmationModel : PageModel
             TempData["ErrorMessage"] = "Order not found.";
             return RedirectToPage("/Index");
         }
+
+        // Get sub-orders for this order
+        SubOrders = await _orderService.GetSubOrdersByParentOrderIdAsync(orderId);
 
         // Get the latest payment transaction for this order
         if (Order.PaymentTransactions.Any())

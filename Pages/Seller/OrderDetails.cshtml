@@ -1,0 +1,260 @@
+@page
+@model MercatoApp.Pages.Seller.OrderDetailsModel
+@{
+    ViewData["Title"] = "Order Details - Seller Panel";
+}
+
+<div class="container-fluid my-4">
+    @if (Model.SubOrder != null)
+    {
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a asp-page="/Seller/Orders">Orders</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">@Model.SubOrder.SubOrderNumber</li>
+                    </ol>
+                </nav>
+                <h1 class="mb-3">
+                    <i class="bi bi-box-seam"></i> Order Details
+                </h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Sub-Order #@Model.SubOrder.SubOrderNumber</h5>
+                            @if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Pending)
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-hourglass-split"></i> Pending
+                                </span>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Processing)
+                            {
+                                <span class="badge bg-info">
+                                    <i class="bi bi-box-seam"></i> Processing
+                                </span>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Shipped)
+                            {
+                                <span class="badge bg-light text-dark">
+                                    <i class="bi bi-truck"></i> Shipped
+                                </span>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Delivered)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Delivered
+                                </span>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Cancelled)
+                            {
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelled
+                                </span>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Refunded)
+                            {
+                                <span class="badge bg-dark">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Refunded
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6>Order Information</h6>
+                                <p class="text-muted mb-1">
+                                    <strong>Created:</strong> @Model.SubOrder.CreatedAt.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                </p>
+                                <p class="text-muted mb-1">
+                                    <strong>Parent Order:</strong> @Model.SubOrder.ParentOrder.OrderNumber
+                                </p>
+                                <p class="text-muted mb-0">
+                                    <strong>Payment Status:</strong>
+                                    @if (Model.SubOrder.ParentOrder.PaymentStatus == MercatoApp.Models.PaymentStatus.Completed)
+                                    {
+                                        <span class="badge bg-success">Paid</span>
+                                    }
+                                    else if (Model.SubOrder.ParentOrder.PaymentStatus == MercatoApp.Models.PaymentStatus.Authorized)
+                                    {
+                                        <span class="badge bg-info">Authorized</span>
+                                    }
+                                    else if (Model.SubOrder.ParentOrder.PaymentStatus == MercatoApp.Models.PaymentStatus.Pending)
+                                    {
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    }
+                                    else if (Model.SubOrder.ParentOrder.PaymentStatus == MercatoApp.Models.PaymentStatus.Failed)
+                                    {
+                                        <span class="badge bg-danger">Failed</span>
+                                    }
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Shipping Method</h6>
+                                @if (Model.SubOrder.ShippingMethod != null)
+                                {
+                                    <p class="text-muted mb-1">
+                                        <strong>@Model.SubOrder.ShippingMethod.Name</strong>
+                                    </p>
+                                    @if (!string.IsNullOrEmpty(Model.SubOrder.ShippingMethod.EstimatedDelivery))
+                                    {
+                                        <p class="text-muted mb-1">
+                                            <small>Est. Delivery: @Model.SubOrder.ShippingMethod.EstimatedDelivery</small>
+                                        </p>
+                                    }
+                                    <p class="text-muted mb-0">
+                                        <small>Cost: @Model.SubOrder.ShippingCost.ToString("C")</small>
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="text-muted">No shipping method selected</p>
+                                }
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <h6 class="mb-3">Order Items</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th class="text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.SubOrder.Items)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@item.ProductTitle</strong>
+                                                @if (!string.IsNullOrEmpty(item.VariantDescription))
+                                                {
+                                                    <br/><small class="text-muted">@item.VariantDescription</small>
+                                                }
+                                            </td>
+                                            <td>@item.Quantity</td>
+                                            <td>@item.UnitPrice.ToString("C")</td>
+                                            <td class="text-end">@item.Subtotal.ToString("C")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Items Subtotal:</strong></td>
+                                        <td class="text-end">@Model.SubOrder.Subtotal.ToString("C")</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Shipping:</strong></td>
+                                        <td class="text-end">@Model.SubOrder.ShippingCost.ToString("C")</td>
+                                    </tr>
+                                    <tr class="table-primary">
+                                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                        <td class="text-end"><strong>@Model.SubOrder.TotalAmount.ToString("C")</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person"></i> Customer
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.SubOrder.ParentOrder.User != null)
+                        {
+                            <p class="mb-1">
+                                <strong>@Model.SubOrder.ParentOrder.User.FirstName @Model.SubOrder.ParentOrder.User.LastName</strong>
+                            </p>
+                            <p class="text-muted small mb-0">
+                                <i class="bi bi-envelope"></i> @Model.SubOrder.ParentOrder.User.Email
+                            </p>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.SubOrder.ParentOrder.GuestEmail))
+                        {
+                            <p class="mb-1">
+                                <strong>Guest Customer</strong>
+                            </p>
+                            <p class="text-muted small mb-0">
+                                <i class="bi bi-envelope"></i> @Model.SubOrder.ParentOrder.GuestEmail
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="text-muted">Unknown customer</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-geo-alt"></i> Delivery Address
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.SubOrder.ParentOrder.DeliveryAddress != null)
+                        {
+                            <address class="mb-0">
+                                <strong>@Model.SubOrder.ParentOrder.DeliveryAddress.FullName</strong><br />
+                                @Model.SubOrder.ParentOrder.DeliveryAddress.AddressLine1<br />
+                                @if (!string.IsNullOrEmpty(Model.SubOrder.ParentOrder.DeliveryAddress.AddressLine2))
+                                {
+                                    @Model.SubOrder.ParentOrder.DeliveryAddress.AddressLine2<br />
+                                }
+                                @Model.SubOrder.ParentOrder.DeliveryAddress.City@(!string.IsNullOrEmpty(Model.SubOrder.ParentOrder.DeliveryAddress.StateProvince) ? $", {Model.SubOrder.ParentOrder.DeliveryAddress.StateProvince}" : "") @Model.SubOrder.ParentOrder.DeliveryAddress.PostalCode<br />
+                                @Model.SubOrder.ParentOrder.DeliveryAddress.CountryCode<br />
+                                <br />
+                                <i class="bi bi-telephone"></i> @Model.SubOrder.ParentOrder.DeliveryAddress.PhoneNumber
+                            </address>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No delivery address</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-check"></i> Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary" disabled>
+                                <i class="bi bi-printer"></i> Print Packing Slip
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" disabled>
+                                <i class="bi bi-pencil"></i> Update Status
+                            </button>
+                            <button type="button" class="btn btn-outline-info" disabled>
+                                <i class="bi bi-tag"></i> Add Tracking
+                            </button>
+                        </div>
+                        <p class="text-muted small mt-3 mb-0">
+                            <i class="bi bi-info-circle"></i> Advanced order management features coming soon.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

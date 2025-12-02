@@ -24,6 +24,16 @@ public class OrderItem
     public Order Order { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the seller sub-order ID that this item belongs to.
+    /// </summary>
+    public int? SellerSubOrderId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the seller sub-order (navigation property).
+    /// </summary>
+    public SellerSubOrder? SellerSubOrder { get; set; }
+
+    /// <summary>
     /// Gets or sets the store ID (seller).
     /// </summary>
     public int StoreId { get; set; }

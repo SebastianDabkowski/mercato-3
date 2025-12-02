@@ -55,4 +55,25 @@ public interface IOrderService
     /// <param name="sessionId">The session ID (for guest).</param>
     /// <returns>An order validation result containing any stock or price issues.</returns>
     Task<OrderValidationResult> ValidateCartForOrderAsync(int? userId, string? sessionId);
+
+    /// <summary>
+    /// Gets all seller sub-orders for a parent order.
+    /// </summary>
+    /// <param name="parentOrderId">The parent order ID.</param>
+    /// <returns>A list of seller sub-orders.</returns>
+    Task<List<SellerSubOrder>> GetSubOrdersByParentOrderIdAsync(int parentOrderId);
+
+    /// <summary>
+    /// Gets all seller sub-orders for a specific store/seller.
+    /// </summary>
+    /// <param name="storeId">The store ID.</param>
+    /// <returns>A list of seller sub-orders for the store.</returns>
+    Task<List<SellerSubOrder>> GetSubOrdersByStoreIdAsync(int storeId);
+
+    /// <summary>
+    /// Gets a specific seller sub-order by its ID.
+    /// </summary>
+    /// <param name="subOrderId">The sub-order ID.</param>
+    /// <returns>The seller sub-order, or null if not found.</returns>
+    Task<SellerSubOrder?> GetSubOrderByIdAsync(int subOrderId);
 }
