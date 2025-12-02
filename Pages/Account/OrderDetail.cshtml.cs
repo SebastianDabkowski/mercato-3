@@ -16,17 +16,20 @@ public class OrderDetailModel : PageModel
     private readonly IOrderService _orderService;
     private readonly IReturnRequestService _returnRequestService;
     private readonly IProductReviewService _reviewService;
+    private readonly ISellerRatingService _sellerRatingService;
     private readonly ILogger<OrderDetailModel> _logger;
 
     public OrderDetailModel(
         IOrderService orderService,
         IReturnRequestService returnRequestService,
         IProductReviewService reviewService,
+        ISellerRatingService sellerRatingService,
         ILogger<OrderDetailModel> logger)
     {
         _orderService = orderService;
         _returnRequestService = returnRequestService;
         _reviewService = reviewService;
+        _sellerRatingService = sellerRatingService;
         _logger = logger;
     }
 
@@ -55,6 +58,12 @@ public class OrderDetailModel : PageModel
     /// Key is OrderItemId, value is the review.
     /// </summary>
     public Dictionary<int, ProductReview> ExistingReviews { get; set; } = new Dictionary<int, ProductReview>();
+
+    /// <summary>
+    /// Gets or sets the seller ratings that the user has already submitted for sub-orders.
+    /// Key is SellerSubOrderId, value is the rating.
+    /// </summary>
+    public Dictionary<int, SellerRating> ExistingSellerRatings { get; set; } = new Dictionary<int, SellerRating>();
 
     /// <summary>
     /// Handles GET request to display order details.
@@ -99,6 +108,13 @@ public class OrderDetailModel : PageModel
                     // Could enhance to load the actual review if needed for display
                     ExistingReviews[item.Id] = new ProductReview { OrderItemId = item.Id };
                 }
+            }
+
+            // Load existing seller rating for this sub-order
+            var hasSellerRating = await _sellerRatingService.HasUserRatedSubOrderAsync(userId, subOrder.Id);
+            if (hasSellerRating)
+            {
+                ExistingSellerRatings[subOrder.Id] = new SellerRating { SellerSubOrderId = subOrder.Id };
             }
         }
 
@@ -228,6 +244,46 @@ public class OrderDetailModel : PageModel
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Failed to submit review for order item {OrderItemId}", orderItemId);
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToPage(new { orderId });
+        }
+    }
+
+    /// <summary>
+    /// Handles POST request to submit a seller rating.
+    /// </summary>
+    /// <param name="sellerSubOrderId">The seller sub-order ID being rated.</param>
+    /// <param name="orderId">The parent order ID for redirect.</param>
+    /// <param name="rating">The rating (1-5 stars).</param>
+    /// <returns>The page result.</returns>
+    public async Task<IActionResult> OnPostSubmitSellerRatingAsync(
+        int sellerSubOrderId,
+        int orderId,
+        int rating)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("User ID claim not found or invalid");
+            return RedirectToPage("/Account/Login");
+        }
+
+        // Validate rating
+        if (rating < 1 || rating > 5)
+        {
+            TempData["ErrorMessage"] = "Rating must be between 1 and 5 stars.";
+            return RedirectToPage(new { orderId });
+        }
+
+        try
+        {
+            var sellerRating = await _sellerRatingService.SubmitRatingAsync(userId, sellerSubOrderId, rating);
+            TempData["SuccessMessage"] = "Thank you for rating the seller!";
+            return RedirectToPage(new { orderId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to submit seller rating for sub-order {SubOrderId}", sellerSubOrderId);
             TempData["ErrorMessage"] = ex.Message;
             return RedirectToPage(new { orderId });
         }

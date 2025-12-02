@@ -287,6 +287,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ProductReview> ProductReviews { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the seller ratings table.
+    /// </summary>
+    public DbSet<SellerRating> SellerRatings { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
