@@ -114,4 +114,10 @@ public class Order
     /// Gets or sets the payment transactions for this order (navigation property).
     /// </summary>
     public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
+
+    /// <summary>
+    /// Gets or sets the seller sub-orders for this parent order (navigation property).
+    /// Each sub-order represents a seller-specific portion of the order.
+    /// </summary>
+    public ICollection<SellerSubOrder> SubOrders { get; set; } = new List<SellerSubOrder>();
 }

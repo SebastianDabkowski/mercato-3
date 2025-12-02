@@ -155,29 +155,56 @@ public class OrderService : IOrderService
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            // Create order items from cart items with stable snapshot of prices and quantities
+            // Create seller sub-orders and order items from cart items
+            int sellerSequence = 1;
             foreach (var sellerGroup in itemsBySeller)
             {
                 var store = sellerGroup.Key;
                 var items = sellerGroup.Value;
 
-                // Create order shipping method record
+                // Calculate totals for this seller's sub-order
+                decimal sellerSubtotal = items.Sum(i => i.PriceAtAdd * i.Quantity);
+                decimal sellerShippingCost = 0;
+                int? shippingMethodId = null;
+
+                // Get shipping cost for this seller
                 if (selectedShippingMethods.ContainsKey(store.Id))
                 {
-                    var shippingMethodId = selectedShippingMethods[store.Id];
-                    var shippingCost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethodId, items);
+                    shippingMethodId = selectedShippingMethods[store.Id];
+                    sellerShippingCost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethodId.Value, items);
                     
+                    // Create order shipping method record (for backward compatibility)
                     var orderShippingMethod = new OrderShippingMethod
                     {
                         OrderId = order.Id,
                         StoreId = store.Id,
-                        ShippingMethodId = shippingMethodId,
-                        ShippingCost = shippingCost
+                        ShippingMethodId = shippingMethodId.Value,
+                        ShippingCost = sellerShippingCost
                     };
 
                     _context.OrderShippingMethods.Add(orderShippingMethod);
                 }
 
+                // Create seller sub-order
+                var subOrderNumber = $"{orderNumber}-{sellerSequence}";
+                var sellerSubOrder = new SellerSubOrder
+                {
+                    ParentOrderId = order.Id,
+                    StoreId = store.Id,
+                    SubOrderNumber = subOrderNumber,
+                    Status = OrderStatus.Pending,
+                    Subtotal = sellerSubtotal,
+                    ShippingCost = sellerShippingCost,
+                    TotalAmount = sellerSubtotal + sellerShippingCost,
+                    ShippingMethodId = shippingMethodId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.SellerSubOrders.Add(sellerSubOrder);
+                await _context.SaveChangesAsync(); // Save to get the sub-order ID
+
+                // Create order items and link to sub-order
                 foreach (var cartItem in items)
                 {
                     var variantDescription = string.Empty;
@@ -191,6 +218,7 @@ public class OrderService : IOrderService
                     var orderItem = new OrderItem
                     {
                         OrderId = order.Id,
+                        SellerSubOrderId = sellerSubOrder.Id,
                         StoreId = store.Id,
                         ProductId = cartItem.ProductId,
                         ProductVariantId = cartItem.ProductVariantId,
@@ -224,6 +252,8 @@ public class OrderService : IOrderService
                         }
                     }
                 }
+
+                sellerSequence++;
             }
 
             await _context.SaveChangesAsync();
@@ -264,6 +294,13 @@ public class OrderService : IOrderService
                 .ThenInclude(sm => sm.ShippingMethod)
             .Include(o => o.ShippingMethods)
                 .ThenInclude(sm => sm.Store)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.Store)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.Items)
+                    .ThenInclude(i => i.Product)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.ShippingMethod)
             .FirstOrDefaultAsync(o => o.Id == orderId);
     }
 
@@ -457,5 +494,58 @@ public class OrderService : IOrderService
         while (!isUnique);
 
         return orderNumber;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<SellerSubOrder>> GetSubOrdersByParentOrderIdAsync(int parentOrderId)
+    {
+        return await _context.SellerSubOrders
+            .Include(so => so.Store)
+            .Include(so => so.Items)
+                .ThenInclude(i => i.Product)
+            .Include(so => so.Items)
+                .ThenInclude(i => i.ProductVariant)
+            .Include(so => so.ShippingMethod)
+            .Where(so => so.ParentOrderId == parentOrderId)
+            .OrderBy(so => so.SubOrderNumber)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<SellerSubOrder>> GetSubOrdersByStoreIdAsync(int storeId)
+    {
+        return await _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.DeliveryAddress)
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.User)
+            .Include(so => so.Store)
+            .Include(so => so.Items)
+                .ThenInclude(i => i.Product)
+            .Include(so => so.Items)
+                .ThenInclude(i => i.ProductVariant)
+            .Include(so => so.ShippingMethod)
+            .Where(so => so.StoreId == storeId)
+            .OrderByDescending(so => so.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<SellerSubOrder?> GetSubOrderByIdAsync(int subOrderId)
+    {
+        return await _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.DeliveryAddress)
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.User)
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.PaymentTransactions)
+            .Include(so => so.Store)
+            .Include(so => so.Items)
+                .ThenInclude(i => i.Product)
+            .Include(so => so.Items)
+                .ThenInclude(i => i.ProductVariant)
+            .Include(so => so.ShippingMethod)
+            .FirstOrDefaultAsync(so => so.Id == subOrderId);
     }
 }

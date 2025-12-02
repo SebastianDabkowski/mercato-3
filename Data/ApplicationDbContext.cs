@@ -143,6 +143,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<OrderItem> OrderItems { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the seller sub-orders table.
+    /// </summary>
+    public DbSet<SellerSubOrder> SellerSubOrders { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the shipping methods table.
     /// </summary>
     public DbSet<ShippingMethod> ShippingMethods { get; set; } = null!;
@@ -700,11 +705,63 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.ProductVariantId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Configure relationship with SellerSubOrder (optional)
+            entity.HasOne(e => e.SellerSubOrder)
+                .WithMany(s => s.Items)
+                .HasForeignKey(e => e.SellerSubOrderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Configure decimal precision
             entity.Property(e => e.UnitPrice)
                 .HasPrecision(18, 2);
 
             entity.Property(e => e.Subtotal)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<SellerSubOrder>(entity =>
+        {
+            // Index on parent order ID for finding all sub-orders
+            entity.HasIndex(e => e.ParentOrderId);
+
+            // Index on store ID for finding sub-orders by seller
+            entity.HasIndex(e => e.StoreId);
+
+            // Index on sub-order number for fast lookups
+            entity.HasIndex(e => e.SubOrderNumber).IsUnique();
+
+            // Composite index for filtering seller's sub-orders by status
+            entity.HasIndex(e => new { e.StoreId, e.Status });
+
+            // Composite index for ordering seller's sub-orders by date
+            entity.HasIndex(e => new { e.StoreId, e.CreatedAt });
+
+            // Configure relationship with Parent Order
+            entity.HasOne(e => e.ParentOrder)
+                .WithMany(o => o.SubOrders)
+                .HasForeignKey(e => e.ParentOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with ShippingMethod (optional)
+            entity.HasOne(e => e.ShippingMethod)
+                .WithMany()
+                .HasForeignKey(e => e.ShippingMethodId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure decimal precision
+            entity.Property(e => e.Subtotal)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.ShippingCost)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.TotalAmount)
                 .HasPrecision(18, 2);
         });
 
