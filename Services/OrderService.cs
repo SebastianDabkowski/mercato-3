@@ -666,6 +666,7 @@ public class OrderService : IOrderService
             .Include(so => so.Items)
                 .ThenInclude(i => i.ProductVariant)
             .Include(so => so.ShippingMethod)
+            .Include(so => so.StatusHistory.OrderByDescending(h => h.ChangedAt))
             .FirstOrDefaultAsync(so => so.Id == subOrderId);
     }
 

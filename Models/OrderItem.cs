@@ -94,4 +94,9 @@ public class OrderItem
     /// </summary>
     [Required]
     public decimal Subtotal { get; set; }
+
+    /// <summary>
+    /// Gets or sets the tax amount for this item.
+    /// </summary>
+    public decimal TaxAmount { get; set; } = 0;
 }

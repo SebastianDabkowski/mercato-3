@@ -172,6 +172,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<PromoCode> PromoCodes { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the order status history table.
+    /// </summary>
+    public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -717,6 +722,9 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.Subtotal)
                 .HasPrecision(18, 2);
+
+            entity.Property(e => e.TaxAmount)
+                .HasPrecision(18, 2);
         });
 
         modelBuilder.Entity<SellerSubOrder>(entity =>
@@ -804,6 +812,27 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.MaximumDiscountAmount)
                 .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<OrderStatusHistory>(entity =>
+        {
+            // Index on sub-order ID for finding history
+            entity.HasIndex(e => e.SellerSubOrderId);
+
+            // Composite index for ordering history by date
+            entity.HasIndex(e => new { e.SellerSubOrderId, e.ChangedAt });
+
+            // Configure relationship with SellerSubOrder
+            entity.HasOne(e => e.SellerSubOrder)
+                .WithMany(s => s.StatusHistory)
+                .HasForeignKey(e => e.SellerSubOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure optional relationship with User
+            entity.HasOne(e => e.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ChangedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

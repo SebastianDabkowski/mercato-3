@@ -85,6 +85,13 @@ public class Address
     public bool IsDefault { get; set; }
 
     /// <summary>
+    /// Gets or sets delivery instructions for this address (optional).
+    /// Examples: "Leave at front door", "Ring doorbell", "Call upon arrival"
+    /// </summary>
+    [MaxLength(500)]
+    public string? DeliveryInstructions { get; set; }
+
+    /// <summary>
     /// Gets or sets the date and time when the address was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
