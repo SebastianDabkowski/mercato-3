@@ -32,7 +32,7 @@ public class SellerDashboardService : ISellerDashboardService
         try
         {
             // Ensure end date includes the entire day
-            var endDateTime = endDate.Date.AddDays(1).AddTicks(-1);
+            var endDateTime = GetEndOfDay(endDate);
             var startDateTime = startDate.Date;
 
             // Build base query for order items belonging to this seller
@@ -90,6 +90,27 @@ public class SellerDashboardService : ISellerDashboardService
     }
 
     /// <summary>
+    /// Gets the end of day for a given date (23:59:59.9999999).
+    /// </summary>
+    private static DateTime GetEndOfDay(DateTime date)
+    {
+        return date.Date.AddDays(1).AddTicks(-1);
+    }
+
+    /// <summary>
+    /// Gets the start of the week (Monday) for a given date.
+    /// </summary>
+    private static DateTime GetWeekStart(DateTime date)
+    {
+        // Calculate days to subtract to get to Monday
+        // Sunday = 0, so we subtract 6 to get previous Monday
+        // Monday-Saturday = 1-6, so we subtract (dayOfWeek - 1)
+        var dayOfWeek = (int)date.DayOfWeek;
+        var daysToSubtract = dayOfWeek == 0 ? 6 : dayOfWeek - 1;
+        return date.AddDays(-daysToSubtract).Date;
+    }
+
+    /// <summary>
     /// Generates time series data points based on the specified granularity.
     /// </summary>
     private List<TimeSeriesDataPoint> GenerateTimeSeriesData(
@@ -109,27 +130,27 @@ public class SellerDashboardService : ISellerDashboardService
             switch (granularity)
             {
                 case TimeGranularity.Day:
-                    periodEnd = currentDate.AddDays(1).AddTicks(-1);
+                    periodEnd = GetEndOfDay(currentDate);
                     label = currentDate.ToString("MMM dd");
                     break;
 
                 case TimeGranularity.Week:
                     // Start week on Monday
-                    var weekStart = currentDate.AddDays(-(int)currentDate.DayOfWeek + (currentDate.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
-                    periodEnd = weekStart.AddDays(7).AddTicks(-1);
+                    var weekStart = GetWeekStart(currentDate);
+                    periodEnd = GetEndOfDay(weekStart.AddDays(6));
                     label = $"Week of {weekStart:MMM dd}";
                     currentDate = weekStart;
                     break;
 
                 case TimeGranularity.Month:
                     var monthStart = new DateTime(currentDate.Year, currentDate.Month, 1);
-                    periodEnd = monthStart.AddMonths(1).AddTicks(-1);
+                    periodEnd = GetEndOfDay(monthStart.AddMonths(1).AddDays(-1));
                     label = monthStart.ToString("MMMM yyyy");
                     currentDate = monthStart;
                     break;
 
                 default:
-                    periodEnd = currentDate.AddDays(1).AddTicks(-1);
+                    periodEnd = GetEndOfDay(currentDate);
                     label = currentDate.ToString("MMM dd");
                     break;
             }

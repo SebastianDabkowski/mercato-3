@@ -255,8 +255,13 @@ public class DashboardModel : PageModel
         });
 
         // Load categories that have products from this store
-        var categories = await _context.Categories
-            .Where(c => _context.Products.Any(p => p.StoreId == storeId && p.CategoryId == c.Id))
+        var categories = await _context.Products
+            .Where(p => p.StoreId == storeId && p.CategoryId != null)
+            .Join(_context.Categories,
+                p => p.CategoryId,
+                c => c.Id,
+                (p, c) => c)
+            .Distinct()
             .OrderBy(c => c.Name)
             .Select(c => new { c.Id, c.Name })
             .ToListAsync();
