@@ -96,6 +96,7 @@ builder.Services.AddScoped<IReviewModerationService, ReviewModerationService>();
 builder.Services.AddScoped<ISellerRatingService, SellerRatingService>();
 builder.Services.AddScoped<ISellerReputationService, SellerReputationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IProductQuestionService, ProductQuestionService>();
 builder.Services.AddScoped<IOrderMessageService, OrderMessageService>();
 

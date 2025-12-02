@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="~/MercatoApp.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div data-authenticated hidden></div>
+    }
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
@@ -106,10 +110,19 @@
         </div>
     </footer>
 
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @await Html.PartialAsync("_PushNotificationBanner")
+    }
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/search-suggestions.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script src="~/js/push-notifications.js" asp-append-version="true"></script>
+    }
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

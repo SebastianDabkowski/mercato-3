@@ -11,13 +11,16 @@ public class NotificationService : INotificationService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<NotificationService> _logger;
+    private readonly IPushNotificationService? _pushNotificationService;
 
     public NotificationService(
         ApplicationDbContext context,
-        ILogger<NotificationService> logger)
+        ILogger<NotificationService> logger,
+        IPushNotificationService? pushNotificationService = null)
     {
         _context = context;
         _logger = logger;
+        _pushNotificationService = pushNotificationService;
     }
 
     /// <inheritdoc />
@@ -51,6 +54,31 @@ public class NotificationService : INotificationService
             notification.Id,
             type,
             userId);
+
+        // Send push notification if service is available
+        if (_pushNotificationService != null)
+        {
+            try
+            {
+                await _pushNotificationService.SendPushNotificationAsync(
+                    userId,
+                    title,
+                    message,
+                    relatedUrl);
+
+                _logger.LogDebug(
+                    "Push notification sent for notification {NotificationId}",
+                    notification.Id);
+            }
+            catch (Exception ex)
+            {
+                // Don't fail the notification creation if push fails
+                _logger.LogWarning(
+                    ex,
+                    "Failed to send push notification for notification {NotificationId}",
+                    notification.Id);
+            }
+        }
 
         return notification;
     }
