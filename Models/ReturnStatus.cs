@@ -28,5 +28,10 @@ public enum ReturnStatus
     /// <summary>
     /// Return case has been resolved with a final decision.
     /// </summary>
-    Resolved
+    Resolved,
+
+    /// <summary>
+    /// Case has been escalated for admin review due to conflict or policy violation.
+    /// </summary>
+    UnderAdminReview
 }

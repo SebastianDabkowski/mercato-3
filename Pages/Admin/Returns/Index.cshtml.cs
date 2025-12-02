@@ -48,6 +48,12 @@ public class IndexModel : PageModel
     public int? StoreFilter { get; set; }
 
     /// <summary>
+    /// Gets or sets the search query for case number, buyer name, or seller name.
+    /// </summary>
+    [BindProperty(SupportsGet = true)]
+    public string? SearchQuery { get; set; }
+
+    /// <summary>
     /// Gets or sets available stores for filtering.
     /// </summary>
     public List<Store> AvailableStores { get; set; } = new();
@@ -89,6 +95,17 @@ public class IndexModel : PageModel
         if (StoreFilter.HasValue)
         {
             query = query.Where(rr => rr.SubOrder.StoreId == StoreFilter.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            var searchLower = SearchQuery.ToLower();
+            query = query.Where(rr =>
+                rr.ReturnNumber.ToLower().Contains(searchLower) ||
+                rr.Buyer.FirstName.ToLower().Contains(searchLower) ||
+                rr.Buyer.LastName.ToLower().Contains(searchLower) ||
+                rr.Buyer.Email.ToLower().Contains(searchLower) ||
+                rr.SubOrder.Store.StoreName.ToLower().Contains(searchLower));
         }
 
         ReturnRequests = await query

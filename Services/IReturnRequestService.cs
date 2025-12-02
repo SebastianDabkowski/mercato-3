@@ -133,4 +133,45 @@ public interface IReturnRequestService
     /// <param name="returnRequestId">The return request ID.</param>
     /// <returns>A tuple indicating if the resolution can be changed and an error message if not.</returns>
     Task<(bool CanChange, string? ErrorMessage)> CanChangeResolutionAsync(int returnRequestId);
+
+    /// <summary>
+    /// Escalates a return/complaint case for admin review.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="escalationReason">The reason for escalation.</param>
+    /// <param name="escalatedByUserId">The user ID who initiated the escalation.</param>
+    /// <param name="adminNotes">Optional notes about the escalation.</param>
+    /// <returns>A tuple indicating success and error message if any.</returns>
+    Task<(bool Success, string? ErrorMessage)> EscalateReturnCaseAsync(
+        int returnRequestId,
+        EscalationReason escalationReason,
+        int escalatedByUserId,
+        string? adminNotes = null);
+
+    /// <summary>
+    /// Records an admin decision on an escalated case.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="adminUserId">The admin user ID making the decision.</param>
+    /// <param name="actionType">The type of admin action.</param>
+    /// <param name="notes">Required notes explaining the decision.</param>
+    /// <param name="newStatus">The new status to set (optional, depends on action type).</param>
+    /// <param name="resolutionType">The resolution type if enforcing a resolution.</param>
+    /// <param name="resolutionAmount">The resolution amount if enforcing a refund.</param>
+    /// <returns>A tuple indicating success, error message, and the updated return request.</returns>
+    Task<(bool Success, string? ErrorMessage, ReturnRequest? ReturnRequest)> RecordAdminDecisionAsync(
+        int returnRequestId,
+        int adminUserId,
+        AdminActionType actionType,
+        string notes,
+        ReturnStatus? newStatus = null,
+        ResolutionType? resolutionType = null,
+        decimal? resolutionAmount = null);
+
+    /// <summary>
+    /// Gets all admin actions for a specific return request.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <returns>A list of admin actions ordered by date.</returns>
+    Task<List<ReturnRequestAdminAction>> GetAdminActionsAsync(int returnRequestId);
 }

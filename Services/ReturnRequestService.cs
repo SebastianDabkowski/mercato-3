@@ -679,4 +679,213 @@ public class ReturnRequestService : IReturnRequestService
 
         return (true, null);
     }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage)> EscalateReturnCaseAsync(
+        int returnRequestId,
+        EscalationReason escalationReason,
+        int escalatedByUserId,
+        string? adminNotes = null)
+    {
+        var returnRequest = await _context.ReturnRequests
+            .Include(rr => rr.SubOrder)
+                .ThenInclude(so => so.Store)
+            .Include(rr => rr.Buyer)
+            .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
+
+        if (returnRequest == null)
+        {
+            return (false, "Return request not found.");
+        }
+
+        // Validate that case is in a state that can be escalated
+        if (returnRequest.Status == ReturnStatus.UnderAdminReview)
+        {
+            return (false, "Case is already under admin review.");
+        }
+
+        if (returnRequest.Status == ReturnStatus.Completed)
+        {
+            return (false, "Cannot escalate a completed case.");
+        }
+
+        // Update the return request with escalation details
+        returnRequest.Status = ReturnStatus.UnderAdminReview;
+        returnRequest.EscalationReason = escalationReason;
+        returnRequest.EscalatedAt = DateTime.UtcNow;
+        returnRequest.EscalatedByUserId = escalatedByUserId;
+        returnRequest.UpdatedAt = DateTime.UtcNow;
+
+        // Create an admin action record if notes provided
+        if (!string.IsNullOrWhiteSpace(adminNotes))
+        {
+            var adminAction = new ReturnRequestAdminAction
+            {
+                ReturnRequestId = returnRequestId,
+                AdminUserId = escalatedByUserId,
+                ActionType = escalationReason == EscalationReason.SLABreach
+                    ? AdminActionType.EscalatedSLABreach
+                    : escalationReason == EscalationReason.AdminManualFlag
+                        ? AdminActionType.ManualFlag
+                        : AdminActionType.Escalated,
+                PreviousStatus = returnRequest.Status,
+                NewStatus = ReturnStatus.UnderAdminReview,
+                Notes = adminNotes,
+                ActionTakenAt = DateTime.UtcNow,
+                NotificationsSent = false
+            };
+            _context.ReturnRequestAdminActions.Add(adminAction);
+        }
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Return request {ReturnRequestId} escalated by user {UserId} with reason {Reason}",
+            returnRequestId, escalatedByUserId, escalationReason);
+
+        return (true, null);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage, ReturnRequest? ReturnRequest)> RecordAdminDecisionAsync(
+        int returnRequestId,
+        int adminUserId,
+        AdminActionType actionType,
+        string notes,
+        ReturnStatus? newStatus = null,
+        ResolutionType? resolutionType = null,
+        decimal? resolutionAmount = null)
+    {
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            return (false, "Admin decision notes are required.", null);
+        }
+
+        var returnRequest = await _context.ReturnRequests
+            .Include(rr => rr.SubOrder)
+                .ThenInclude(so => so.Store)
+            .Include(rr => rr.Buyer)
+            .Include(rr => rr.Items)
+                .ThenInclude(ri => ri.OrderItem)
+            .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
+
+        if (returnRequest == null)
+        {
+            return (false, "Return request not found.", null);
+        }
+
+        var previousStatus = returnRequest.Status;
+
+        // Create the admin action record
+        var adminAction = new ReturnRequestAdminAction
+        {
+            ReturnRequestId = returnRequestId,
+            AdminUserId = adminUserId,
+            ActionType = actionType,
+            PreviousStatus = previousStatus,
+            NewStatus = newStatus,
+            Notes = notes,
+            ResolutionType = resolutionType,
+            ResolutionAmount = resolutionAmount,
+            ActionTakenAt = DateTime.UtcNow,
+            NotificationsSent = false
+        };
+
+        _context.ReturnRequestAdminActions.Add(adminAction);
+
+        // Apply the decision based on action type
+        switch (actionType)
+        {
+            case AdminActionType.OverrideSellerDecision:
+            case AdminActionType.EnforceRefund:
+                if (resolutionType.HasValue)
+                {
+                    returnRequest.ResolutionType = resolutionType.Value;
+                    returnRequest.ResolutionNotes = notes;
+                    returnRequest.ResolvedAt = DateTime.UtcNow;
+                    returnRequest.Status = ReturnStatus.Resolved;
+
+                    // Create refund if applicable
+                    if (resolutionType.Value == ResolutionType.FullRefund || resolutionType.Value == ResolutionType.PartialRefund)
+                    {
+                        decimal refundAmount = resolutionType.Value == ResolutionType.FullRefund
+                            ? returnRequest.RefundAmount
+                            : resolutionAmount ?? 0;
+
+                        if (refundAmount > 0)
+                        {
+                            returnRequest.ResolutionAmount = refundAmount;
+
+                            // Create refund transaction
+                            try
+                            {
+                                await _refundService.ProcessPartialRefundAsync(
+                                    returnRequest.SubOrder.ParentOrderId,
+                                    returnRequest.BuyerId,
+                                    refundAmount,
+                                    $"Admin-enforced refund for {returnRequest.ReturnNumber}: {notes}",
+                                    returnRequestId);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to create refund for admin decision on return {ReturnRequestId}", returnRequestId);
+                                return (false, $"Failed to create refund: {ex.Message}", null);
+                            }
+                        }
+                    }
+                }
+                else if (newStatus.HasValue)
+                {
+                    returnRequest.Status = newStatus.Value;
+                }
+                break;
+
+            case AdminActionType.CloseWithoutAction:
+                returnRequest.Status = ReturnStatus.Resolved;
+                returnRequest.ResolutionType = ResolutionType.NoRefund;
+                returnRequest.ResolutionNotes = notes;
+                returnRequest.ResolvedAt = DateTime.UtcNow;
+                break;
+
+            case AdminActionType.ApprovedSellerDecision:
+                // Keep current resolution, just move out of admin review
+                returnRequest.Status = ReturnStatus.Resolved;
+                if (returnRequest.ResolvedAt == null)
+                {
+                    returnRequest.ResolvedAt = DateTime.UtcNow;
+                }
+                break;
+
+            case AdminActionType.AddedNotes:
+                // No status change, just adding notes
+                break;
+
+            default:
+                if (newStatus.HasValue)
+                {
+                    returnRequest.Status = newStatus.Value;
+                }
+                break;
+        }
+
+        returnRequest.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Admin {AdminUserId} recorded decision {ActionType} on return request {ReturnRequestId}",
+            adminUserId, actionType, returnRequestId);
+
+        return (true, null, returnRequest);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<ReturnRequestAdminAction>> GetAdminActionsAsync(int returnRequestId)
+    {
+        return await _context.ReturnRequestAdminActions
+            .Include(a => a.AdminUser)
+            .Where(a => a.ReturnRequestId == returnRequestId)
+            .OrderByDescending(a => a.ActionTakenAt)
+            .ToListAsync();
+    }
 }

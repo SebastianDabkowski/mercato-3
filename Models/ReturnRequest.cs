@@ -139,4 +139,29 @@ public class ReturnRequest
     /// Gets or sets the associated refund transaction if one has been created.
     /// </summary>
     public RefundTransaction? Refund { get; set; }
+
+    /// <summary>
+    /// Gets or sets the escalation reason if the case has been escalated.
+    /// </summary>
+    public EscalationReason EscalationReason { get; set; } = EscalationReason.None;
+
+    /// <summary>
+    /// Gets or sets the date and time when the case was escalated.
+    /// </summary>
+    public DateTime? EscalatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the ID of the user who escalated the case (buyer, seller, or admin).
+    /// </summary>
+    public int? EscalatedByUserId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the user who escalated the case (navigation property).
+    /// </summary>
+    public User? EscalatedByUser { get; set; }
+
+    /// <summary>
+    /// Gets or sets the admin actions taken on this case (navigation property).
+    /// </summary>
+    public ICollection<ReturnRequestAdminAction> AdminActions { get; set; } = new List<ReturnRequestAdminAction>();
 }
