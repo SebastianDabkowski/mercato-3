@@ -83,22 +83,7 @@
                                 </p>
                                 <p class="text-muted mb-0">
                                     <strong>Payment Status:</strong>
-                                    @if (Model.SubOrder.ParentOrder.PaymentStatus == MercatoApp.Models.PaymentStatus.Completed)
-                                    {
-                                        <span class="badge bg-success">Paid</span>
-                                    }
-                                    else if (Model.SubOrder.ParentOrder.PaymentStatus == MercatoApp.Models.PaymentStatus.Authorized)
-                                    {
-                                        <span class="badge bg-info">Authorized</span>
-                                    }
-                                    else if (Model.SubOrder.ParentOrder.PaymentStatus == MercatoApp.Models.PaymentStatus.Pending)
-                                    {
-                                        <span class="badge bg-warning text-dark">Pending</span>
-                                    }
-                                    else if (Model.SubOrder.ParentOrder.PaymentStatus == MercatoApp.Models.PaymentStatus.Failed)
-                                    {
-                                        <span class="badge bg-danger">Failed</span>
-                                    }
+                                    <partial name="_PaymentStatusBadge" model="Model.SubOrder.ParentOrder.PaymentStatus" />
                                 </p>
                             </div>
                             <div class="col-md-6">
