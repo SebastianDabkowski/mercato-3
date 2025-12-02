@@ -107,4 +107,14 @@ public class ReturnRequest
     /// Empty if IsFullReturn is true (all items in sub-order are being returned).
     /// </summary>
     public ICollection<ReturnRequestItem> Items { get; set; } = new List<ReturnRequestItem>();
+
+    /// <summary>
+    /// Gets or sets the messages in the return request thread (navigation property).
+    /// </summary>
+    public ICollection<ReturnRequestMessage> Messages { get; set; } = new List<ReturnRequestMessage>();
+
+    /// <summary>
+    /// Gets or sets the associated refund transaction if one has been created.
+    /// </summary>
+    public RefundTransaction? Refund { get; set; }
 }

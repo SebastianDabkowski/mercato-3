@@ -53,6 +53,17 @@ public class RefundTransaction
     public SellerSubOrder? SellerSubOrder { get; set; }
 
     /// <summary>
+    /// Gets or sets the return request ID if this refund is associated with a return/complaint.
+    /// Null for refunds not initiated by return requests (e.g., order cancellations).
+    /// </summary>
+    public int? ReturnRequestId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the return request (navigation property).
+    /// </summary>
+    public ReturnRequest? ReturnRequest { get; set; }
+
+    /// <summary>
     /// Gets or sets the type of refund (Full or Partial).
     /// </summary>
     public RefundType RefundType { get; set; }

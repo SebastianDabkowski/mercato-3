@@ -1,0 +1,333 @@
+@page
+@model MercatoApp.Pages.Account.ReturnRequestDetailModel
+@{
+    ViewData["Title"] = $"{(Model.ReturnRequest.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "Complaint" : "Return")} #{Model.ReturnRequest.ReturnNumber}";
+    var requestTypeLabel = Model.ReturnRequest.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "Complaint" : "Return";
+    var requestIcon = Model.ReturnRequest.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "exclamation-triangle" : "arrow-return-left";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <!-- Back button -->
+            <div class="mb-3">
+                <a asp-page="/Account/ReturnRequests" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Back to All Returns & Complaints
+                </a>
+            </div>
+
+            <!-- Header -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-1">
+                                <i class="bi bi-@requestIcon"></i>
+                                @requestTypeLabel #@Model.ReturnRequest.ReturnNumber
+                            </h2>
+                            <p class="mb-0">
+                                Order: <a asp-page="/Account/OrderDetail" asp-route-orderId="@Model.ReturnRequest.SubOrder.ParentOrder.Id" class="text-white text-decoration-underline">
+                                    @Model.ReturnRequest.SubOrder.ParentOrder.OrderNumber
+                                </a>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                            <partial name="_ReturnStatusBadge" model="Model.ReturnRequest.Status" />
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <strong><i class="bi bi-shop"></i> Seller:</strong> 
+                                @Model.ReturnRequest.SubOrder.Store.StoreName
+                            </p>
+                            <p class="mb-2">
+                                <strong><i class="bi bi-calendar"></i> Requested:</strong> 
+                                @Model.ReturnRequest.RequestedAt.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                            </p>
+                            <p class="mb-2">
+                                <strong><i class="bi bi-clock-history"></i> Last Updated:</strong> 
+                                @Model.ReturnRequest.UpdatedAt.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <strong>Request Type:</strong> 
+                                <span class="badge bg-info">@requestTypeLabel</span>
+                            </p>
+                            <p class="mb-2">
+                                <strong>Reason:</strong> @Model.ReturnRequest.Reason
+                            </p>
+                            <p class="mb-2">
+                                <strong>Sub-Order:</strong> 
+                                @Model.ReturnRequest.SubOrder.SubOrderNumber
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Original Request Data -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-file-text"></i> Request Details</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.ReturnRequest.Description))
+                    {
+                        <div class="mb-3">
+                            <strong>Buyer's Description:</strong>
+                            <p class="mt-2 p-3 bg-light rounded">@Model.ReturnRequest.Description</p>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <strong>Items:</strong>
+                        @if (Model.ReturnRequest.IsFullReturn)
+                        {
+                            <p class="mt-2">
+                                <span class="badge bg-info">All Items in Sub-Order</span>
+                            </p>
+                            <ul class="list-group mt-2">
+                                @foreach (var item in Model.ReturnRequest.SubOrder.Items)
+                                {
+                                    <li class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <i class="bi bi-box"></i>
+                                                <strong>@item.ProductTitle</strong>
+                                                @if (!string.IsNullOrEmpty(item.VariantDescription))
+                                                {
+                                                    <br/><small class="text-muted">@item.VariantDescription</small>
+                                                }
+                                            </div>
+                                            <div class="col-md-4 text-md-end">
+                                                <span class="badge bg-secondary">Qty: @item.Quantity</span>
+                                                <span class="text-muted">@item.UnitPrice.ToString("C") each</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else if (Model.ReturnRequest.Items.Any())
+                        {
+                            <ul class="list-group mt-2">
+                                @foreach (var item in Model.ReturnRequest.Items)
+                                {
+                                    <li class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <i class="bi bi-box"></i>
+                                                <strong>@item.OrderItem.ProductTitle</strong>
+                                                @if (!string.IsNullOrEmpty(item.OrderItem.VariantDescription))
+                                                {
+                                                    <br/><small class="text-muted">@item.OrderItem.VariantDescription</small>
+                                                }
+                                            </div>
+                                            <div class="col-md-4 text-md-end">
+                                                <span class="badge bg-secondary">Qty: @item.Quantity</span>
+                                                <span class="text-muted">Refund: @item.RefundAmount.ToString("C")</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+
+                    <div class="alert alert-secondary">
+                        <strong>Expected Refund Amount:</strong> @Model.ReturnRequest.RefundAmount.ToString("C")
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Status & Resolution -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-info-circle"></i> Status & Resolution</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Current Status:</strong>
+                        <partial name="_ReturnStatusBadge" model="Model.ReturnRequest.Status" />
+                        
+                        @if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Requested)
+                        {
+                            <div class="alert alert-info mt-3">
+                                <i class="bi bi-hourglass-split"></i> 
+                                Your request is pending seller review. The seller will review your request and respond soon.
+                            </div>
+                        }
+                        else if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Approved)
+                        {
+                            <div class="alert alert-success mt-3">
+                                <i class="bi bi-check-circle"></i> 
+                                <strong>Approved on @Model.ReturnRequest.ApprovedAt?.ToString("MMMM dd, yyyy 'at' h:mm tt")</strong>
+                                <br/>
+                                Your @requestTypeLabel.ToLower() request has been approved by the seller. Please follow the seller's instructions below.
+                            </div>
+                        }
+                        else if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Rejected)
+                        {
+                            <div class="alert alert-danger mt-3">
+                                <i class="bi bi-x-circle"></i> 
+                                <strong>Rejected on @Model.ReturnRequest.RejectedAt?.ToString("MMMM dd, yyyy 'at' h:mm tt")</strong>
+                                <br/>
+                                Unfortunately, your request has been rejected by the seller. See the reason below.
+                            </div>
+                        }
+                        else if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Completed)
+                        {
+                            <div class="alert alert-success mt-3">
+                                <i class="bi bi-check-circle-fill"></i> 
+                                <strong>Completed on @Model.ReturnRequest.CompletedAt?.ToString("MMMM dd, yyyy 'at' h:mm tt")</strong>
+                                <br/>
+                                Your @requestTypeLabel.ToLower() has been completed and the refund has been processed.
+                            </div>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.ReturnRequest.SellerNotes))
+                    {
+                        <div class="mb-3">
+                            <strong>Seller's Response:</strong>
+                            <div class="p-3 border rounded mt-2 @(Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Rejected ? "bg-light-danger" : "bg-light")">
+                                @Model.ReturnRequest.SellerNotes
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Refund Information -->
+            @if (Model.RefundTransaction != null)
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0"><i class="bi bi-cash-coin"></i> Refund Information</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2">
+                                    <strong>Refund Number:</strong> @Model.RefundTransaction.RefundNumber
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Amount:</strong> @Model.RefundTransaction.RefundAmount.ToString("C")
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Status:</strong>
+                                    @if (Model.RefundTransaction.Status == MercatoApp.Models.RefundStatus.Completed)
+                                    {
+                                        <span class="badge bg-success">Completed</span>
+                                    }
+                                    else if (Model.RefundTransaction.Status == MercatoApp.Models.RefundStatus.Processing)
+                                    {
+                                        <span class="badge bg-warning">Processing</span>
+                                    }
+                                    else if (Model.RefundTransaction.Status == MercatoApp.Models.RefundStatus.Failed)
+                                    {
+                                        <span class="badge bg-danger">Failed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">@Model.RefundTransaction.Status</span>
+                                    }
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2">
+                                    <strong>Requested:</strong> @Model.RefundTransaction.RequestedAt.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                </p>
+                                @if (Model.RefundTransaction.CompletedAt.HasValue)
+                                {
+                                    <p class="mb-2">
+                                        <strong>Completed:</strong> @Model.RefundTransaction.CompletedAt.Value.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                    </p>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.RefundTransaction.ProviderRefundId))
+                                {
+                                    <p class="mb-2">
+                                        <strong>Provider Reference:</strong> 
+                                        <code>@Model.RefundTransaction.ProviderRefundId</code>
+                                    </p>
+                                }
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.RefundTransaction.Notes))
+                        {
+                            <div class="alert alert-info mt-3 mb-0">
+                                <strong>Notes:</strong> @Model.RefundTransaction.Notes
+                            </div>
+                        }
+
+                        @if (Model.RefundTransaction.Status == MercatoApp.Models.RefundStatus.Failed && !string.IsNullOrEmpty(Model.RefundTransaction.ErrorMessage))
+                        {
+                            <div class="alert alert-danger mt-3 mb-0">
+                                <strong>Error:</strong> @Model.RefundTransaction.ErrorMessage
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Messaging Thread -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-chat-dots"></i> Conversation</h4>
+                </div>
+                <div class="card-body">
+                    @if (Model.ReturnRequest.Messages.Any())
+                    {
+                        <div class="list-group">
+                            @foreach (var message in Model.ReturnRequest.Messages.OrderBy(m => m.SentAt))
+                            {
+                                <div class="list-group-item @(message.IsFromSeller ? "border-start border-primary border-3" : "border-start border-success border-3")">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <strong>
+                                                @if (message.IsFromSeller)
+                                                {
+                                                    <i class="bi bi-shop"></i> @("Seller")
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-person"></i> @("You")
+                                                }
+                                            </strong>
+                                        </div>
+                                        <small class="text-muted">
+                                            @message.SentAt.ToString("MMM dd, yyyy 'at' h:mm tt")
+                                        </small>
+                                    </div>
+                                    <p class="mb-0">@message.Content</p>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            No messages yet. The seller may add messages when reviewing or responding to your request.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center mt-4">
+                <a asp-page="/Account/OrderDetail" asp-route-orderId="@Model.ReturnRequest.SubOrder.ParentOrder.Id" class="btn btn-outline-primary">
+                    <i class="bi bi-eye"></i> View Order Details
+                </a>
+                <a asp-page="/Account/ReturnRequests" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to All Cases
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

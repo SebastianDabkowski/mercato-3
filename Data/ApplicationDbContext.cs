@@ -198,6 +198,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<ReturnRequestItem> ReturnRequestItems { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the return request messages table.
+    /// </summary>
+    public DbSet<ReturnRequestMessage> ReturnRequestMessages { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the commission transactions table.
     /// </summary>
     public DbSet<CommissionTransaction> CommissionTransactions { get; set; } = null!;
@@ -991,6 +996,46 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.OrderItem)
                 .WithMany()
                 .HasForeignKey(e => e.OrderItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.RefundAmount)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<ReturnRequestMessage>(entity =>
+        {
+            // Index on return request ID for finding all messages in a request
+            entity.HasIndex(e => e.ReturnRequestId);
+
+            // Index on sender ID for finding all messages from a user
+            entity.HasIndex(e => e.SenderId);
+
+            // Index on sent date for chronological ordering
+            entity.HasIndex(e => e.SentAt);
+
+            // Configure relationship with ReturnRequest
+            entity.HasOne(e => e.ReturnRequest)
+                .WithMany(r => r.Messages)
+                .HasForeignKey(e => e.ReturnRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with Sender (User)
+            entity.HasOne(e => e.Sender)
+                .WithMany()
+                .HasForeignKey(e => e.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RefundTransaction>(entity =>
+        {
+            // Index on return request ID for finding refunds associated with a return request
+            entity.HasIndex(e => e.ReturnRequestId);
+
+            // Configure relationship with ReturnRequest
+            entity.HasOne(e => e.ReturnRequest)
+                .WithOne(r => r.Refund)
+                .HasForeignKey<RefundTransaction>(e => e.ReturnRequestId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Configure decimal precision

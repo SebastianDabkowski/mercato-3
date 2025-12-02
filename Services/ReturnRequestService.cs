@@ -239,9 +239,13 @@ public class ReturnRequestService : IReturnRequestService
                 .ThenInclude(so => so.Store)
             .Include(rr => rr.SubOrder)
                 .ThenInclude(so => so.ParentOrder)
+            .Include(rr => rr.SubOrder)
+                .ThenInclude(so => so.Items)
             .Include(rr => rr.Buyer)
             .Include(rr => rr.Items)
                 .ThenInclude(ri => ri.OrderItem)
+            .Include(rr => rr.Messages)
+                .ThenInclude(m => m.Sender)
             .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
     }
 }
