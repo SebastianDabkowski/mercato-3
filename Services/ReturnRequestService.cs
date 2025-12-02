@@ -433,6 +433,29 @@ public class ReturnRequestService : IReturnRequestService
             return 0;
         }
 
+        // Authorization check: verify the user is either the buyer or the seller
+        if (isSellerViewing)
+        {
+            // Verify the user owns the store
+            var store = await _context.Stores.FirstOrDefaultAsync(s => s.Id == returnRequest.SubOrder.StoreId);
+            if (store == null || store.UserId != userId)
+            {
+                _logger.LogWarning("User {UserId} attempted to mark messages as read for return request {ReturnRequestId} but does not own the store",
+                    userId, returnRequestId);
+                return 0;
+            }
+        }
+        else
+        {
+            // Verify the user is the buyer
+            if (returnRequest.BuyerId != userId)
+            {
+                _logger.LogWarning("User {UserId} attempted to mark messages as read for return request {ReturnRequestId} but is not the buyer",
+                    userId, returnRequestId);
+                return 0;
+            }
+        }
+
         // Get unread messages that were sent by the other party
         var messagesToMarkAsRead = await _context.ReturnRequestMessages
             .Where(m => m.ReturnRequestId == returnRequestId)
@@ -461,8 +484,42 @@ public class ReturnRequestService : IReturnRequestService
     }
 
     /// <inheritdoc />
-    public async Task<int> GetUnreadMessageCountAsync(int returnRequestId, bool isSellerViewing)
+    public async Task<int> GetUnreadMessageCountAsync(int returnRequestId, int userId, bool isSellerViewing)
     {
+        // Get the return request for authorization check
+        var returnRequest = await _context.ReturnRequests
+            .Include(rr => rr.SubOrder)
+            .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
+
+        if (returnRequest == null)
+        {
+            _logger.LogWarning("Return request {ReturnRequestId} not found when getting unread count", returnRequestId);
+            return 0;
+        }
+
+        // Authorization check: verify the user is either the buyer or the seller
+        if (isSellerViewing)
+        {
+            // Verify the user owns the store
+            var store = await _context.Stores.FirstOrDefaultAsync(s => s.Id == returnRequest.SubOrder.StoreId);
+            if (store == null || store.UserId != userId)
+            {
+                _logger.LogWarning("User {UserId} attempted to get unread count for return request {ReturnRequestId} but does not own the store",
+                    userId, returnRequestId);
+                return 0;
+            }
+        }
+        else
+        {
+            // Verify the user is the buyer
+            if (returnRequest.BuyerId != userId)
+            {
+                _logger.LogWarning("User {UserId} attempted to get unread count for return request {ReturnRequestId} but is not the buyer",
+                    userId, returnRequestId);
+                return 0;
+            }
+        }
+
         // Get unread messages that were sent by the other party
         var unreadCount = await _context.ReturnRequestMessages
             .Where(m => m.ReturnRequestId == returnRequestId)

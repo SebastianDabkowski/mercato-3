@@ -54,7 +54,7 @@ public class ReturnRequestsModel : PageModel
         // Get unread message counts for each return request
         foreach (var request in ReturnRequests)
         {
-            var unreadCount = await _returnRequestService.GetUnreadMessageCountAsync(request.Id, isSellerViewing: false);
+            var unreadCount = await _returnRequestService.GetUnreadMessageCountAsync(request.Id, userId, isSellerViewing: false);
             UnreadMessageCounts[request.Id] = unreadCount;
         }
 

@@ -104,7 +104,8 @@ public interface IReturnRequestService
     /// Gets the count of unread messages for a specific return request and viewer.
     /// </summary>
     /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="userId">The user ID who is viewing.</param>
     /// <param name="isSellerViewing">Whether the viewer is the seller.</param>
     /// <returns>The count of unread messages sent by the other party.</returns>
-    Task<int> GetUnreadMessageCountAsync(int returnRequestId, bool isSellerViewing);
+    Task<int> GetUnreadMessageCountAsync(int returnRequestId, int userId, bool isSellerViewing);
 }
