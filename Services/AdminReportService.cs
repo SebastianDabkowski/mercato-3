@@ -40,6 +40,61 @@ public class AdminReportService : IAdminReportService
     }
 
     /// <inheritdoc />
+    public async Task<List<OrderRevenueReportData>> GetOrderReportDataAsync(
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int? storeId = null,
+        string? orderStatus = null,
+        string? paymentStatus = null,
+        int skip = 0,
+        int take = 50)
+    {
+        var subOrders = await GetSubOrdersForReportAsync(fromDate, toDate, storeId, orderStatus, paymentStatus, skip, take);
+
+        // Batch load commissions to avoid N+1 queries
+        var subOrderIds = subOrders.Select(so => so.Id).ToList();
+        var commissions = await GetCommissionAmountsAsync(subOrderIds);
+
+        // Build report data
+        var reportData = new List<OrderRevenueReportData>();
+        foreach (var subOrder in subOrders)
+        {
+            var commission = commissions.GetValueOrDefault(subOrder.Id, 0);
+            var payoutAmount = subOrder.TotalAmount - commission;
+
+            reportData.Add(new OrderRevenueReportData
+            {
+                OrderId = subOrder.ParentOrderId,
+                OrderNumber = subOrder.ParentOrder.OrderNumber,
+                OrderDate = subOrder.ParentOrder.OrderedAt,
+                BuyerName = GetBuyerName(subOrder),
+                BuyerEmail = GetBuyerEmail(subOrder),
+                SellerStoreName = subOrder.Store.StoreName,
+                SubOrderNumber = subOrder.SubOrderNumber,
+                OrderStatus = subOrder.Status.ToString(),
+                PaymentStatus = subOrder.ParentOrder.PaymentStatus.ToString(),
+                OrderValue = subOrder.TotalAmount,
+                Commission = commission,
+                PayoutAmount = payoutAmount
+            });
+        }
+
+        return reportData;
+    }
+
+    /// <inheritdoc />
+    public async Task<int> GetOrderReportCountAsync(
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int? storeId = null,
+        string? orderStatus = null,
+        string? paymentStatus = null)
+    {
+        var query = BuildReportQuery(fromDate, toDate, storeId, orderStatus, paymentStatus);
+        return await query.CountAsync();
+    }
+
+    /// <inheritdoc />
     public async Task<AdminReportExportResult> ExportOrderReportToCsvAsync(
         DateTime? fromDate = null,
         DateTime? toDate = null,
@@ -88,12 +143,16 @@ public class AdminReportService : IAdminReportService
                 COL_PAYOUT_AMOUNT
             ));
 
+            // Batch load commissions to avoid N+1 queries
+            var subOrderIds = subOrders.Select(so => so.Id).ToList();
+            var commissions = await GetCommissionAmountsAsync(subOrderIds);
+
             // Data rows
             foreach (var subOrder in subOrders)
             {
                 var buyerName = GetBuyerName(subOrder);
                 var buyerEmail = GetBuyerEmail(subOrder);
-                var commission = await GetCommissionAmountAsync(subOrder.Id);
+                var commission = commissions.GetValueOrDefault(subOrder.Id, 0);
                 var payoutAmount = subOrder.TotalAmount - commission;
 
                 csv.AppendLine(FormatCsvRow(
@@ -130,9 +189,9 @@ public class AdminReportService : IAdminReportService
     }
 
     /// <summary>
-    /// Gets seller sub-orders for report with optional filters.
+    /// Builds the base query for report data with filters applied.
     /// </summary>
-    private async Task<List<SellerSubOrder>> GetSubOrdersForReportAsync(
+    private IQueryable<SellerSubOrder> BuildReportQuery(
         DateTime? fromDate = null,
         DateTime? toDate = null,
         int? storeId = null,
@@ -175,21 +234,51 @@ public class AdminReportService : IAdminReportService
             query = query.Where(so => so.ParentOrder.PaymentStatus == parsedPaymentStatus);
         }
 
-        return await query
-            .OrderByDescending(so => so.ParentOrder.OrderedAt)
-            .ToListAsync();
+        return query.OrderByDescending(so => so.ParentOrder.OrderedAt);
     }
 
     /// <summary>
-    /// Gets the commission amount for a sub-order by summing up commission transactions.
+    /// Gets seller sub-orders for report with optional filters and pagination.
     /// </summary>
-    private async Task<decimal> GetCommissionAmountAsync(int subOrderId)
+    private async Task<List<SellerSubOrder>> GetSubOrdersForReportAsync(
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int? storeId = null,
+        string? orderStatus = null,
+        string? paymentStatus = null,
+        int skip = 0,
+        int take = 0)
     {
-        var commission = await _context.CommissionTransactions
-            .Where(ct => ct.EscrowTransaction.SellerSubOrderId == subOrderId)
-            .SumAsync(ct => ct.CommissionAmount);
+        var query = BuildReportQuery(fromDate, toDate, storeId, orderStatus, paymentStatus);
 
-        return commission;
+        if (skip > 0)
+        {
+            query = query.Skip(skip);
+        }
+
+        if (take > 0)
+        {
+            query = query.Take(take);
+        }
+
+        return await query.ToListAsync();
+    }
+
+    /// <summary>
+    /// Gets the commission amounts for multiple sub-orders in a single query.
+    /// </summary>
+    private async Task<Dictionary<int, decimal>> GetCommissionAmountsAsync(List<int> subOrderIds)
+    {
+        if (!subOrderIds.Any())
+            return new Dictionary<int, decimal>();
+
+        var commissions = await _context.CommissionTransactions
+            .Where(ct => subOrderIds.Contains(ct.EscrowTransaction.SellerSubOrderId))
+            .GroupBy(ct => ct.EscrowTransaction.SellerSubOrderId)
+            .Select(g => new { SubOrderId = g.Key, TotalCommission = g.Sum(ct => ct.CommissionAmount) })
+            .ToListAsync();
+
+        return commissions.ToDictionary(c => c.SubOrderId, c => c.TotalCommission);
     }
 
     /// <summary>

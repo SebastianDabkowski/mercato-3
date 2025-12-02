@@ -148,71 +148,40 @@ public class OrderRevenueModel : PageModel
                 .OrderBy(s => s.StoreName)
                 .ToListAsync();
 
-            // Build query with filters
-            var query = _context.SellerSubOrders
-                .Include(so => so.ParentOrder)
-                    .ThenInclude(o => o.User)
-                .Include(so => so.Store)
-                .AsQueryable();
-
-            // Apply filters
-            if (FromDate.HasValue)
-            {
-                query = query.Where(so => so.ParentOrder.OrderedAt >= FromDate.Value);
-            }
-            if (ToDate.HasValue)
-            {
-                var endOfDay = ToDate.Value.Date.AddDays(1).AddTicks(-1);
-                query = query.Where(so => so.ParentOrder.OrderedAt <= endOfDay);
-            }
-            if (StoreId.HasValue)
-            {
-                query = query.Where(so => so.StoreId == StoreId.Value);
-            }
-            if (!string.IsNullOrEmpty(OrderStatus) && Enum.TryParse<Models.OrderStatus>(OrderStatus, out var parsedOrderStatus))
-            {
-                query = query.Where(so => so.Status == parsedOrderStatus);
-            }
-            if (!string.IsNullOrEmpty(PaymentStatus) && Enum.TryParse<Models.PaymentStatus>(PaymentStatus, out var parsedPaymentStatus))
-            {
-                query = query.Where(so => so.ParentOrder.PaymentStatus == parsedPaymentStatus);
-            }
-
             // Get total count for pagination
-            TotalCount = await query.CountAsync();
+            TotalCount = await _reportService.GetOrderReportCountAsync(
+                FromDate,
+                ToDate,
+                StoreId,
+                OrderStatus,
+                PaymentStatus);
 
-            // Get paginated results
-            var subOrders = await query
-                .OrderByDescending(so => so.ParentOrder.OrderedAt)
-                .Skip((PageNumber - 1) * PageSize)
-                .Take(PageSize)
-                .ToListAsync();
+            // Get paginated report data
+            var reportData = await _reportService.GetOrderReportDataAsync(
+                FromDate,
+                ToDate,
+                StoreId,
+                OrderStatus,
+                PaymentStatus,
+                (PageNumber - 1) * PageSize,
+                PageSize);
 
-            // Build report rows
-            ReportRows = new List<OrderRevenueReportRow>();
-            foreach (var subOrder in subOrders)
+            // Convert to report rows
+            ReportRows = reportData.Select(d => new OrderRevenueReportRow
             {
-                var commission = await GetCommissionAmountAsync(subOrder.Id);
-                var payoutAmount = subOrder.TotalAmount - commission;
-
-                var row = new OrderRevenueReportRow
-                {
-                    OrderId = subOrder.ParentOrderId,
-                    OrderNumber = subOrder.ParentOrder.OrderNumber,
-                    OrderDate = subOrder.ParentOrder.OrderedAt,
-                    BuyerName = GetBuyerName(subOrder),
-                    BuyerEmail = GetBuyerEmail(subOrder),
-                    SellerStoreName = subOrder.Store.StoreName,
-                    SubOrderNumber = subOrder.SubOrderNumber,
-                    OrderStatus = subOrder.Status,
-                    PaymentStatus = subOrder.ParentOrder.PaymentStatus,
-                    OrderValue = subOrder.TotalAmount,
-                    Commission = commission,
-                    PayoutAmount = payoutAmount
-                };
-
-                ReportRows.Add(row);
-            }
+                OrderId = d.OrderId,
+                OrderNumber = d.OrderNumber,
+                OrderDate = d.OrderDate,
+                BuyerName = d.BuyerName,
+                BuyerEmail = d.BuyerEmail,
+                SellerStoreName = d.SellerStoreName,
+                SubOrderNumber = d.SubOrderNumber,
+                OrderStatus = Enum.Parse<Models.OrderStatus>(d.OrderStatus),
+                PaymentStatus = Enum.Parse<Models.PaymentStatus>(d.PaymentStatus),
+                OrderValue = d.OrderValue,
+                Commission = d.Commission,
+                PayoutAmount = d.PayoutAmount
+            }).ToList();
 
             // Calculate totals for current page
             TotalOrderValue = ReportRows.Sum(r => r.OrderValue);
@@ -273,45 +242,5 @@ public class OrderRevenueModel : PageModel
                 PageNumber
             });
         }
-    }
-
-    /// <summary>
-    /// Gets the commission amount for a sub-order.
-    /// </summary>
-    private async Task<decimal> GetCommissionAmountAsync(int subOrderId)
-    {
-        var commission = await _context.CommissionTransactions
-            .Where(ct => ct.EscrowTransaction.SellerSubOrderId == subOrderId)
-            .SumAsync(ct => ct.CommissionAmount);
-
-        return commission;
-    }
-
-    /// <summary>
-    /// Gets the buyer name from a seller sub-order.
-    /// </summary>
-    private static string GetBuyerName(SellerSubOrder subOrder)
-    {
-        if (subOrder.ParentOrder.User != null)
-        {
-            return $"{subOrder.ParentOrder.User.FirstName} {subOrder.ParentOrder.User.LastName}".Trim();
-        }
-        return "Guest";
-    }
-
-    /// <summary>
-    /// Gets the buyer email from a seller sub-order.
-    /// </summary>
-    private static string GetBuyerEmail(SellerSubOrder subOrder)
-    {
-        if (subOrder.ParentOrder.User != null)
-        {
-            return subOrder.ParentOrder.User.Email;
-        }
-        if (!string.IsNullOrEmpty(subOrder.ParentOrder.GuestEmail))
-        {
-            return subOrder.ParentOrder.GuestEmail;
-        }
-        return "N/A";
     }
 }
