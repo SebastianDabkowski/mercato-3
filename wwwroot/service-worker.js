@@ -56,15 +56,22 @@ self.addEventListener('notificationclick', (event) => {
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((clientList) => {
+                // Parse URLs for proper comparison
+                const targetUrl = new URL(urlToOpen, self.location.origin);
+                
                 // Check if there's already a window open with the app
                 for (const client of clientList) {
-                    if (client.url === urlToOpen && 'focus' in client) {
+                    const clientUrl = new URL(client.url);
+                    // Compare pathname and search, ignoring hash and protocol differences
+                    if (clientUrl.pathname === targetUrl.pathname && 
+                        clientUrl.search === targetUrl.search && 
+                        'focus' in client) {
                         return client.focus();
                     }
                 }
                 // If no window is open, open a new one
                 if (clients.openWindow) {
-                    return clients.openWindow(urlToOpen);
+                    return clients.openWindow(targetUrl.href);
                 }
             })
     );

@@ -16,6 +16,7 @@ public class PushNotificationService : IPushNotificationService
     private readonly string _vapidPublicKey;
     private readonly string _vapidPrivateKey;
     private readonly string _vapidSubject;
+    private readonly WebPush.WebPushClient _webPushClient;
 
     public PushNotificationService(
         ApplicationDbContext context,
@@ -25,19 +26,29 @@ public class PushNotificationService : IPushNotificationService
         _context = context;
         _logger = logger;
         _configuration = configuration;
+        _webPushClient = new WebPush.WebPushClient();
 
-        // Get VAPID keys from configuration
-        _vapidPublicKey = _configuration["Push:VapidPublicKey"] ?? GenerateVapidKeys().publicKey;
-        _vapidPrivateKey = _configuration["Push:VapidPrivateKey"] ?? GenerateVapidKeys().privateKey;
-        _vapidSubject = _configuration["Push:VapidSubject"] ?? "mailto:admin@mercato.app";
-
-        // Log if using generated keys (for development)
-        if (string.IsNullOrEmpty(_configuration["Push:VapidPublicKey"]))
+        // Get VAPID keys from configuration or generate new ones
+        var configuredPublicKey = _configuration["Push:VapidPublicKey"];
+        var configuredPrivateKey = _configuration["Push:VapidPrivateKey"];
+        
+        if (!string.IsNullOrEmpty(configuredPublicKey) && !string.IsNullOrEmpty(configuredPrivateKey))
         {
+            _vapidPublicKey = configuredPublicKey;
+            _vapidPrivateKey = configuredPrivateKey;
+        }
+        else
+        {
+            var generatedKeys = GenerateVapidKeys();
+            _vapidPublicKey = generatedKeys.publicKey;
+            _vapidPrivateKey = generatedKeys.privateKey;
+            
             _logger.LogWarning("VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json");
             _logger.LogInformation("Generated VAPID Public Key: {PublicKey}", _vapidPublicKey);
             _logger.LogInformation("Generated VAPID Private Key: {PrivateKey}", _vapidPrivateKey);
         }
+        
+        _vapidSubject = _configuration["Push:VapidSubject"] ?? "mailto:admin@mercato.app";
     }
 
     /// <inheritdoc />
@@ -153,7 +164,6 @@ public class PushNotificationService : IPushNotificationService
             icon = icon ?? "/favicon.ico"
         });
 
-        var webPushClient = new WebPush.WebPushClient();
         var vapidDetails = new WebPush.VapidDetails(_vapidSubject, _vapidPublicKey, _vapidPrivateKey);
 
         var successCount = 0;
@@ -167,7 +177,7 @@ public class PushNotificationService : IPushNotificationService
                     subscription.P256dh,
                     subscription.Auth);
 
-                await webPushClient.SendNotificationAsync(pushSubscription, payload, vapidDetails);
+                await _webPushClient.SendNotificationAsync(pushSubscription, payload, vapidDetails);
 
                 subscription.LastUsedAt = DateTime.UtcNow;
                 successCount++;

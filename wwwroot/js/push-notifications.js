@@ -59,18 +59,40 @@ class PushNotificationManager {
      * Fetch VAPID public key from server
      */
     async fetchVapidPublicKey() {
-        try {
-            const response = await fetch('/Api/Push/Status');
-            if (!response.ok) {
-                throw new Error('Failed to fetch VAPID public key');
+        const maxRetries = 3;
+        let lastError;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch('/Api/Push/Status', {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch VAPID public key: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                this.vapidPublicKey = data.vapidPublicKey;
+                console.log('VAPID public key received');
+                return;
+            } catch (error) {
+                lastError = error;
+                console.error(`Error fetching VAPID public key (attempt ${attempt}/${maxRetries}):`, error);
+                
+                if (attempt < maxRetries) {
+                    // Wait before retrying (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                }
             }
-            const data = await response.json();
-            this.vapidPublicKey = data.vapidPublicKey;
-            console.log('VAPID public key received');
-        } catch (error) {
-            console.error('Error fetching VAPID public key:', error);
-            throw error;
         }
+        
+        throw lastError || new Error('Failed to fetch VAPID public key after multiple attempts');
     }
 
     /**

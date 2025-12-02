@@ -2,7 +2,6 @@ using MercatoApp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace MercatoApp.Pages.Api.Push;
 
@@ -22,7 +21,7 @@ public class UnsubscribeModel : PageModel
         _logger = logger;
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync([FromBody] UnsubscribeData? data)
     {
         // Check if user is authenticated
         if (!User.Identity?.IsAuthenticated ?? true)
@@ -36,21 +35,13 @@ public class UnsubscribeModel : PageModel
             return Unauthorized();
         }
 
+        if (data == null || string.IsNullOrEmpty(data.Endpoint))
+        {
+            return BadRequest(new { error = "Invalid request data" });
+        }
+
         try
         {
-            // Read the request body
-            using var reader = new StreamReader(Request.Body);
-            var body = await reader.ReadToEndAsync();
-            var data = JsonSerializer.Deserialize<UnsubscribeData>(body, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (data == null || string.IsNullOrEmpty(data.Endpoint))
-            {
-                return BadRequest(new { error = "Invalid request data" });
-            }
-
             var success = await _pushNotificationService.UnsubscribeAsync(userId, data.Endpoint);
 
             if (success)
@@ -73,7 +64,7 @@ public class UnsubscribeModel : PageModel
         }
     }
 
-    private class UnsubscribeData
+    public class UnsubscribeData
     {
         public string Endpoint { get; set; } = string.Empty;
     }

@@ -2,7 +2,6 @@ using MercatoApp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace MercatoApp.Pages.Api.Push;
 
@@ -22,7 +21,7 @@ public class SubscribeModel : PageModel
         _logger = logger;
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync([FromBody] SubscriptionData? subscriptionData)
     {
         // Check if user is authenticated
         if (!User.Identity?.IsAuthenticated ?? true)
@@ -36,25 +35,17 @@ public class SubscribeModel : PageModel
             return Unauthorized();
         }
 
+        if (subscriptionData == null ||
+            string.IsNullOrEmpty(subscriptionData.Endpoint) ||
+            subscriptionData.Keys == null ||
+            string.IsNullOrEmpty(subscriptionData.Keys.P256dh) ||
+            string.IsNullOrEmpty(subscriptionData.Keys.Auth))
+        {
+            return BadRequest(new { error = "Invalid subscription data" });
+        }
+
         try
         {
-            // Read the request body
-            using var reader = new StreamReader(Request.Body);
-            var body = await reader.ReadToEndAsync();
-            var subscriptionData = JsonSerializer.Deserialize<SubscriptionData>(body, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (subscriptionData == null ||
-                string.IsNullOrEmpty(subscriptionData.Endpoint) ||
-                subscriptionData.Keys == null ||
-                string.IsNullOrEmpty(subscriptionData.Keys.P256dh) ||
-                string.IsNullOrEmpty(subscriptionData.Keys.Auth))
-            {
-                return BadRequest(new { error = "Invalid subscription data" });
-            }
-
             var userAgent = Request.Headers.UserAgent.ToString();
 
             var subscription = await _pushNotificationService.SubscribeAsync(
@@ -81,13 +72,13 @@ public class SubscribeModel : PageModel
         }
     }
 
-    private class SubscriptionData
+    public class SubscriptionData
     {
         public string Endpoint { get; set; } = string.Empty;
         public SubscriptionKeys? Keys { get; set; }
     }
 
-    private class SubscriptionKeys
+    public class SubscriptionKeys
     {
         public string P256dh { get; set; } = string.Empty;
         public string Auth { get; set; } = string.Empty;
