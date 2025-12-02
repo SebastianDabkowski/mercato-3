@@ -172,16 +172,22 @@ public class ProductModel : PageModel
     {
         try
         {
-            var userId = User.Identity?.IsAuthenticated == true
-                ? int.Parse(User.FindFirst("UserId")?.Value ?? "0")
-                : (int?)null;
+            int? userId = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = User.FindFirst("UserId")?.Value;
+                if (int.TryParse(userIdClaim, out var parsedUserId))
+                {
+                    userId = parsedUserId;
+                }
+            }
 
             var sessionId = HttpContext.Session.Id;
 
             await _analyticsService.TrackEventAsync(new AnalyticsEventData
             {
                 EventType = AnalyticsEventType.ProductView,
-                UserId = userId > 0 ? userId : null,
+                UserId = userId,
                 SessionId = sessionId,
                 ProductId = product.Id,
                 CategoryId = product.CategoryId,

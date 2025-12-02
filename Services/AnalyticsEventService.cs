@@ -97,9 +97,9 @@ public class AnalyticsEventService : IAnalyticsEventService
 
             if (query.EndDate.HasValue)
             {
-                // Include the entire end date
-                var endOfDay = query.EndDate.Value.Date.AddDays(1).AddTicks(-1);
-                queryable = queryable.Where(e => e.CreatedAt <= endOfDay);
+                // Include the entire end date (use < on the next day for clearer intent)
+                var nextDay = query.EndDate.Value.Date.AddDays(1);
+                queryable = queryable.Where(e => e.CreatedAt < nextDay);
             }
 
             if (query.EventType.HasValue)
@@ -170,8 +170,9 @@ public class AnalyticsEventService : IAnalyticsEventService
 
             if (query.EndDate.HasValue)
             {
-                var endOfDay = query.EndDate.Value.Date.AddDays(1).AddTicks(-1);
-                queryable = queryable.Where(e => e.CreatedAt <= endOfDay);
+                // Include the entire end date (use < on the next day for clearer intent)
+                var nextDay = query.EndDate.Value.Date.AddDays(1);
+                queryable = queryable.Where(e => e.CreatedAt < nextDay);
             }
 
             if (query.EventType.HasValue)
@@ -247,8 +248,9 @@ public class AnalyticsEventService : IAnalyticsEventService
 
             if (query.EndDate.HasValue)
             {
-                var endOfDay = query.EndDate.Value.Date.AddDays(1).AddTicks(-1);
-                queryable = queryable.Where(e => e.CreatedAt <= endOfDay);
+                // Include the entire end date (use < on the next day for clearer intent)
+                var nextDay = query.EndDate.Value.Date.AddDays(1);
+                queryable = queryable.Where(e => e.CreatedAt < nextDay);
             }
 
             if (query.EventType.HasValue)
@@ -306,7 +308,10 @@ public class AnalyticsEventService : IAnalyticsEventService
 
         try
         {
-            // Process in batches to avoid memory issues
+            // Process in batches to avoid memory issues with large datasets
+            // Note: For production with SQL Server/PostgreSQL, consider using ExecuteDeleteAsync() 
+            // for more efficient bulk deletion without loading entities into memory.
+            // Current implementation is compatible with in-memory database.
             while (true)
             {
                 var batch = await _context.AnalyticsEvents
