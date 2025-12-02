@@ -294,10 +294,9 @@ public class OrderExportService : IOrderExportService
         // Apply buyer email filter (partial match, case-insensitive)
         if (!string.IsNullOrWhiteSpace(buyerEmail))
         {
-            var emailLower = buyerEmail.ToLower();
             query = query.Where(so =>
-                (so.ParentOrder.User != null && so.ParentOrder.User.Email.ToLower().Contains(emailLower)) ||
-                (so.ParentOrder.GuestEmail != null && so.ParentOrder.GuestEmail.ToLower().Contains(emailLower)));
+                (so.ParentOrder.User != null && EF.Functions.Like(so.ParentOrder.User.Email, $"%{buyerEmail}%")) ||
+                (so.ParentOrder.GuestEmail != null && EF.Functions.Like(so.ParentOrder.GuestEmail, $"%{buyerEmail}%")));
         }
 
         return await query

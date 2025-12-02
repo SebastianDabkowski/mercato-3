@@ -57,21 +57,7 @@ public class OrderExportModel : PageModel
         }
 
         // Parse SelectedStatuses from query string if it's a comma-separated string
-        if (Request.Query.TryGetValue("SelectedStatuses", out var statusesString) && 
-            !string.IsNullOrEmpty(statusesString))
-        {
-            var statusValues = statusesString.ToString()
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => int.TryParse(s.Trim(), out var val) ? (OrderStatus)val : (OrderStatus?)null)
-                .Where(s => s.HasValue)
-                .Select(s => s!.Value)
-                .ToList();
-            
-            if (statusValues.Any())
-            {
-                SelectedStatuses = statusValues;
-            }
-        }
+        ParseSelectedStatusesFromRequest(Request.Query);
 
         return Page();
     }
@@ -87,21 +73,7 @@ public class OrderExportModel : PageModel
         try
         {
             // Parse SelectedStatuses from form if it's a comma-separated string
-            if (Request.Form.TryGetValue("SelectedStatuses", out var statusesString) && 
-                !string.IsNullOrEmpty(statusesString))
-            {
-                var statusValues = statusesString.ToString()
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => int.TryParse(s.Trim(), out var val) ? (OrderStatus)val : (OrderStatus?)null)
-                    .Where(s => s.HasValue)
-                    .Select(s => s!.Value)
-                    .ToList();
-                
-                if (statusValues.Any())
-                {
-                    SelectedStatuses = statusValues;
-                }
-            }
+            ParseSelectedStatusesFromRequest(Request.Form);
 
             // Generate the export file based on format
             OrderExportResult result;
@@ -156,5 +128,24 @@ public class OrderExportModel : PageModel
             .FirstOrDefaultAsync(s => s.UserId == userId);
 
         return store?.Id;
+    }
+
+    private void ParseSelectedStatusesFromRequest(IEnumerable<KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> requestData)
+    {
+        var statusesString = requestData.FirstOrDefault(kvp => kvp.Key == "SelectedStatuses").Value;
+        if (!string.IsNullOrEmpty(statusesString))
+        {
+            var statusValues = statusesString.ToString()
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => int.TryParse(s.Trim(), out var val) ? (OrderStatus)val : (OrderStatus?)null)
+                .Where(s => s.HasValue)
+                .Select(s => s!.Value)
+                .ToList();
+            
+            if (statusValues.Any())
+            {
+                SelectedStatuses = statusValues;
+            }
+        }
     }
 }
