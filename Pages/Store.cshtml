@@ -31,6 +31,35 @@
                             {
                                 <span class="badge bg-secondary mb-2">@Model.Store.Category</span>
                             }
+                            
+                            @* Seller Rating Display *@
+                            @if (Model.AverageRating.HasValue && Model.RatingCount > 0)
+                            {
+                                <div class="mb-2">
+                                    <span class="text-warning">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            if (i <= Math.Floor(Model.AverageRating.Value))
+                                            {
+                                                <i class="bi bi-star-fill"></i>
+                                            }
+                                            else if (i == Math.Ceiling(Model.AverageRating.Value) && Model.AverageRating.Value % 1 >= 0.5M)
+                                            {
+                                                <i class="bi bi-star-half"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-star"></i>
+                                            }
+                                        }
+                                    </span>
+                                    <span class="ms-2">
+                                        <strong>@Model.AverageRating.Value.ToString("0.0")</strong>
+                                        <small class="text-muted">(@Model.RatingCount @(Model.RatingCount == 1 ? "rating" : "ratings"))</small>
+                                    </span>
+                                </div>
+                            }
+                            
                             @if (!string.IsNullOrEmpty(Model.Store.Description))
                             {
                                 <p class="text-muted mb-0">@Model.Store.Description</p>

@@ -9,11 +9,16 @@ public class StoreModel : PageModel
 {
     private readonly IStoreProfileService _storeProfileService;
     private readonly IProductService _productService;
+    private readonly ISellerRatingService _sellerRatingService;
 
-    public StoreModel(IStoreProfileService storeProfileService, IProductService productService)
+    public StoreModel(
+        IStoreProfileService storeProfileService, 
+        IProductService productService,
+        ISellerRatingService sellerRatingService)
     {
         _storeProfileService = storeProfileService;
         _productService = productService;
+        _sellerRatingService = sellerRatingService;
     }
 
     public Store? Store { get; set; }
@@ -27,6 +32,16 @@ public class StoreModel : PageModel
     /// Gets the products grouped by category.
     /// </summary>
     public Dictionary<string, List<Product>> ProductsByCategory { get; set; } = new();
+
+    /// <summary>
+    /// Gets the average seller rating for this store.
+    /// </summary>
+    public decimal? AverageRating { get; set; }
+
+    /// <summary>
+    /// Gets the total number of ratings for this store.
+    /// </summary>
+    public int RatingCount { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether the store is publicly viewable (Active or LimitedActive).
@@ -52,6 +67,10 @@ public class StoreModel : PageModel
         {
             return NotFound();
         }
+
+        // Load seller rating information
+        AverageRating = await _sellerRatingService.GetAverageRatingAsync(Store.Id);
+        RatingCount = await _sellerRatingService.GetRatingCountAsync(Store.Id);
 
         // Handle stores that are not publicly viewable
         if (!IsStorePubliclyViewable)
