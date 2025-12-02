@@ -47,4 +47,12 @@ public interface IOrderService
     /// <param name="countryCode">The country code of the delivery address.</param>
     /// <returns>A validation result indicating if shipping is allowed.</returns>
     Task<(bool IsValid, string? ErrorMessage)> ValidateShippingForCartAsync(int? userId, string? sessionId, string countryCode);
+
+    /// <summary>
+    /// Validates stock availability and prices for items in the cart before placing an order.
+    /// </summary>
+    /// <param name="userId">The user ID (null for guest).</param>
+    /// <param name="sessionId">The session ID (for guest).</param>
+    /// <returns>An order validation result containing any stock or price issues.</returns>
+    Task<OrderValidationResult> ValidateCartForOrderAsync(int? userId, string? sessionId);
 }

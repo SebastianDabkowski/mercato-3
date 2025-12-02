@@ -27,6 +27,43 @@
         </div>
     }
 
+    @if (Model.ValidationErrors.Any())
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading">
+                <i class="bi bi-exclamation-triangle"></i> Unable to Place Order
+            </h5>
+            <p class="mb-2">Please review and update your cart before continuing:</p>
+            <ul class="mb-0">
+                @foreach (var error in Model.ValidationErrors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+            <hr />
+            <p class="mb-0 small">
+                <a asp-page="/Cart" class="alert-link">Go to cart to update quantities or remove items</a>
+            </p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model.ValidationWarnings.Any())
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading">
+                <i class="bi bi-exclamation-circle"></i> Price Changes Detected
+            </h5>
+            <ul class="mb-0">
+                @foreach (var warning in Model.ValidationWarnings)
+                {
+                    <li>@warning</li>
+                }
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="row">
         <div class="col-lg-8">
             <!-- Delivery Address -->

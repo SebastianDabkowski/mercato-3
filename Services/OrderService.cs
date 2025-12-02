@@ -38,136 +38,207 @@ public class OrderService : IOrderService
         int paymentMethodId,
         string? guestEmail)
     {
-        // Validate address
-        var address = await _addressService.GetAddressByIdAsync(addressId);
-        if (address == null)
+        // Use a transaction to ensure atomicity and prevent race conditions
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        
+        try
         {
-            throw new InvalidOperationException("Delivery address not found.");
-        }
-
-        // Validate shipping for this address
-        var (isValid, errorMessage) = await ValidateShippingForCartAsync(userId, sessionId, address.CountryCode);
-        if (!isValid)
-        {
-            throw new InvalidOperationException(errorMessage ?? "Shipping validation failed.");
-        }
-
-        // Get cart items
-        var itemsBySeller = await _cartService.GetCartItemsBySellerAsync(userId, sessionId);
-        if (!itemsBySeller.Any())
-        {
-            throw new InvalidOperationException("Cart is empty.");
-        }
-
-        // Calculate totals
-        decimal itemsSubtotal = 0;
-        decimal totalShipping = 0;
-
-        foreach (var sellerGroup in itemsBySeller)
-        {
-            var store = sellerGroup.Key;
-            var items = sellerGroup.Value;
-
-            // Calculate items subtotal
-            itemsSubtotal += items.Sum(i => i.PriceAtAdd * i.Quantity);
-
-            // Calculate shipping cost for this seller
-            if (selectedShippingMethods.ContainsKey(store.Id))
+            // Validate stock and prices before creating the order
+            var validationResult = await ValidateCartForOrderAsync(userId, sessionId);
+            if (!validationResult.IsValid)
             {
-                var shippingMethodId = selectedShippingMethods[store.Id];
-                var shippingCost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethodId, items);
-                totalShipping += shippingCost;
-            }
-            else
-            {
-                throw new InvalidOperationException($"Shipping method not selected for store {store.StoreName}.");
-            }
-        }
-
-        decimal totalAmount = itemsSubtotal + totalShipping;
-
-        // Generate order number
-        var orderNumber = await GenerateOrderNumberAsync();
-
-        // Create order
-        var order = new Order
-        {
-            OrderNumber = orderNumber,
-            UserId = userId,
-            GuestEmail = guestEmail,
-            DeliveryAddressId = addressId,
-            Status = OrderStatus.Pending,
-            Subtotal = itemsSubtotal,
-            ShippingCost = totalShipping,
-            TaxAmount = 0, // Tax calculation can be added later
-            TotalAmount = totalAmount,
-            PaymentMethodId = paymentMethodId,
-            PaymentStatus = PaymentStatus.Pending,
-            OrderedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync();
-
-        // Create order items from cart items
-        foreach (var sellerGroup in itemsBySeller)
-        {
-            var store = sellerGroup.Key;
-            var items = sellerGroup.Value;
-
-            // Create order shipping method record
-            if (selectedShippingMethods.ContainsKey(store.Id))
-            {
-                var shippingMethodId = selectedShippingMethods[store.Id];
-                var shippingCost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethodId, items);
+                // Build detailed error message
+                var errorMessages = new List<string>();
                 
-                var orderShippingMethod = new OrderShippingMethod
+                if (!string.IsNullOrEmpty(validationResult.GeneralError))
                 {
-                    OrderId = order.Id,
-                    StoreId = store.Id,
-                    ShippingMethodId = shippingMethodId,
-                    ShippingCost = shippingCost
-                };
-
-                _context.OrderShippingMethods.Add(orderShippingMethod);
+                    errorMessages.Add(validationResult.GeneralError);
+                }
+                
+                if (validationResult.StockIssues.Any())
+                {
+                    errorMessages.Add("Stock issues:");
+                    foreach (var issue in validationResult.StockIssues)
+                    {
+                        errorMessages.Add($"• {issue.Message}");
+                    }
+                }
+                
+                if (validationResult.PriceIssues.Any())
+                {
+                    errorMessages.Add("Price changes:");
+                    foreach (var issue in validationResult.PriceIssues)
+                    {
+                        errorMessages.Add($"• {issue.Message}");
+                    }
+                }
+                
+                throw new InvalidOperationException(string.Join(" ", errorMessages));
             }
 
-            foreach (var cartItem in items)
+            // Validate address
+            var address = await _addressService.GetAddressByIdAsync(addressId);
+            if (address == null)
             {
-                var variantDescription = string.Empty;
-                if (cartItem.ProductVariant != null)
+                throw new InvalidOperationException("Delivery address not found.");
+            }
+
+            // Validate shipping for this address
+            var (isValid, errorMessage) = await ValidateShippingForCartAsync(userId, sessionId, address.CountryCode);
+            if (!isValid)
+            {
+                throw new InvalidOperationException(errorMessage ?? "Shipping validation failed.");
+            }
+
+            // Get cart items
+            var itemsBySeller = await _cartService.GetCartItemsBySellerAsync(userId, sessionId);
+            if (!itemsBySeller.Any())
+            {
+                throw new InvalidOperationException("Cart is empty.");
+            }
+
+            // Calculate totals
+            decimal itemsSubtotal = 0;
+            decimal totalShipping = 0;
+
+            foreach (var sellerGroup in itemsBySeller)
+            {
+                var store = sellerGroup.Key;
+                var items = sellerGroup.Value;
+
+                // Calculate items subtotal
+                itemsSubtotal += items.Sum(i => i.PriceAtAdd * i.Quantity);
+
+                // Calculate shipping cost for this seller
+                if (selectedShippingMethods.ContainsKey(store.Id))
                 {
-                    var options = cartItem.ProductVariant.Options
-                        .Select(o => $"{o.AttributeValue.VariantAttribute.Name}: {o.AttributeValue.Value}");
-                    variantDescription = string.Join(", ", options);
+                    var shippingMethodId = selectedShippingMethods[store.Id];
+                    var shippingCost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethodId, items);
+                    totalShipping += shippingCost;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Shipping method not selected for store {store.StoreName}.");
+                }
+            }
+
+            decimal totalAmount = itemsSubtotal + totalShipping;
+
+            // Generate order number
+            var orderNumber = await GenerateOrderNumberAsync();
+
+            // Create order with snapshot of prices from cart
+            var order = new Order
+            {
+                OrderNumber = orderNumber,
+                UserId = userId,
+                GuestEmail = guestEmail,
+                DeliveryAddressId = addressId,
+                Status = OrderStatus.Pending,
+                Subtotal = itemsSubtotal,
+                ShippingCost = totalShipping,
+                TaxAmount = 0, // Tax calculation can be added later
+                TotalAmount = totalAmount,
+                PaymentMethodId = paymentMethodId,
+                PaymentStatus = PaymentStatus.Pending,
+                OrderedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            // Create order items from cart items with stable snapshot of prices and quantities
+            foreach (var sellerGroup in itemsBySeller)
+            {
+                var store = sellerGroup.Key;
+                var items = sellerGroup.Value;
+
+                // Create order shipping method record
+                if (selectedShippingMethods.ContainsKey(store.Id))
+                {
+                    var shippingMethodId = selectedShippingMethods[store.Id];
+                    var shippingCost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethodId, items);
+                    
+                    var orderShippingMethod = new OrderShippingMethod
+                    {
+                        OrderId = order.Id,
+                        StoreId = store.Id,
+                        ShippingMethodId = shippingMethodId,
+                        ShippingCost = shippingCost
+                    };
+
+                    _context.OrderShippingMethods.Add(orderShippingMethod);
                 }
 
-                var orderItem = new OrderItem
+                foreach (var cartItem in items)
                 {
-                    OrderId = order.Id,
-                    StoreId = store.Id,
-                    ProductId = cartItem.ProductId,
-                    ProductVariantId = cartItem.ProductVariantId,
-                    ProductTitle = cartItem.Product.Title,
-                    VariantDescription = variantDescription,
-                    Quantity = cartItem.Quantity,
-                    UnitPrice = cartItem.PriceAtAdd,
-                    Subtotal = cartItem.PriceAtAdd * cartItem.Quantity
-                };
+                    var variantDescription = string.Empty;
+                    if (cartItem.ProductVariant != null)
+                    {
+                        var options = cartItem.ProductVariant.Options
+                            .Select(o => $"{o.AttributeValue.VariantAttribute.Name}: {o.AttributeValue.Value}");
+                        variantDescription = string.Join(", ", options);
+                    }
 
-                _context.OrderItems.Add(orderItem);
+                    var orderItem = new OrderItem
+                    {
+                        OrderId = order.Id,
+                        StoreId = store.Id,
+                        ProductId = cartItem.ProductId,
+                        ProductVariantId = cartItem.ProductVariantId,
+                        ProductTitle = cartItem.Product.Title,
+                        VariantDescription = variantDescription,
+                        Quantity = cartItem.Quantity,
+                        UnitPrice = cartItem.PriceAtAdd, // Use price from cart for stable snapshot
+                        Subtotal = cartItem.PriceAtAdd * cartItem.Quantity
+                    };
+
+                    _context.OrderItems.Add(orderItem);
+                    
+                    // Deduct stock from inventory
+                    var product = await _context.Products
+                        .Include(p => p.Variants)
+                        .FirstOrDefaultAsync(p => p.Id == cartItem.ProductId);
+                    
+                    if (product != null)
+                    {
+                        if (cartItem.ProductVariantId.HasValue)
+                        {
+                            var variant = product.Variants.FirstOrDefault(v => v.Id == cartItem.ProductVariantId.Value);
+                            if (variant != null)
+                            {
+                                variant.Stock -= cartItem.Quantity;
+                                variant.UpdatedAt = DateTime.UtcNow;
+                            }
+                        }
+                        else
+                        {
+                            product.Stock -= cartItem.Quantity;
+                            product.UpdatedAt = DateTime.UtcNow;
+                        }
+                    }
+                }
             }
+
+            await _context.SaveChangesAsync();
+
+            // Clear the cart
+            await _cartService.ClearCartAsync(userId, sessionId);
+
+            // Commit the transaction
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Created order {OrderNumber} for user {UserId}", orderNumber, userId ?? 0);
+
+            return order;
         }
-
-        await _context.SaveChangesAsync();
-
-        // Clear the cart
-        await _cartService.ClearCartAsync(userId, sessionId);
-
-        _logger.LogInformation("Created order {OrderNumber} for user {UserId}", orderNumber, userId ?? 0);
-
-        return order;
+        catch
+        {
+            // Rollback transaction on any error
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -219,6 +290,141 @@ public class OrderService : IOrderService
         // For now, we only check if the country is in our allowed list
 
         return (true, null);
+    }
+
+    /// <inheritdoc />
+    public async Task<OrderValidationResult> ValidateCartForOrderAsync(int? userId, string? sessionId)
+    {
+        var result = new OrderValidationResult { IsValid = true };
+
+        try
+        {
+            // Get cart items
+            var itemsBySeller = await _cartService.GetCartItemsBySellerAsync(userId, sessionId);
+            if (!itemsBySeller.Any())
+            {
+                result.IsValid = false;
+                result.GeneralError = "Cart is empty.";
+                return result;
+            }
+
+            // Validate each cart item for stock and price
+            foreach (var sellerGroup in itemsBySeller)
+            {
+                foreach (var cartItem in sellerGroup.Value)
+                {
+                    // Get fresh product data from database to check current stock and price
+                    var product = await _context.Products
+                        .Include(p => p.Variants)
+                        .FirstOrDefaultAsync(p => p.Id == cartItem.ProductId);
+
+                    if (product == null)
+                    {
+                        result.IsValid = false;
+                        result.GeneralError = $"Product '{cartItem.Product.Title}' is no longer available.";
+                        continue;
+                    }
+
+                    // Determine variant description for error messages
+                    string? variantDescription = null;
+                    if (cartItem.ProductVariant != null)
+                    {
+                        var options = cartItem.ProductVariant.Options
+                            .Select(o => $"{o.AttributeValue.VariantAttribute.Name}: {o.AttributeValue.Value}");
+                        variantDescription = string.Join(", ", options);
+                    }
+
+                    // Validate stock
+                    int availableStock;
+                    if (cartItem.ProductVariantId.HasValue)
+                    {
+                        var variant = product.Variants.FirstOrDefault(v => v.Id == cartItem.ProductVariantId.Value);
+                        if (variant == null || !variant.IsEnabled)
+                        {
+                            result.IsValid = false;
+                            result.StockIssues.Add(new StockValidationIssue
+                            {
+                                CartItemId = cartItem.Id,
+                                ProductId = cartItem.ProductId,
+                                ProductVariantId = cartItem.ProductVariantId,
+                                ProductTitle = product.Title,
+                                VariantDescription = variantDescription,
+                                RequestedQuantity = cartItem.Quantity,
+                                AvailableStock = 0,
+                                Message = $"{product.Title} ({variantDescription}) is no longer available."
+                            });
+                            continue;
+                        }
+                        availableStock = variant.Stock;
+                    }
+                    else
+                    {
+                        availableStock = product.Stock;
+                    }
+
+                    if (cartItem.Quantity > availableStock)
+                    {
+                        result.IsValid = false;
+                        var itemName = cartItem.ProductVariantId.HasValue 
+                            ? $"{product.Title} ({variantDescription})" 
+                            : product.Title;
+                        result.StockIssues.Add(new StockValidationIssue
+                        {
+                            CartItemId = cartItem.Id,
+                            ProductId = cartItem.ProductId,
+                            ProductVariantId = cartItem.ProductVariantId,
+                            ProductTitle = product.Title,
+                            VariantDescription = variantDescription,
+                            RequestedQuantity = cartItem.Quantity,
+                            AvailableStock = availableStock,
+                            Message = availableStock == 0 
+                                ? $"{itemName} is out of stock." 
+                                : $"{itemName}: Only {availableStock} available, but you requested {cartItem.Quantity}."
+                        });
+                    }
+
+                    // Validate price
+                    decimal currentPrice;
+                    if (cartItem.ProductVariantId.HasValue)
+                    {
+                        var variant = product.Variants.FirstOrDefault(v => v.Id == cartItem.ProductVariantId.Value);
+                        currentPrice = variant?.PriceOverride ?? product.Price;
+                    }
+                    else
+                    {
+                        currentPrice = product.Price;
+                    }
+
+                    if (cartItem.PriceAtAdd != currentPrice)
+                    {
+                        result.IsValid = false;
+                        var itemName = cartItem.ProductVariantId.HasValue 
+                            ? $"{product.Title} ({variantDescription})" 
+                            : product.Title;
+                        var priceChange = currentPrice > cartItem.PriceAtAdd ? "increased" : "decreased";
+                        result.PriceIssues.Add(new PriceValidationIssue
+                        {
+                            CartItemId = cartItem.Id,
+                            ProductId = cartItem.ProductId,
+                            ProductVariantId = cartItem.ProductVariantId,
+                            ProductTitle = product.Title,
+                            VariantDescription = variantDescription,
+                            PriceInCart = cartItem.PriceAtAdd,
+                            CurrentPrice = currentPrice,
+                            Message = $"{itemName}: Price has {priceChange} from {cartItem.PriceAtAdd:C} to {currentPrice:C}."
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating cart for order");
+            result.IsValid = false;
+            result.GeneralError = "An error occurred while validating your order. Please try again.";
+        }
+
+        return result;
     }
 
     private async Task<string> GenerateOrderNumberAsync()
