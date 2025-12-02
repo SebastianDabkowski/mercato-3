@@ -1,0 +1,189 @@
+@page
+@model MercatoApp.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Marketplace Performance Dashboard - Admin";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-graph-up"></i> Marketplace Performance Dashboard
+                </h1>
+            </div>
+
+            <!-- Error Message -->
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Date Range Selector -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-range"></i> Select Date Range
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="DateRange" class="form-label">Date Range Preset</label>
+                            <select name="DateRange" id="DateRange" class="form-select" onchange="toggleCustomDates()">
+                                <option value="today" selected="@(Model.DateRange == "today")">Today</option>
+                                <option value="last7days" selected="@(Model.DateRange == "last7days")">Last 7 Days</option>
+                                <option value="last30days" selected="@(Model.DateRange == "last30days")">Last 30 Days</option>
+                                <option value="custom" selected="@(Model.DateRange == "custom")">Custom Range</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3" id="customStartDateContainer" style="display: @(Model.DateRange == "custom" ? "block" : "none")">
+                            <label for="CustomStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="CustomStartDate" name="CustomStartDate" 
+                                   value="@(Model.CustomStartDate?.ToString("yyyy-MM-dd"))" max="@DateTime.UtcNow.ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <div class="col-md-3" id="customEndDateContainer" style="display: @(Model.DateRange == "custom" ? "block" : "none")">
+                            <label for="CustomEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="CustomEndDate" name="CustomEndDate" 
+                                   value="@(Model.CustomEndDate?.ToString("yyyy-MM-dd"))" max="@DateTime.UtcNow.ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh Dashboard
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Dashboard Info -->
+            @if (Model.Metrics != null)
+            {
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle"></i> 
+                    Showing data from <strong>@Model.StartDate.ToString("MMM dd, yyyy")</strong> to <strong>@Model.EndDate.ToString("MMM dd, yyyy")</strong>
+                    <br/>
+                    <small class="text-muted">Last refreshed: @Model.Metrics.CalculatedAt.ToString("MMM dd, yyyy h:mm tt") UTC</small>
+                </div>
+
+                @if (Model.Metrics.TotalOrders == 0 && Model.Metrics.NewUsers == 0)
+                {
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-circle"></i> No activity found for the selected period. Try selecting a different date range.
+                    </div>
+                }
+
+                <!-- KPI Tiles -->
+                <div class="row g-4 mb-4">
+                    <!-- GMV Tile -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-primary">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-currency-dollar"></i> Gross Merchandise Value
+                                </h6>
+                                <h2 class="card-title mb-3 text-primary">@Model.Metrics.GrossMerchandiseValue.ToString("C")</h2>
+                                <p class="card-text text-muted small">Total order value including shipping, before commission</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Orders Tile -->
+                    <div class="col-md-6 col-lg-4">
+                        <a asp-page="/Admin/Orders/Index" class="text-decoration-none">
+                            <div class="card h-100 border-success hover-shadow">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-bag-check"></i> Total Orders
+                                    </h6>
+                                    <h2 class="card-title mb-3 text-success">@Model.Metrics.TotalOrders.ToString("N0")</h2>
+                                    <p class="card-text text-muted small">Click to view detailed order list</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Active Sellers Tile -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-info">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-shop"></i> Active Sellers
+                                </h6>
+                                <h2 class="card-title mb-3 text-info">@Model.Metrics.ActiveSellers.ToString("N0")</h2>
+                                <p class="card-text text-muted small">Stores with active products or orders in period</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Products Tile -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-warning">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-box"></i> Active Products
+                                </h6>
+                                <h2 class="card-title mb-3 text-warning">@Model.Metrics.ActiveProducts.ToString("N0")</h2>
+                                <p class="card-text text-muted small">Products with Active status in catalog</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New Users Tile -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-secondary">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-person-plus"></i> New Users
+                                </h6>
+                                <h2 class="card-title mb-3 text-secondary">@Model.Metrics.NewUsers.ToString("N0")</h2>
+                                <p class="card-text text-muted small">Users registered during the selected period</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-shadow {
+        transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .hover-shadow:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    a .card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+
+<script>
+    function toggleCustomDates() {
+        const dateRange = document.getElementById('DateRange').value;
+        const startContainer = document.getElementById('customStartDateContainer');
+        const endContainer = document.getElementById('customEndDateContainer');
+        
+        if (dateRange === 'custom') {
+            startContainer.style.display = 'block';
+            endContainer.style.display = 'block';
+        } else {
+            startContainer.style.display = 'none';
+            endContainer.style.display = 'none';
+        }
+    }
+</script>

@@ -217,6 +217,21 @@ public static class TestDataSeeder
         context.Users.Add(buyerUser);
         await context.SaveChangesAsync();
 
+        // Create a test admin user
+        var adminUser = new User
+        {
+            Email = "admin@test.com",
+            PasswordHash = HashPassword("Test123!"),
+            FirstName = "Admin",
+            LastName = "User",
+            UserType = UserType.Admin,
+            Status = AccountStatus.Active,
+            AcceptedTerms = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(adminUser);
+        await context.SaveChangesAsync();
+
         // Create a test cart with items from both sellers
         var cart = new Cart
         {
