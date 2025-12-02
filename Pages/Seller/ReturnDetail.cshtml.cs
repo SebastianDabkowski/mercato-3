@@ -40,6 +40,12 @@ public class ReturnDetailModel : PageModel
     public Store? CurrentStore { get; set; }
 
     /// <summary>
+    /// Gets or sets the new message content input.
+    /// </summary>
+    [BindProperty]
+    public string NewMessageContent { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets the current seller's store.
     /// </summary>
     /// <returns>The store, or null if not found.</returns>
@@ -86,6 +92,13 @@ public class ReturnDetailModel : PageModel
                 CurrentStore.Id, id, ReturnRequest.SubOrder.StoreId);
             TempData["ErrorMessage"] = "You are not authorized to view this return request.";
             return RedirectToPage("/Seller/Returns");
+        }
+
+        // Mark messages as read for the seller
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdClaim, out var userId))
+        {
+            await _returnRequestService.MarkMessagesAsReadAsync(id, userId, isSellerViewing: true);
         }
 
         return Page();
@@ -179,6 +192,55 @@ public class ReturnDetailModel : PageModel
             TempData["ErrorMessage"] = ex.Message;
         }
 
+        return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
+    }
+
+    /// <summary>
+    /// Handles POST request to add a message to the return request.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <returns>The page result.</returns>
+    public async Task<IActionResult> OnPostAddMessageAsync(int returnRequestId)
+    {
+        // Get the seller's store
+        CurrentStore = await GetCurrentStoreAsync();
+
+        if (CurrentStore == null)
+        {
+            TempData["ErrorMessage"] = "Store not found.";
+            return RedirectToPage("/Index");
+        }
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("User ID claim not found or invalid");
+            return RedirectToPage("/Account/Login");
+        }
+
+        // Validate message content
+        if (string.IsNullOrWhiteSpace(NewMessageContent))
+        {
+            TempData["ErrorMessage"] = "Message cannot be empty.";
+            return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
+        }
+
+        if (NewMessageContent.Length > 2000)
+        {
+            TempData["ErrorMessage"] = "Message cannot exceed 2000 characters.";
+            return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
+        }
+
+        // Add the message
+        var message = await _returnRequestService.AddMessageAsync(returnRequestId, userId, NewMessageContent, isFromSeller: true);
+
+        if (message == null)
+        {
+            TempData["ErrorMessage"] = "Failed to send message. You may not have permission to message this case.";
+            return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
+        }
+
+        TempData["SuccessMessage"] = "Message sent successfully.";
         return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
     }
 }
