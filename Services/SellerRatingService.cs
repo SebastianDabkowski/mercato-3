@@ -86,16 +86,12 @@ public class SellerRatingService : ISellerRatingService
     /// <inheritdoc />
     public async Task<decimal?> GetAverageRatingAsync(int storeId)
     {
-        var ratings = await _context.SellerRatings
+        var average = await _context.SellerRatings
             .Where(sr => sr.StoreId == storeId)
-            .ToListAsync();
+            .Select(sr => (decimal?)sr.Rating)
+            .AverageAsync();
 
-        if (!ratings.Any())
-        {
-            return null;
-        }
-
-        return (decimal)ratings.Average(sr => sr.Rating);
+        return average;
     }
 
     /// <inheritdoc />

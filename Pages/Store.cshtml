@@ -39,23 +39,12 @@
                                     <span class="text-warning">
                                         @for (int i = 1; i <= 5; i++)
                                         {
-                                            if (i <= Math.Floor(Model.AverageRating.Value))
-                                            {
-                                                <i class="bi bi-star-fill"></i>
-                                            }
-                                            else if (i == Math.Ceiling(Model.AverageRating.Value) && Model.AverageRating.Value % 1 >= 0.5M)
-                                            {
-                                                <i class="bi bi-star-half"></i>
-                                            }
-                                            else
-                                            {
-                                                <i class="bi bi-star"></i>
-                                            }
+                                            <i class="bi @MercatoApp.Helpers.RatingHelper.GetStarIconClass(i, Model.AverageRating.Value)"></i>
                                         }
                                     </span>
                                     <span class="ms-2">
-                                        <strong>@Model.AverageRating.Value.ToString("0.0")</strong>
-                                        <small class="text-muted">(@Model.RatingCount @(Model.RatingCount == 1 ? "rating" : "ratings"))</small>
+                                        <strong>@MercatoApp.Helpers.RatingHelper.FormatRating(Model.AverageRating.Value)</strong>
+                                        <small class="text-muted">(@Model.RatingCount @MercatoApp.Helpers.RatingHelper.GetRatingLabel(Model.RatingCount))</small>
                                     </span>
                                 </div>
                             }

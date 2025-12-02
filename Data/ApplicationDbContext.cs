@@ -1486,5 +1486,21 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.ShipmentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<SellerRating>(entity =>
+        {
+            // Create index on StoreId for efficient average rating queries
+            entity.HasIndex(e => e.StoreId);
+
+            // Create index on UserId for user rating history queries
+            entity.HasIndex(e => e.UserId);
+
+            // Create index on SellerSubOrderId for checking existing ratings
+            entity.HasIndex(e => e.SellerSubOrderId);
+
+            // Create composite unique constraint to enforce one rating per sub-order per user
+            entity.HasIndex(e => new { e.UserId, e.SellerSubOrderId })
+                .IsUnique();
+        });
     }
 }
