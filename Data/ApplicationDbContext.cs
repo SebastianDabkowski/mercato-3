@@ -168,6 +168,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<PaymentTransaction> PaymentTransactions { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the refund transactions table.
+    /// </summary>
+    public DbSet<RefundTransaction> RefundTransactions { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the escrow transactions table.
     /// </summary>
     public DbSet<EscrowTransaction> EscrowTransactions { get; set; } = null!;

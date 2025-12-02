@@ -30,6 +30,18 @@ public interface IPaymentProviderService
     /// <param name="providerId">The payment method provider ID.</param>
     /// <returns>True if enabled, false otherwise.</returns>
     bool IsPaymentMethodEnabled(string providerId);
+
+    /// <summary>
+    /// Processes a refund with the payment provider.
+    /// </summary>
+    /// <param name="paymentTransaction">The original payment transaction.</param>
+    /// <param name="refundAmount">The amount to refund.</param>
+    /// <param name="reason">The reason for the refund.</param>
+    /// <returns>Refund processing result.</returns>
+    Task<RefundProcessingResult> ProcessRefundAsync(
+        PaymentTransaction paymentTransaction,
+        decimal refundAmount,
+        string reason);
 }
 
 /// <summary>
@@ -80,6 +92,32 @@ public class PaymentVerificationResult
 
     /// <summary>
     /// Gets or sets the error message if payment failed.
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Gets or sets additional metadata from the provider.
+    /// </summary>
+    public Dictionary<string, string>? Metadata { get; set; }
+}
+
+/// <summary>
+/// Result of refund processing.
+/// </summary>
+public class RefundProcessingResult
+{
+    /// <summary>
+    /// Gets or sets whether the refund was successful.
+    /// </summary>
+    public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the provider's refund transaction ID.
+    /// </summary>
+    public string? ProviderRefundId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error message if refund failed.
     /// </summary>
     public string? ErrorMessage { get; set; }
 

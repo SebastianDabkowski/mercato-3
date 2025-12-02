@@ -160,4 +160,83 @@ public class MockPaymentProviderService : IPaymentProviderService
     {
         return _enabledMethods.Contains(providerId);
     }
+
+    /// <inheritdoc />
+    public async Task<RefundProcessingResult> ProcessRefundAsync(
+        PaymentTransaction paymentTransaction,
+        decimal refundAmount,
+        string reason)
+    {
+        await Task.Delay(100); // Simulate API call
+
+        _logger.LogInformation("Processing refund for payment transaction {TransactionId}, amount: {Amount}, reason: {Reason}",
+            paymentTransaction.Id, refundAmount, reason);
+
+        // Validate refund amount
+        if (refundAmount <= 0)
+        {
+            return new RefundProcessingResult
+            {
+                Success = false,
+                ErrorMessage = "Refund amount must be greater than zero"
+            };
+        }
+
+        if (refundAmount > paymentTransaction.Amount)
+        {
+            return new RefundProcessingResult
+            {
+                Success = false,
+                ErrorMessage = $"Refund amount ({refundAmount}) cannot exceed original payment amount ({paymentTransaction.Amount})"
+            };
+        }
+
+        // Check payment status
+        if (paymentTransaction.Status != PaymentStatus.Completed && 
+            paymentTransaction.Status != PaymentStatus.Authorized)
+        {
+            return new RefundProcessingResult
+            {
+                Success = false,
+                ErrorMessage = $"Cannot refund payment with status {paymentTransaction.Status}"
+            };
+        }
+
+        // For cash on delivery, refunds need to be handled manually
+        if (paymentTransaction.PaymentMethod?.ProviderId == "cash_on_delivery")
+        {
+            _logger.LogInformation("Cash on delivery refund - must be processed manually");
+            
+            // In a real system, this might create a task for manual processing
+            var providerRefundId = $"COD-REFUND-{Guid.NewGuid().ToString("N")[..20]}";
+            
+            return new RefundProcessingResult
+            {
+                Success = true,
+                ProviderRefundId = providerRefundId,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "RefundMethod", "Manual" },
+                    { "Note", "Cash on delivery refund requires manual processing" }
+                }
+            };
+        }
+
+        // For other payment methods, simulate provider refund processing
+        // In production, this would call the actual payment provider API
+        var refundId = $"REFUND-{Guid.NewGuid().ToString("N")[..20]}";
+
+        _logger.LogInformation("Refund processed successfully with ID {RefundId}", refundId);
+
+        return new RefundProcessingResult
+        {
+            Success = true,
+            ProviderRefundId = refundId,
+            Metadata = new Dictionary<string, string>
+            {
+                { "ProcessedAt", DateTime.UtcNow.ToString("O") },
+                { "OriginalTransactionId", paymentTransaction.ProviderTransactionId ?? "N/A" }
+            }
+        };
+    }
 }
