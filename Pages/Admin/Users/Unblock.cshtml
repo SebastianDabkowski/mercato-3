@@ -1,0 +1,124 @@
+@page
+@model MercatoApp.Pages.Admin.Users.UnblockModel
+@{
+    ViewData["Title"] = "Unblock User Account - Admin";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-unlock"></i> Unblock User Account
+                </h1>
+                <a asp-page="/Admin/Users/Details" asp-route-id="@Model.User?.Id" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+            </div>
+
+            @if (Model.User == null)
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> User not found.
+                </div>
+            }
+            else
+            {
+                <!-- User Info Alert -->
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">
+                        <i class="bi bi-info-circle"></i> Account Information
+                    </h5>
+                    <p>You are about to unblock the following user account:</p>
+                    <hr>
+                    <p class="mb-1"><strong>User ID:</strong> @Model.User.Id</p>
+                    <p class="mb-1"><strong>Name:</strong> @Model.User.FirstName @Model.User.LastName</p>
+                    <p class="mb-1"><strong>Email:</strong> @Model.User.Email</p>
+                    <p class="mb-0"><strong>Role:</strong> @Model.User.UserType</p>
+                </div>
+
+                <!-- Block Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-shield-exclamation"></i> Current Block Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.BlockedByAdmin != null)
+                        {
+                            <p class="mb-2">
+                                <strong>Blocked By:</strong> @Model.BlockedByAdmin.FirstName @Model.BlockedByAdmin.LastName (@Model.BlockedByAdmin.Email)
+                            </p>
+                        }
+                        @if (Model.User.BlockedAt.HasValue)
+                        {
+                            <p class="mb-2">
+                                <strong>Blocked At:</strong> @Model.User.BlockedAt.Value.ToString("MMMM dd, yyyy h:mm tt") UTC
+                            </p>
+                        }
+                        @if (Model.User.BlockReason.HasValue)
+                        {
+                            <p class="mb-2">
+                                <strong>Reason:</strong> 
+                                <span class="badge bg-danger">@Model.User.BlockReason.Value</span>
+                            </p>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.User.BlockNotes))
+                        {
+                            <p class="mb-0">
+                                <strong>Notes:</strong> @Model.User.BlockNotes
+                            </p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Unblock Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clipboard-check"></i> Unblock Confirmation
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success">
+                            <p class="mb-0">
+                                <i class="bi bi-check-circle"></i> After unblocking, the user will be able to log in and access their account normally.
+                                @if (Model.User.UserType == MercatoApp.Models.UserType.Seller)
+                                {
+                                    <text>Their store and product listings will become visible again.</text>
+                                }
+                            </p>
+                        </div>
+
+                        <form method="post">
+                            <div class="mb-3">
+                                <label asp-for="Notes" class="form-label">
+                                    Notes (Optional)
+                                </label>
+                                <textarea asp-for="Notes" class="form-control" rows="3" 
+                                          placeholder="Provide any notes about why this account is being unblocked..."></textarea>
+                                <span asp-validation-for="Notes" class="text-danger"></span>
+                                <small class="text-muted">Maximum 1000 characters</small>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a asp-page="/Admin/Users/Details" asp-route-id="@Model.User.Id" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-unlock"></i> Confirm and Unblock Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

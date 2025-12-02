@@ -174,4 +174,126 @@ public class UserManagementService : IUserManagementService
         var user = await _context.Users.FindAsync(userId);
         return user?.UserType.ToString() ?? "Unknown";
     }
+
+    /// <inheritdoc />
+    public async Task<bool> BlockUserAsync(int userId, int adminUserId, BlockReason reason, string? notes)
+    {
+        try
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("Attempted to block non-existent user {UserId}", userId);
+                return false;
+            }
+
+            // Check if user is already blocked
+            if (user.Status == AccountStatus.Blocked)
+            {
+                _logger.LogInformation("User {UserId} is already blocked", userId);
+                return false;
+            }
+
+            var previousStatus = user.Status;
+
+            // Update user status and blocking information
+            user.Status = AccountStatus.Blocked;
+            user.BlockedByUserId = adminUserId;
+            user.BlockedAt = DateTime.UtcNow;
+            user.BlockReason = reason;
+            user.BlockNotes = notes;
+
+            // Create audit log entry
+            var auditLog = new AdminAuditLog
+            {
+                AdminUserId = adminUserId,
+                TargetUserId = userId,
+                Action = "BlockUser",
+                Reason = $"{reason}: {notes}",
+                ActionTimestamp = DateTime.UtcNow,
+                Metadata = $"Previous status: {previousStatus}, Reason: {reason}"
+            };
+
+            _context.AdminAuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} blocked by admin {AdminUserId} for reason {Reason}", 
+                userId, adminUserId, reason);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error blocking user {UserId}", userId);
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UnblockUserAsync(int userId, int adminUserId, string? notes)
+    {
+        try
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("Attempted to unblock non-existent user {UserId}", userId);
+                return false;
+            }
+
+            // Check if user is actually blocked
+            if (user.Status != AccountStatus.Blocked)
+            {
+                _logger.LogInformation("User {UserId} is not currently blocked", userId);
+                return false;
+            }
+
+            // Update user status - set to Active (they were previously active before being blocked)
+            user.Status = AccountStatus.Active;
+            
+            // Keep block history for audit purposes, don't clear BlockedByUserId, BlockedAt, etc.
+
+            // Create audit log entry
+            var auditLog = new AdminAuditLog
+            {
+                AdminUserId = adminUserId,
+                TargetUserId = userId,
+                Action = "UnblockUser",
+                Reason = notes,
+                ActionTimestamp = DateTime.UtcNow,
+                Metadata = $"Previous status: Blocked, New status: Active"
+            };
+
+            _context.AdminAuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} unblocked by admin {AdminUserId}", userId, adminUserId);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unblocking user {UserId}", userId);
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<List<AdminAuditLog>> GetUserAuditLogAsync(int userId, int limit = 10)
+    {
+        try
+        {
+            return await _context.AdminAuditLogs
+                .Where(log => log.TargetUserId == userId)
+                .Include(log => log.AdminUser)
+                .OrderByDescending(log => log.ActionTimestamp)
+                .Take(limit)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting audit log for user {UserId}", userId);
+            throw;
+        }
+    }
 }

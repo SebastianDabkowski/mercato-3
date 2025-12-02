@@ -35,4 +35,31 @@ public interface IUserManagementService
     /// <param name="userId">The user ID.</param>
     /// <returns>The role name.</returns>
     Task<string> GetUserRoleAsync(int userId);
+
+    /// <summary>
+    /// Blocks a user account.
+    /// </summary>
+    /// <param name="userId">The user ID to block.</param>
+    /// <param name="adminUserId">The admin user ID performing the action.</param>
+    /// <param name="reason">The reason for blocking.</param>
+    /// <param name="notes">Additional notes about the blocking.</param>
+    /// <returns>True if the user was successfully blocked, false otherwise.</returns>
+    Task<bool> BlockUserAsync(int userId, int adminUserId, BlockReason reason, string? notes);
+
+    /// <summary>
+    /// Unblocks a user account.
+    /// </summary>
+    /// <param name="userId">The user ID to unblock.</param>
+    /// <param name="adminUserId">The admin user ID performing the action.</param>
+    /// <param name="notes">Additional notes about the unblocking.</param>
+    /// <returns>True if the user was successfully unblocked, false otherwise.</returns>
+    Task<bool> UnblockUserAsync(int userId, int adminUserId, string? notes);
+
+    /// <summary>
+    /// Gets the audit log entries for a specific user.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="limit">The maximum number of entries to return.</param>
+    /// <returns>A list of audit log entries.</returns>
+    Task<List<AdminAuditLog>> GetUserAuditLogAsync(int userId, int limit = 10);
 }

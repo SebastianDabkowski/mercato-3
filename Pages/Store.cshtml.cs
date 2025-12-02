@@ -55,6 +55,7 @@ public class StoreModel : PageModel
     /// Gets a value indicating whether the store is publicly viewable (Active or LimitedActive).
     /// </summary>
     public bool IsStorePubliclyViewable => Store != null && 
+        Store.User.Status != AccountStatus.Blocked &&
         (Store.Status == StoreStatus.Active || Store.Status == StoreStatus.LimitedActive);
 
     /// <summary>
@@ -86,12 +87,20 @@ public class StoreModel : PageModel
         // Handle stores that are not publicly viewable
         if (!IsStorePubliclyViewable)
         {
-            UnavailableMessage = Store.Status switch
+            // Check if seller account is blocked first
+            if (Store.User.Status == AccountStatus.Blocked)
             {
-                StoreStatus.Suspended => "This store is currently unavailable.",
-                StoreStatus.PendingVerification => "This store is not yet available for public viewing.",
-                _ => "This store is currently unavailable."
-            };
+                UnavailableMessage = "This store is currently unavailable.";
+            }
+            else
+            {
+                UnavailableMessage = Store.Status switch
+                {
+                    StoreStatus.Suspended => "This store is currently unavailable.",
+                    StoreStatus.PendingVerification => "This store is not yet available for public viewing.",
+                    _ => "This store is currently unavailable."
+                };
+            }
         }
         else
         {

@@ -98,6 +98,60 @@
                     </div>
                 </div>
 
+                <!-- Account Actions Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear"></i> Account Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.User.Status == MercatoApp.Models.AccountStatus.Blocked)
+                        {
+                            <div class="alert alert-danger mb-3">
+                                <h6 class="alert-heading">
+                                    <i class="bi bi-ban"></i> This account is blocked
+                                </h6>
+                                <hr>
+                                @if (Model.BlockedByAdmin != null)
+                                {
+                                    <p class="mb-1">
+                                        <strong>Blocked By:</strong> @Model.BlockedByAdmin.FirstName @Model.BlockedByAdmin.LastName (@Model.BlockedByAdmin.Email)
+                                    </p>
+                                }
+                                @if (Model.User.BlockedAt.HasValue)
+                                {
+                                    <p class="mb-1">
+                                        <strong>Blocked At:</strong> @Model.User.BlockedAt.Value.ToString("MMMM dd, yyyy h:mm tt") UTC
+                                    </p>
+                                }
+                                @if (Model.User.BlockReason.HasValue)
+                                {
+                                    <p class="mb-1">
+                                        <strong>Reason:</strong> @Model.User.BlockReason.Value
+                                    </p>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.User.BlockNotes))
+                                {
+                                    <p class="mb-0">
+                                        <strong>Notes:</strong> @Model.User.BlockNotes
+                                    </p>
+                                }
+                            </div>
+                            <a asp-page="/Admin/Users/Unblock" asp-route-id="@Model.User.Id" class="btn btn-success">
+                                <i class="bi bi-unlock"></i> Unblock Account
+                            </a>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-3">Manage this user's account status and permissions.</p>
+                            <a asp-page="/Admin/Users/Block" asp-route-id="@Model.User.Id" class="btn btn-danger">
+                                <i class="bi bi-ban"></i> Block Account
+                            </a>
+                        }
+                    </div>
+                </div>
+
                 <!-- Verification Status Card -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -270,6 +324,62 @@
                         else
                         {
                             <p class="text-muted mb-0">No login activity recorded for this user.</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Admin Audit Log Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-text"></i> Admin Audit Log
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.AuditLog != null && Model.AuditLog.Count > 0)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date/Time</th>
+                                            <th>Action</th>
+                                            <th>Admin</th>
+                                            <th>Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var log in Model.AuditLog)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <small>@log.ActionTimestamp.ToString("MMM dd, yyyy h:mm tt")</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-@(log.Action switch
+                                                    {
+                                                        "BlockUser" => "danger",
+                                                        "UnblockUser" => "success",
+                                                        _ => "secondary"
+                                                    })">
+                                                        @log.Action
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <small>@log.AdminUser.FirstName @log.AdminUser.LastName</small>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">@(log.Reason ?? "No reason provided")</small>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No admin actions recorded for this user.</p>
                         }
                     </div>
                 </div>

@@ -40,6 +40,16 @@ public class DetailsModel : PageModel
     public List<LoginEvent>? LoginHistory { get; set; }
 
     /// <summary>
+    /// Gets or sets the audit log entries for the user.
+    /// </summary>
+    public List<AdminAuditLog>? AuditLog { get; set; }
+
+    /// <summary>
+    /// Gets or sets the admin user who blocked this account (if blocked).
+    /// </summary>
+    public User? BlockedByAdmin { get; set; }
+
+    /// <summary>
     /// Handles GET request to display user details.
     /// </summary>
     /// <param name="id">The user ID.</param>
@@ -61,6 +71,15 @@ public class DetailsModel : PageModel
 
             // Get login history
             LoginHistory = await _userManagementService.GetLoginHistoryAsync(id, 20);
+
+            // Get audit log
+            AuditLog = await _userManagementService.GetUserAuditLogAsync(id, 20);
+
+            // Get blocked by admin info if user is blocked
+            if (User.Status == AccountStatus.Blocked && User.BlockedByUserId.HasValue)
+            {
+                BlockedByAdmin = await _userManagementService.GetUserDetailsAsync(User.BlockedByUserId.Value);
+            }
 
             return Page();
         }
