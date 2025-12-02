@@ -42,8 +42,8 @@ public class PaymentAuthorizeModel : PageModel
     {
         if (action == "approve")
         {
-            // Simulate successful payment
-            var providerTransactionId = $"SIM-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}";
+            // Simulate successful payment with a unique transaction ID
+            var providerTransactionId = $"SIM-{transactionId}-{Guid.NewGuid():N}".Substring(0, 24);
             await _paymentService.HandlePaymentCallbackAsync(transactionId, true, providerTransactionId, null);
 
             var transaction = await _paymentService.GetPaymentTransactionByIdAsync(transactionId);

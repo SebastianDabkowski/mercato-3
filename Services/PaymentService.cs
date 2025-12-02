@@ -131,7 +131,7 @@ public class PaymentService : IPaymentService
         if (transaction.PaymentMethod.ProviderId == "cash_on_delivery")
         {
             transaction.Status = PaymentStatus.Authorized;
-            transaction.ProviderTransactionId = $"COD-{transaction.Id}";
+            transaction.ProviderTransactionId = $"COD-{transaction.OrderId}-{transaction.Id}";
             transaction.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
