@@ -73,6 +73,7 @@ builder.Services.AddScoped<ISearchSuggestionService, SearchSuggestionService>();
 builder.Services.AddScoped<IRecentlyViewedService, RecentlyViewedService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<ICartTotalsService, CartTotalsService>();
+builder.Services.AddScoped<IGuestCartService, GuestCartService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Configure role-based authorization policies

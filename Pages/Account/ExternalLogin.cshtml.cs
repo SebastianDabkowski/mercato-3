@@ -12,17 +12,23 @@ public class ExternalLoginModel : PageModel
     private readonly ISocialLoginService _socialLoginService;
     private readonly ISessionService _sessionService;
     private readonly IAuthenticationSchemeProvider _schemeProvider;
+    private readonly ICartService _cartService;
+    private readonly IGuestCartService _guestCartService;
     private readonly ILogger<ExternalLoginModel> _logger;
 
     public ExternalLoginModel(
         ISocialLoginService socialLoginService,
         ISessionService sessionService,
         IAuthenticationSchemeProvider schemeProvider,
+        ICartService cartService,
+        IGuestCartService guestCartService,
         ILogger<ExternalLoginModel> logger)
     {
         _socialLoginService = socialLoginService;
         _sessionService = sessionService;
         _schemeProvider = schemeProvider;
+        _cartService = cartService;
+        _guestCartService = guestCartService;
         _logger = logger;
     }
 
@@ -219,6 +225,26 @@ public class ExternalLoginModel : PageModel
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
+
+        // Merge guest cart into user cart after social login
+        // Cart merge is important but not critical to authentication - if it fails, we log the error
+        // but don't block the login. The user can still add items to cart after successful login.
+        if (loginResult.User != null)
+        {
+            try
+            {
+                var guestCartId = _guestCartService.GetGuestCartIdIfExists();
+                if (!string.IsNullOrEmpty(guestCartId))
+                {
+                    await _cartService.MergeCartsAsync(loginResult.User.Id, guestCartId);
+                    _guestCartService.ClearGuestCartId();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to merge guest cart during social login for user {UserId}", loginResult.User.Id);
+            }
+        }
 
         _logger.LogInformation(
             "User {Email} logged in with {Provider} (IsNewUser: {IsNewUser})",

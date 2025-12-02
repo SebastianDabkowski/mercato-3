@@ -15,20 +15,29 @@ public class LoginModel : PageModel
     private readonly IEmailVerificationService _emailVerificationService;
     private readonly ISessionService _sessionService;
     private readonly ISellerOnboardingService _sellerOnboardingService;
+    private readonly ICartService _cartService;
+    private readonly IGuestCartService _guestCartService;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<LoginModel> _logger;
 
     public LoginModel(
         IUserAuthenticationService authenticationService,
         IEmailVerificationService emailVerificationService,
         ISessionService sessionService,
         ISellerOnboardingService sellerOnboardingService,
-        IConfiguration configuration)
+        ICartService cartService,
+        IGuestCartService guestCartService,
+        IConfiguration configuration,
+        ILogger<LoginModel> logger)
     {
         _authenticationService = authenticationService;
         _emailVerificationService = emailVerificationService;
         _sessionService = sessionService;
         _sellerOnboardingService = sellerOnboardingService;
+        _cartService = cartService;
+        _guestCartService = guestCartService;
         _configuration = configuration;
+        _logger = logger;
     }
 
     [BindProperty]
@@ -138,6 +147,26 @@ public class LoginModel : PageModel
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
+
+        // Merge guest cart into user cart after login
+        // Cart merge is important but not critical to authentication - if it fails, we log the error
+        // but don't block the login. The user can still add items to cart after successful login.
+        if (result.User != null)
+        {
+            try
+            {
+                var guestCartId = _guestCartService.GetGuestCartIdIfExists();
+                if (!string.IsNullOrEmpty(guestCartId))
+                {
+                    await _cartService.MergeCartsAsync(result.User.Id, guestCartId);
+                    _guestCartService.ClearGuestCartId();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to merge guest cart during login for user {UserId}", result.User.Id);
+            }
+        }
 
         // Check if seller requires KYC - redirect to KYC page if not approved
         if (result.User.UserType == UserType.Seller && result.User.KycStatus != KycStatus.Approved)

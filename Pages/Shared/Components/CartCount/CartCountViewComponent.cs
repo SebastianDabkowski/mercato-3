@@ -7,10 +7,12 @@ namespace MercatoApp.Pages.Shared.Components.CartCount;
 public class CartCountViewComponent : ViewComponent
 {
     private readonly ICartService _cartService;
+    private readonly IGuestCartService _guestCartService;
 
-    public CartCountViewComponent(ICartService cartService)
+    public CartCountViewComponent(ICartService cartService, IGuestCartService guestCartService)
     {
         _cartService = cartService;
+        _guestCartService = guestCartService;
     }
 
     public async Task<IViewComponentResult> InvokeAsync()
@@ -31,18 +33,8 @@ public class CartCountViewComponent : ViewComponent
             }
         }
 
-        // Ensure session is loaded
-        _ = HttpContext.Session.GetString("_init");
-
-        // Use HTTP session ID for anonymous users
-        var sessionId = HttpContext.Session.Id;
-        if (string.IsNullOrEmpty(sessionId))
-        {
-            // Create a session if it doesn't exist
-            HttpContext.Session.SetString("_init", "1");
-            sessionId = HttpContext.Session.Id;
-        }
-
-        return (null, sessionId);
+        // Use persistent guest cart ID for anonymous users
+        var guestCartId = _guestCartService.GetOrCreateGuestCartId();
+        return (null, guestCartId);
     }
 }

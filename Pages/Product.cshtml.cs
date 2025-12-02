@@ -12,17 +12,20 @@ public class ProductModel : PageModel
     private readonly IProductVariantService _variantService;
     private readonly IRecentlyViewedService _recentlyViewedService;
     private readonly ICartService _cartService;
+    private readonly IGuestCartService _guestCartService;
 
     public ProductModel(
         IProductService productService,
         IProductVariantService variantService,
         IRecentlyViewedService recentlyViewedService,
-        ICartService cartService)
+        ICartService cartService,
+        IGuestCartService guestCartService)
     {
         _productService = productService;
         _variantService = variantService;
         _recentlyViewedService = recentlyViewedService;
         _cartService = cartService;
+        _guestCartService = guestCartService;
     }
 
     public Product? Product { get; set; }
@@ -164,18 +167,8 @@ public class ProductModel : PageModel
             }
         }
 
-        // Ensure session is loaded
-        _ = HttpContext.Session.GetString("_init");
-
-        // Use HTTP session ID for anonymous users
-        var sessionId = HttpContext.Session.Id;
-        if (string.IsNullOrEmpty(sessionId))
-        {
-            // Create a session if it doesn't exist
-            HttpContext.Session.SetString("_init", "1");
-            sessionId = HttpContext.Session.Id;
-        }
-
-        return (null, sessionId);
+        // Use persistent guest cart ID for anonymous users
+        var guestCartId = _guestCartService.GetOrCreateGuestCartId();
+        return (null, guestCartId);
     }
 }
