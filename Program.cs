@@ -79,6 +79,7 @@ builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
 builder.Services.AddScoped<IOrderExportService, OrderExportService>();
+builder.Services.AddScoped<IReturnRequestService, ReturnRequestService>();
 builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();

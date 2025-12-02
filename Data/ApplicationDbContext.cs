@@ -177,6 +177,16 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the return requests table.
+    /// </summary>
+    public DbSet<ReturnRequest> ReturnRequests { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the return request items table.
+    /// </summary>
+    public DbSet<ReturnRequestItem> ReturnRequestItems { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -833,6 +843,65 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ChangedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ReturnRequest>(entity =>
+        {
+            // Index on return number for fast lookups
+            entity.HasIndex(e => e.ReturnNumber).IsUnique();
+
+            // Index on sub-order ID for finding returns for a sub-order
+            entity.HasIndex(e => e.SubOrderId);
+
+            // Index on buyer ID for finding returns by buyer
+            entity.HasIndex(e => e.BuyerId);
+
+            // Index on status for filtering returns
+            entity.HasIndex(e => e.Status);
+
+            // Composite index for ordering returns by status and date
+            entity.HasIndex(e => new { e.Status, e.RequestedAt });
+
+            // Configure relationship with SellerSubOrder
+            entity.HasOne(e => e.SubOrder)
+                .WithMany()
+                .HasForeignKey(e => e.SubOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with Buyer
+            entity.HasOne(e => e.Buyer)
+                .WithMany()
+                .HasForeignKey(e => e.BuyerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.RefundAmount)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<ReturnRequestItem>(entity =>
+        {
+            // Index on return request ID for finding all items in a return
+            entity.HasIndex(e => e.ReturnRequestId);
+
+            // Index on order item ID for tracking returns for specific items
+            entity.HasIndex(e => e.OrderItemId);
+
+            // Configure relationship with ReturnRequest
+            entity.HasOne(e => e.ReturnRequest)
+                .WithMany(r => r.Items)
+                .HasForeignKey(e => e.ReturnRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with OrderItem
+            entity.HasOne(e => e.OrderItem)
+                .WithMany()
+                .HasForeignKey(e => e.OrderItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.RefundAmount)
+                .HasPrecision(18, 2);
         });
     }
 }
