@@ -118,6 +118,8 @@ public class ReturnRequestService : IReturnRequestService
         }
 
         // Determine category ID for SLA calculation (use first item's category if available)
+        // Note: For mixed-category orders, this uses the first item's category as a simplification.
+        // Future enhancement: Could use a primary category or most common category in the order.
         int? categoryId = subOrder.Items.FirstOrDefault()?.Product?.CategoryId;
 
         // Calculate SLA deadlines

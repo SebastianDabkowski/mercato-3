@@ -11,17 +11,24 @@ public class SLAService : ISLAService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<SLAService> _logger;
+    private readonly IConfiguration _configuration;
 
-    // Default SLA values
-    private const int DefaultFirstResponseHours = 24;
-    private const int DefaultResolutionHours = 168; // 7 days
+    // Default SLA values - loaded from configuration
+    private readonly int _defaultFirstResponseHours;
+    private readonly int _defaultResolutionHours;
 
     public SLAService(
         ApplicationDbContext context,
-        ILogger<SLAService> logger)
+        ILogger<SLAService> logger,
+        IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
+        _configuration = configuration;
+        
+        // Read defaults from configuration with fallback values
+        _defaultFirstResponseHours = _configuration.GetValue<int?>("SLA:DefaultFirstResponseHours") ?? 24;
+        _defaultResolutionHours = _configuration.GetValue<int?>("SLA:DefaultResolutionHours") ?? 168;
     }
 
     /// <inheritdoc />
@@ -74,8 +81,8 @@ public class SLAService : ISLAService
         // If no config exists, return hardcoded defaults
         return new SLAConfig
         {
-            FirstResponseHours = DefaultFirstResponseHours,
-            ResolutionHours = DefaultResolutionHours
+            FirstResponseHours = _defaultFirstResponseHours,
+            ResolutionHours = _defaultResolutionHours
         };
     }
 
@@ -270,7 +277,8 @@ public class SLAService : ISLAService
             stats.AverageResolutionTimeHours = resolvedCases
                 .Average(c => 
                 {
-                    var endTime = c.ResolvedAt ?? c.CompletedAt!.Value;
+                    // Use ResolvedAt if available, otherwise use CompletedAt
+                    var endTime = c.ResolvedAt ?? c.CompletedAt ?? c.RequestedAt;
                     return (endTime - c.RequestedAt).TotalHours;
                 });
         }

@@ -30,12 +30,12 @@ public class SLAConfig
     /// <summary>
     /// Gets or sets the first response deadline in hours (seller must respond within this time).
     /// </summary>
-    public int FirstResponseHours { get; set; } = 24;
+    public int FirstResponseHours { get; set; }
 
     /// <summary>
     /// Gets or sets the resolution deadline in hours (case must be resolved within this time).
     /// </summary>
-    public int ResolutionHours { get; set; } = 168; // 7 days default
+    public int ResolutionHours { get; set; }
 
     /// <summary>
     /// Gets or sets whether this configuration is active.
