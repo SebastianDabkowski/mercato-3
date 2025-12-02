@@ -1,0 +1,12 @@
+@model int
+
+<a asp-page="/Account/Notifications" class="nav-link text-dark position-relative" title="Notifications">
+    <i class="bi bi-bell"></i>
+    @if (Model > 0)
+    {
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-count">
+            @(Model > 99 ? "99+" : Model.ToString())
+            <span class="visually-hidden">unread notifications</span>
+        </span>
+    }
+</a>
