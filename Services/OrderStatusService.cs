@@ -399,12 +399,12 @@ public class OrderStatusService : IOrderStatusService
     /// Logs a status change for a seller sub-order.
     /// </summary>
     /// <param name="subOrderId">The sub-order ID.</param>
-    /// <param name="previousStatus">The previous status.</param>
+    /// <param name="previousStatus">The previous status (null for initial status).</param>
     /// <param name="newStatus">The new status.</param>
     /// <param name="notes">Optional notes about the status change.</param>
     private async Task LogStatusChangeAsync(
         int subOrderId, 
-        OrderStatus previousStatus, 
+        OrderStatus? previousStatus, 
         OrderStatus newStatus, 
         string? notes = null)
     {
