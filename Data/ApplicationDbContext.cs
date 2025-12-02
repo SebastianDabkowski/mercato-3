@@ -282,6 +282,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<SLAConfig> SLAConfigs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the product reviews table.
+    /// </summary>
+    public DbSet<ProductReview> ProductReviews { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
