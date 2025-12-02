@@ -108,7 +108,7 @@ public class CartTotalsService : ICartTotalsService
         var shippingRule = await _context.ShippingRules
             .FirstOrDefaultAsync(r => r.StoreId == store.Id && r.IsActive);
 
-        // If no shipping rule exists, create a default one
+        // If no active shipping rule exists, create a default one
         if (shippingRule == null)
         {
             shippingRule = await GetOrCreateDefaultShippingRuleAsync(store.Id);
@@ -148,7 +148,7 @@ public class CartTotalsService : ICartTotalsService
     public async Task<ShippingRule> GetOrCreateDefaultShippingRuleAsync(int storeId)
     {
         var existingRule = await _context.ShippingRules
-            .FirstOrDefaultAsync(r => r.StoreId == storeId);
+            .FirstOrDefaultAsync(r => r.StoreId == storeId && r.IsActive);
 
         if (existingRule != null)
         {
@@ -215,11 +215,11 @@ public class CartTotalsService : ICartTotalsService
     /// <summary>
     /// Gets or creates the default commission configuration.
     /// </summary>
-    /// <returns>The commission configuration.</returns>
+    /// <returns>The active commission configuration.</returns>
     private async Task<CommissionConfig> GetOrCreateDefaultCommissionConfigAsync()
     {
         var existingConfig = await _context.CommissionConfigs
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(c => c.IsActive);
 
         if (existingConfig != null)
         {
