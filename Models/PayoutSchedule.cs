@@ -59,10 +59,10 @@ public class PayoutSchedule
     /// <summary>
     /// Gets or sets the date and time when the schedule was created.
     /// </summary>
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
 
     /// <summary>
     /// Gets or sets the date and time when the schedule was last updated.
     /// </summary>
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; }
 }

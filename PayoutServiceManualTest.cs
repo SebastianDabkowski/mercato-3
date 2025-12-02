@@ -2,6 +2,7 @@ using MercatoApp.Data;
 using MercatoApp.Models;
 using MercatoApp.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace MercatoApp.Tests;
@@ -26,9 +27,19 @@ public static class PayoutServiceManualTest
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         var payoutLogger = loggerFactory.CreateLogger<PayoutService>();
         var settingsLogger = loggerFactory.CreateLogger<PayoutSettingsService>();
+
+        // Setup configuration
+        var configData = new Dictionary<string, string?>
+        {
+            { "Payout:MaxRetryAttempts", "3" },
+            { "Payout:RetryDelayHours", "24" }
+        };
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configData)
+            .Build();
         
         var payoutSettingsService = new PayoutSettingsService(context, settingsLogger);
-        var payoutService = new PayoutService(context, payoutLogger, payoutSettingsService);
+        var payoutService = new PayoutService(context, payoutLogger, payoutSettingsService, configuration);
 
         // Setup test data
         await SetupTestDataAsync(context, payoutSettingsService);

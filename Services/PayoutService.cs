@@ -13,17 +13,18 @@ public class PayoutService : IPayoutService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<PayoutService> _logger;
     private readonly IPayoutSettingsService _payoutSettingsService;
-    private const int DefaultRetryDelayHours = 24;
-    private const int MaxRetryAttempts = 3;
+    private readonly IConfiguration _configuration;
 
     public PayoutService(
         ApplicationDbContext context,
         ILogger<PayoutService> logger,
-        IPayoutSettingsService payoutSettingsService)
+        IPayoutSettingsService payoutSettingsService,
+        IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _payoutSettingsService = payoutSettingsService;
+        _configuration = configuration;
     }
 
     /// <inheritdoc />
@@ -69,13 +70,20 @@ public class PayoutService : IPayoutService
             schedule = new PayoutSchedule
             {
                 StoreId = storeId,
-                CreatedAt = now
+                CreatedAt = now,
+                UpdatedAt = now
             };
             _context.PayoutSchedules.Add(schedule);
         }
 
+        // Ensure schedule is not null at this point
+        if (schedule == null)
+        {
+            throw new InvalidOperationException("Failed to initialize payout schedule.");
+        }
+
         // Update schedule properties
-        schedule!.Frequency = frequency;
+        schedule.Frequency = frequency;
         schedule.MinimumPayoutThreshold = minimumThreshold;
         schedule.DayOfWeek = dayOfWeek;
         schedule.DayOfMonth = dayOfMonth;
@@ -195,6 +203,9 @@ public class PayoutService : IPayoutService
                 && e.PayoutId == null)
             .ToListAsync();
 
+        // Get configuration values
+        var maxRetryAttempts = _configuration.GetValue<int>("Payout:MaxRetryAttempts", 3);
+
         // Create the payout
         var payout = new Payout
         {
@@ -206,7 +217,7 @@ public class PayoutService : IPayoutService
             Currency = payoutMethod.Currency ?? "USD",
             Status = PayoutStatus.Scheduled,
             ScheduledDate = scheduledDate,
-            MaxRetryAttempts = MaxRetryAttempts,
+            MaxRetryAttempts = maxRetryAttempts,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -399,6 +410,9 @@ public class PayoutService : IPayoutService
             }
             else
             {
+                // Get retry delay from configuration
+                var retryDelayHours = _configuration.GetValue<int>("Payout:RetryDelayHours", 24);
+
                 // Mark as failed
                 payout.Status = PayoutStatus.Failed;
                 payout.FailedAt = now;
@@ -410,7 +424,7 @@ public class PayoutService : IPayoutService
                 // Schedule retry if under max attempts
                 if (payout.RetryCount < payout.MaxRetryAttempts)
                 {
-                    payout.NextRetryDate = now.AddHours(DefaultRetryDelayHours * payout.RetryCount);
+                    payout.NextRetryDate = now.AddHours(retryDelayHours * payout.RetryCount);
                     _logger.LogWarning(
                         "Payout {PayoutNumber} failed (attempt {RetryCount}/{MaxRetries}). Will retry at {NextRetry}. Error: {Error}",
                         payout.PayoutNumber,
@@ -614,8 +628,7 @@ public class PayoutService : IPayoutService
         await Task.Delay(100);
 
         // Simulate 90% success rate for demonstration
-        var random = new Random();
-        var isSuccess = random.Next(100) < 90;
+        var isSuccess = Random.Shared.Next(100) < 90;
 
         if (isSuccess)
         {
