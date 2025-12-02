@@ -81,6 +81,23 @@
 
             <div class="card mb-4">
                 <div class="card-header">
+                    <h5 class="mb-0">Regional Restrictions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.AllowedCountries" class="form-label"></label>
+                        <input asp-for="Input.AllowedCountries" class="form-control" placeholder="e.g., US,CA,MX" />
+                        <span asp-validation-for="Input.AllowedCountries" class="text-danger"></span>
+                        <div class="form-text">
+                            Optional: Comma-separated list of country codes (ISO 3166-1 alpha-2) where this shipping method is available.
+                            Leave empty to make available worldwide. Examples: US, CA, GB, DE, FR, AU, JP.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
                     <h5 class="mb-0">Availability</h5>
                 </div>
                 <div class="card-body">

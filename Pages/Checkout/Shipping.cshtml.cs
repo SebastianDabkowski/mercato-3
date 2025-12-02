@@ -70,7 +70,10 @@ public class ShippingModel : PageModel
             var store = sellerGroup.Key;
             var items = sellerGroup.Value;
 
-            var shippingMethods = await _shippingMethodService.GetOrCreateDefaultShippingMethodsAsync(store.Id);
+            // Get shipping methods filtered by delivery country
+            var shippingMethods = await _shippingMethodService.GetActiveShippingMethodsByCountryAsync(
+                store.Id, 
+                DeliveryAddress.CountryCode);
             ShippingMethodsBySeller[store.Id] = shippingMethods;
 
             // Calculate costs for each method

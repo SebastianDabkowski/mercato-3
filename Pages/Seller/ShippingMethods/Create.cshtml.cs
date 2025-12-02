@@ -55,6 +55,10 @@ public class CreateModel : PageModel
         [Display(Name = "Free Shipping Threshold")]
         public decimal? FreeShippingThreshold { get; set; }
 
+        [MaxLength(1000, ErrorMessage = "Allowed countries must be 1000 characters or less.")]
+        [Display(Name = "Allowed Countries")]
+        public string? AllowedCountries { get; set; }
+
         [Display(Name = "Is Active")]
         public bool IsActive { get; set; } = true;
     }
@@ -106,6 +110,7 @@ public class CreateModel : PageModel
                 BaseCost = Input.BaseCost,
                 AdditionalItemCost = Input.AdditionalItemCost,
                 FreeShippingThreshold = Input.FreeShippingThreshold,
+                AllowedCountries = Input.AllowedCountries,
                 IsActive = Input.IsActive,
                 DisplayOrder = 0
             };

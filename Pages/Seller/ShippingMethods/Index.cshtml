@@ -59,6 +59,7 @@
                                 <th class="text-end">Base Cost</th>
                                 <th class="text-end">Additional Item</th>
                                 <th class="text-end">Free Shipping At</th>
+                                <th>Regions</th>
                                 <th>Status</th>
                                 <th class="text-end">Actions</th>
                             </tr>
@@ -104,6 +105,16 @@
                                         else
                                         {
                                             <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(method.AllowedCountries))
+                                        {
+                                            <span class="text-muted small">@method.AllowedCountries</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Worldwide</span>
                                         }
                                     </td>
                                     <td>

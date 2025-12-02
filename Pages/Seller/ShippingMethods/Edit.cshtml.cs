@@ -59,6 +59,10 @@ public class EditModel : PageModel
         [Display(Name = "Free Shipping Threshold")]
         public decimal? FreeShippingThreshold { get; set; }
 
+        [MaxLength(1000, ErrorMessage = "Allowed countries must be 1000 characters or less.")]
+        [Display(Name = "Allowed Countries")]
+        public string? AllowedCountries { get; set; }
+
         [Display(Name = "Is Active")]
         public bool IsActive { get; set; }
     }
@@ -91,6 +95,7 @@ public class EditModel : PageModel
         Input.BaseCost = ShippingMethod.BaseCost;
         Input.AdditionalItemCost = ShippingMethod.AdditionalItemCost;
         Input.FreeShippingThreshold = ShippingMethod.FreeShippingThreshold;
+        Input.AllowedCountries = ShippingMethod.AllowedCountries;
         Input.IsActive = ShippingMethod.IsActive;
 
         return Page();
@@ -129,6 +134,7 @@ public class EditModel : PageModel
         ShippingMethod.BaseCost = Input.BaseCost;
         ShippingMethod.AdditionalItemCost = Input.AdditionalItemCost;
         ShippingMethod.FreeShippingThreshold = Input.FreeShippingThreshold;
+        ShippingMethod.AllowedCountries = Input.AllowedCountries;
         ShippingMethod.IsActive = Input.IsActive;
 
         var success = await _shippingMethodService.UpdateShippingMethodAsync(ShippingMethod, Store.Id);

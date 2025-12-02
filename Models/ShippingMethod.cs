@@ -77,6 +77,14 @@ public class ShippingMethod
     public int DisplayOrder { get; set; } = 0;
 
     /// <summary>
+    /// Gets or sets the comma-separated list of allowed country codes (ISO 3166-1 alpha-2).
+    /// If null or empty, shipping is available to all countries.
+    /// Example: "US,CA,MX" for USA, Canada, and Mexico only.
+    /// </summary>
+    [MaxLength(1000)]
+    public string? AllowedCountries { get; set; }
+
+    /// <summary>
     /// Gets or sets the date and time when the method was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

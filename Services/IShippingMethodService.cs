@@ -15,6 +15,15 @@ public interface IShippingMethodService
     Task<List<ShippingMethod>> GetActiveShippingMethodsAsync(int storeId);
 
     /// <summary>
+    /// Gets all active shipping methods for a store that are available for a specific country.
+    /// Filters methods based on regional restrictions (AllowedCountries).
+    /// </summary>
+    /// <param name="storeId">The store ID.</param>
+    /// <param name="countryCode">The delivery country code (ISO 3166-1 alpha-2).</param>
+    /// <returns>A list of active shipping methods available for the specified country.</returns>
+    Task<List<ShippingMethod>> GetActiveShippingMethodsByCountryAsync(int storeId, string countryCode);
+
+    /// <summary>
     /// Gets or creates default shipping methods for a store.
     /// If the store has no shipping methods, creates default ones.
     /// </summary>
