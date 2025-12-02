@@ -31,12 +31,24 @@ public class UserManagementService : IUserManagementService
             // Apply search filter
             if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
             {
-                var searchTerm = filter.SearchQuery.Trim().ToLower();
-                query = query.Where(u =>
-                    u.Email.ToLower().Contains(searchTerm) ||
-                    u.FirstName.ToLower().Contains(searchTerm) ||
-                    u.LastName.ToLower().Contains(searchTerm) ||
-                    u.Id.ToString() == searchTerm);
+                var searchTerm = filter.SearchQuery.Trim();
+                
+                // Try parsing as integer for ID search
+                if (int.TryParse(searchTerm, out var userId))
+                {
+                    query = query.Where(u =>
+                        u.Id == userId ||
+                        EF.Functions.Like(u.Email, $"%{searchTerm}%") ||
+                        EF.Functions.Like(u.FirstName, $"%{searchTerm}%") ||
+                        EF.Functions.Like(u.LastName, $"%{searchTerm}%"));
+                }
+                else
+                {
+                    query = query.Where(u =>
+                        EF.Functions.Like(u.Email, $"%{searchTerm}%") ||
+                        EF.Functions.Like(u.FirstName, $"%{searchTerm}%") ||
+                        EF.Functions.Like(u.LastName, $"%{searchTerm}%"));
+                }
             }
 
             // Apply status filter
@@ -77,24 +89,14 @@ public class UserManagementService : IUserManagementService
                     : query.OrderByDescending(u => u.CreatedAt)
             };
 
-            // Apply pagination
-            var users = await query
+            // Apply pagination and get users with last login in a single query
+            var userIds = await query
                 .Skip((filter.Page - 1) * filter.PageSize)
                 .Take(filter.PageSize)
-                .Select(u => new
-                {
-                    u.Id,
-                    u.Email,
-                    u.FirstName,
-                    u.LastName,
-                    u.UserType,
-                    u.Status,
-                    u.CreatedAt
-                })
+                .Select(u => u.Id)
                 .ToListAsync();
 
-            // Get last login dates for each user
-            var userIds = users.Select(u => u.Id).ToList();
+            // Get last login dates for the paginated users only
             var lastLogins = await _context.LoginEvents
                 .Where(le => userIds.Contains(le.UserId ?? 0) && le.IsSuccessful)
                 .GroupBy(le => le.UserId)
@@ -106,6 +108,21 @@ public class UserManagementService : IUserManagementService
                 .ToListAsync();
 
             var lastLoginDict = lastLogins.ToDictionary(ll => ll.UserId ?? 0, ll => ll.LastLoginAt);
+
+            // Get the actual user data
+            var users = await query
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Email,
+                    u.FirstName,
+                    u.LastName,
+                    u.UserType,
+                    u.Status,
+                    u.CreatedAt
+                })
+                .ToListAsync();
 
             // Map to UserListItem
             var items = users.Select(u => new UserListItem
