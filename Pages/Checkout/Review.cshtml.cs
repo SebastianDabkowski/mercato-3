@@ -3,6 +3,7 @@ using MercatoApp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace MercatoApp.Pages.Checkout;
 
@@ -11,7 +12,8 @@ public class ReviewModel : PageModel
     private readonly IAddressService _addressService;
     private readonly IOrderService _orderService;
     private readonly ICartService _cartService;
-    private readonly ICartTotalsService _cartTotalsService;
+    private readonly IShippingMethodService _shippingMethodService;
+    private readonly IPaymentService _paymentService;
     private readonly IGuestCartService _guestCartService;
     private readonly ILogger<ReviewModel> _logger;
 
@@ -19,21 +21,28 @@ public class ReviewModel : PageModel
         IAddressService addressService,
         IOrderService orderService,
         ICartService cartService,
-        ICartTotalsService cartTotalsService,
+        IShippingMethodService shippingMethodService,
+        IPaymentService paymentService,
         IGuestCartService guestCartService,
         ILogger<ReviewModel> logger)
     {
         _addressService = addressService;
         _orderService = orderService;
         _cartService = cartService;
-        _cartTotalsService = cartTotalsService;
+        _shippingMethodService = shippingMethodService;
+        _paymentService = paymentService;
         _guestCartService = guestCartService;
         _logger = logger;
     }
 
     public Address? DeliveryAddress { get; set; }
     public Dictionary<Store, List<CartItem>> ItemsBySeller { get; set; } = new();
-    public CartTotals CartTotals { get; set; } = new();
+    public Dictionary<int, ShippingMethod> SelectedShippingMethodsBySeller { get; set; } = new();
+    public Dictionary<int, decimal> ShippingCostsBySeller { get; set; } = new();
+    public PaymentMethod? SelectedPaymentMethod { get; set; }
+    public decimal ItemsSubtotal { get; set; }
+    public decimal TotalShipping { get; set; }
+    public decimal TotalAmount { get; set; }
     public string? GuestEmail { get; set; }
 
     [BindProperty]
@@ -66,8 +75,58 @@ public class ReviewModel : PageModel
             return RedirectToPage("/Checkout/Address");
         }
 
+        // Get selected shipping methods from session
+        var selectedShippingMethodsJson = HttpContext.Session.GetString("CheckoutShippingMethods");
+        if (string.IsNullOrEmpty(selectedShippingMethodsJson))
+        {
+            TempData["ErrorMessage"] = "Please select shipping methods.";
+            return RedirectToPage("/Checkout/Shipping");
+        }
+
+        var selectedShippingMethods = JsonSerializer.Deserialize<Dictionary<int, int>>(selectedShippingMethodsJson);
+        if (selectedShippingMethods == null)
+        {
+            TempData["ErrorMessage"] = "Invalid shipping method selection.";
+            return RedirectToPage("/Checkout/Shipping");
+        }
+
+        // Load selected shipping methods and calculate costs
+        foreach (var sellerGroup in ItemsBySeller)
+        {
+            var store = sellerGroup.Key;
+            var items = sellerGroup.Value;
+
+            if (selectedShippingMethods.ContainsKey(store.Id))
+            {
+                var shippingMethod = await _shippingMethodService.GetShippingMethodByIdAsync(selectedShippingMethods[store.Id]);
+                if (shippingMethod != null)
+                {
+                    SelectedShippingMethodsBySeller[store.Id] = shippingMethod;
+                    var cost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethod.Id, items);
+                    ShippingCostsBySeller[store.Id] = cost;
+                    TotalShipping += cost;
+                }
+            }
+        }
+
+        // Get selected payment method from session
+        var selectedPaymentMethodId = HttpContext.Session.GetInt32("CheckoutPaymentMethodId");
+        if (!selectedPaymentMethodId.HasValue)
+        {
+            TempData["ErrorMessage"] = "Please select a payment method.";
+            return RedirectToPage("/Checkout/Payment");
+        }
+
+        SelectedPaymentMethod = await _paymentService.GetPaymentMethodByIdAsync(selectedPaymentMethodId.Value);
+        if (SelectedPaymentMethod == null)
+        {
+            TempData["ErrorMessage"] = "Payment method not found.";
+            return RedirectToPage("/Checkout/Payment");
+        }
+
         // Calculate totals
-        CartTotals = await _cartTotalsService.CalculateCartTotalsAsync(userId, sessionId);
+        ItemsSubtotal = ItemsBySeller.SelectMany(s => s.Value).Sum(i => i.PriceAtAdd * i.Quantity);
+        TotalAmount = ItemsSubtotal + TotalShipping;
 
         // Get guest email if available
         if (!userId.HasValue)
@@ -90,6 +149,29 @@ public class ReviewModel : PageModel
             return RedirectToPage("/Checkout/Address");
         }
 
+        // Get selected shipping methods
+        var selectedShippingMethodsJson = HttpContext.Session.GetString("CheckoutShippingMethods");
+        if (string.IsNullOrEmpty(selectedShippingMethodsJson))
+        {
+            TempData["ErrorMessage"] = "Please select shipping methods.";
+            return RedirectToPage("/Checkout/Shipping");
+        }
+
+        var selectedShippingMethods = JsonSerializer.Deserialize<Dictionary<int, int>>(selectedShippingMethodsJson);
+        if (selectedShippingMethods == null)
+        {
+            TempData["ErrorMessage"] = "Invalid shipping method selection.";
+            return RedirectToPage("/Checkout/Shipping");
+        }
+
+        // Get selected payment method
+        var paymentMethodId = HttpContext.Session.GetInt32("CheckoutPaymentMethodId");
+        if (!paymentMethodId.HasValue)
+        {
+            TempData["ErrorMessage"] = "Please select a payment method.";
+            return RedirectToPage("/Checkout/Payment");
+        }
+
         // For guest checkout, validate email
         string? guestEmail = null;
         if (!userId.HasValue)
@@ -108,13 +190,35 @@ public class ReviewModel : PageModel
         try
         {
             // Create the order
-            var order = await _orderService.CreateOrderFromCartAsync(userId, sessionId, addressId.Value, guestEmail);
+            var order = await _orderService.CreateOrderFromCartAsync(
+                userId, 
+                sessionId, 
+                addressId.Value, 
+                selectedShippingMethods,
+                paymentMethodId.Value,
+                guestEmail);
+
+            // Create payment transaction and initiate payment
+            var paymentTransaction = await _paymentService.CreatePaymentTransactionAsync(
+                order.Id, 
+                paymentMethodId.Value, 
+                order.TotalAmount);
+
+            var paymentRedirectUrl = await _paymentService.InitiatePaymentAsync(paymentTransaction.Id);
 
             // Clear checkout session data
             HttpContext.Session.Remove("CheckoutAddressId");
+            HttpContext.Session.Remove("CheckoutShippingMethods");
+            HttpContext.Session.Remove("CheckoutPaymentMethodId");
             HttpContext.Session.Remove("CheckoutGuestEmail");
 
-            // Redirect to confirmation page
+            // If payment requires redirect (e.g., credit card, PayPal), redirect to payment page
+            if (!string.IsNullOrEmpty(paymentRedirectUrl))
+            {
+                return Redirect(paymentRedirectUrl);
+            }
+
+            // Otherwise (e.g., cash on delivery), proceed directly to confirmation
             return RedirectToPage("/Checkout/Confirmation", new { orderId = order.Id });
         }
         catch (InvalidOperationException ex)

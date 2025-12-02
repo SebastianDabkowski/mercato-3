@@ -1,0 +1,187 @@
+@page
+@model MercatoApp.Pages.Checkout.PaymentModel
+@{
+    ViewData["Title"] = "Checkout - Payment Method";
+}
+
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Cart">Cart</a></li>
+            <li class="breadcrumb-item"><a asp-page="/Checkout/Address">Delivery Address</a></li>
+            <li class="breadcrumb-item"><a asp-page="/Checkout/Shipping">Shipping Method</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Payment Method</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">
+        <i class="bi bi-credit-card"></i> Select Payment Method
+    </h1>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Delivery Address Summary -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt"></i> Delivery Address
+                    </h5>
+                    <a asp-page="/Checkout/Address" class="btn btn-sm btn-outline-primary">Change</a>
+                </div>
+                <div class="card-body">
+                    @if (Model.DeliveryAddress != null)
+                    {
+                        <address class="mb-0 small">
+                            <strong>@Model.DeliveryAddress.FullName</strong><br />
+                            @Model.DeliveryAddress.AddressLine1<br />
+                            @if (!string.IsNullOrEmpty(Model.DeliveryAddress.AddressLine2))
+                            {
+                                @Model.DeliveryAddress.AddressLine2<br />
+                            }
+                            @Model.DeliveryAddress.City@(!string.IsNullOrEmpty(Model.DeliveryAddress.StateProvince) ? $", {Model.DeliveryAddress.StateProvince}" : "") @Model.DeliveryAddress.PostalCode<br />
+                            @Model.DeliveryAddress.CountryCode
+                        </address>
+                    }
+                </div>
+            </div>
+
+            <!-- Shipping Methods Summary -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-truck"></i> Shipping Methods
+                    </h5>
+                    <a asp-page="/Checkout/Shipping" class="btn btn-sm btn-outline-primary">Change</a>
+                </div>
+                <div class="card-body">
+                    @foreach (var kvp in Model.SelectedShippingMethodsBySeller)
+                    {
+                        var storeId = kvp.Key;
+                        var shippingMethod = kvp.Value;
+                        var store = Model.ItemsBySeller.Keys.FirstOrDefault(s => s.Id == storeId);
+                        
+                        if (store != null)
+                        {
+                            <div class="d-flex justify-content-between align-items-start mb-2 @(kvp.Key != Model.SelectedShippingMethodsBySeller.Keys.Last() ? "border-bottom pb-2" : "")">
+                                <div>
+                                    <strong class="small">@store.StoreName</strong>
+                                    <div class="text-muted small">
+                                        @shippingMethod.Name
+                                        @if (!string.IsNullOrEmpty(shippingMethod.EstimatedDelivery))
+                                        {
+                                            <span> - @shippingMethod.EstimatedDelivery</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Payment Method Selection -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Select Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        @if (Model.AvailablePaymentMethods.Any())
+                        {
+                            @foreach (var method in Model.AvailablePaymentMethods)
+                            {
+                                var isSelected = Model.SelectedPaymentMethodId == method.Id;
+
+                                <div class="form-check mb-3 p-3 border rounded @(isSelected ? "border-primary bg-light" : "")">
+                                    <input class="form-check-input" type="radio" 
+                                           name="SelectedPaymentMethodId" 
+                                           value="@method.Id" 
+                                           id="payment-@method.Id"
+                                           checked="@isSelected">
+                                    <label class="form-check-label w-100" for="payment-@method.Id">
+                                        <div class="d-flex align-items-start">
+                                            @if (!string.IsNullOrEmpty(method.IconClass))
+                                            {
+                                                <i class="@method.IconClass fs-4 me-3"></i>
+                                            }
+                                            <div class="flex-grow-1">
+                                                <strong>@method.Name</strong>
+                                                @if (!string.IsNullOrEmpty(method.Description))
+                                                {
+                                                    <div class="text-muted small">@method.Description</div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                No payment methods available.
+                            </div>
+                        }
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-page="/Checkout/Shipping" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Shipping
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                Continue to Review <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Order Summary -->
+            <div class="card sticky-top" style="top: 1rem;">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-6">Items:</dt>
+                        <dd class="col-6 text-end">@Model.ItemsSubtotal.ToString("C")</dd>
+
+                        <dt class="col-6">Shipping:</dt>
+                        <dd class="col-6 text-end">@Model.TotalShipping.ToString("C")</dd>
+
+                        <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
+                        <dd class="col-6 text-end border-top pt-2 mt-2">
+                            <strong class="text-primary h5">@Model.TotalAmount.ToString("C")</strong>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-shield-check"></i> Secure Checkout
+                    </h6>
+                    <p class="card-text small text-muted mb-0">
+                        Your payment information is protected with industry-standard encryption.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

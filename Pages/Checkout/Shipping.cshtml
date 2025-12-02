@@ -1,0 +1,231 @@
+@page
+@model MercatoApp.Pages.Checkout.ShippingModel
+@{
+    ViewData["Title"] = "Checkout - Shipping Method";
+}
+
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Cart">Cart</a></li>
+            <li class="breadcrumb-item"><a asp-page="/Checkout/Address">Delivery Address</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Shipping Method</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">
+        <i class="bi bi-truck"></i> Select Shipping Method
+    </h1>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Delivery Address Summary -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt"></i> Delivery Address
+                    </h5>
+                    <a asp-page="/Checkout/Address" class="btn btn-sm btn-outline-primary">Change</a>
+                </div>
+                <div class="card-body">
+                    @if (Model.DeliveryAddress != null)
+                    {
+                        <address class="mb-0">
+                            <strong>@Model.DeliveryAddress.FullName</strong><br />
+                            @Model.DeliveryAddress.AddressLine1<br />
+                            @if (!string.IsNullOrEmpty(Model.DeliveryAddress.AddressLine2))
+                            {
+                                @Model.DeliveryAddress.AddressLine2<br />
+                            }
+                            @Model.DeliveryAddress.City@(!string.IsNullOrEmpty(Model.DeliveryAddress.StateProvince) ? $", {Model.DeliveryAddress.StateProvince}" : "") @Model.DeliveryAddress.PostalCode<br />
+                            @Model.DeliveryAddress.CountryCode
+                        </address>
+                    }
+                </div>
+            </div>
+
+            <!-- Shipping Methods by Seller -->
+            <form method="post">
+                @foreach (var sellerGroup in Model.ItemsBySeller)
+                {
+                    var store = sellerGroup.Key;
+                    var items = sellerGroup.Value;
+                    var shippingMethods = Model.ShippingMethodsBySeller.ContainsKey(store.Id) 
+                        ? Model.ShippingMethodsBySeller[store.Id] 
+                        : new List<ShippingMethod>();
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-shop"></i> @store.StoreName
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Items from this seller -->
+                            <div class="mb-3">
+                                <h6 class="text-muted small">Items:</h6>
+                                @foreach (var item in items)
+                                {
+                                    <div class="small">
+                                        <i class="bi bi-box"></i> @item.Product.Title
+                                        @if (item.ProductVariant != null)
+                                        {
+                                            <span class="text-muted">
+                                                (@foreach (var option in item.ProductVariant.Options)
+                                                {
+                                                    @($"{option.AttributeValue.VariantAttribute.Name}: {option.AttributeValue.Value} ")
+                                                })
+                                            </span>
+                                        }
+                                        × @item.Quantity
+                                    </div>
+                                }
+                            </div>
+
+                            <hr />
+
+                            <!-- Shipping method selection -->
+                            <h6 class="mb-3">Select Shipping Method:</h6>
+                            @if (shippingMethods.Any())
+                            {
+                                @foreach (var method in shippingMethods)
+                                {
+                                    var itemsSubtotal = items.Sum(i => i.PriceAtAdd * i.Quantity);
+                                    var itemCount = items.Sum(i => i.Quantity);
+                                    var shippingCost = method.FreeShippingThreshold.HasValue && itemsSubtotal >= method.FreeShippingThreshold.Value
+                                        ? 0
+                                        : method.BaseCost + (itemCount > 1 ? method.AdditionalItemCost * (itemCount - 1) : 0);
+                                    var isSelected = Model.SelectedShippingMethods.ContainsKey(store.Id) && Model.SelectedShippingMethods[store.Id] == method.Id;
+
+                                    <div class="form-check mb-3 p-3 border rounded @(isSelected ? "border-primary bg-light" : "")">
+                                        <input class="form-check-input" type="radio" 
+                                               name="SelectedShippingMethods[@store.Id]" 
+                                               value="@method.Id" 
+                                               id="shipping-@method.Id"
+                                               checked="@isSelected"
+                                               data-store-id="@store.Id"
+                                               data-cost="@shippingCost">
+                                        <label class="form-check-label w-100" for="shipping-@method.Id">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <strong>@method.Name</strong>
+                                                    @if (!string.IsNullOrEmpty(method.Description))
+                                                    {
+                                                        <div class="text-muted small">@method.Description</div>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(method.EstimatedDelivery))
+                                                    {
+                                                        <div class="text-muted small">
+                                                            <i class="bi bi-clock"></i> @method.EstimatedDelivery
+                                                        </div>
+                                                    }
+                                                    @if (shippingCost == 0)
+                                                    {
+                                                        <span class="badge bg-success mt-1">Free Shipping!</span>
+                                                    }
+                                                </div>
+                                                <div class="text-end">
+                                                    <strong class="text-primary">@shippingCost.ToString("C")</strong>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning">
+                                    No shipping methods available for this seller.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="d-flex justify-content-between">
+                    <a asp-page="/Checkout/Address" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Address
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Continue to Payment <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Order Summary -->
+            <div class="card sticky-top" style="top: 1rem;">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-6">Items:</dt>
+                        <dd class="col-6 text-end" id="items-subtotal">
+                            @Model.ItemsBySeller.SelectMany(s => s.Value).Sum(i => i.PriceAtAdd * i.Quantity).ToString("C")
+                        </dd>
+
+                        <dt class="col-6">Shipping:</dt>
+                        <dd class="col-6 text-end" id="shipping-total">
+                            @Model.ShippingCostsBySeller.Values.Sum().ToString("C")
+                        </dd>
+
+                        <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
+                        <dd class="col-6 text-end border-top pt-2 mt-2" id="order-total">
+                            <strong class="text-primary h5">
+                                @((Model.ItemsBySeller.SelectMany(s => s.Value).Sum(i => i.PriceAtAdd * i.Quantity) + Model.ShippingCostsBySeller.Values.Sum()).ToString("C"))
+                            </strong>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-shield-check"></i> Secure Checkout
+                    </h6>
+                    <p class="card-text small text-muted mb-0">
+                        Your information is protected with industry-standard encryption.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Update order summary when shipping method changes
+        document.querySelectorAll('input[type="radio"][name^="SelectedShippingMethods"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                updateOrderSummary();
+            });
+        });
+
+        function updateOrderSummary() {
+            let totalShipping = 0;
+            document.querySelectorAll('input[type="radio"][name^="SelectedShippingMethods"]:checked').forEach(radio => {
+                totalShipping += parseFloat(radio.dataset.cost);
+            });
+
+            const itemsSubtotal = parseFloat(document.getElementById('items-subtotal').textContent.replace(/[^0-9.]/g, ''));
+            const orderTotal = itemsSubtotal + totalShipping;
+
+            document.getElementById('shipping-total').textContent = '$' + totalShipping.toFixed(2);
+            document.getElementById('order-total').innerHTML = '<strong class="text-primary h5">$' + orderTotal.toFixed(2) + '</strong>';
+        }
+    </script>
+}
