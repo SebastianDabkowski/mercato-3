@@ -127,6 +127,21 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<CommissionConfig> CommissionConfigs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the addresses table.
+    /// </summary>
+    public DbSet<Address> Addresses { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the orders table.
+    /// </summary>
+    public DbSet<Order> Orders { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the order items table.
+    /// </summary>
+    public DbSet<OrderItem> OrderItems { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -564,6 +579,107 @@ public class ApplicationDbContext : DbContext
                 .HasPrecision(18, 2);
 
             entity.Property(e => e.FreeShippingThreshold)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<Address>(entity =>
+        {
+            // Index on user ID for finding all addresses for a user
+            entity.HasIndex(e => e.UserId);
+
+            // Composite index for finding default address
+            entity.HasIndex(e => new { e.UserId, e.IsDefault });
+
+            // Configure optional relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Order>(entity =>
+        {
+            // Index on order number for fast lookups
+            entity.HasIndex(e => e.OrderNumber).IsUnique();
+
+            // Index on user ID for finding all orders for a user
+            entity.HasIndex(e => e.UserId);
+
+            // Index on guest email for guest order lookups
+            entity.HasIndex(e => e.GuestEmail);
+
+            // Index on status for filtering orders
+            entity.HasIndex(e => e.Status);
+
+            // Composite index for ordering user's orders by date
+            entity.HasIndex(e => new { e.UserId, e.OrderedAt });
+
+            // Configure optional relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with DeliveryAddress
+            entity.HasOne(e => e.DeliveryAddress)
+                .WithMany()
+                .HasForeignKey(e => e.DeliveryAddressId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.Subtotal)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.ShippingCost)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.TaxAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.TotalAmount)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            // Index on order ID for finding all items in an order
+            entity.HasIndex(e => e.OrderId);
+
+            // Index on store ID for finding items by seller
+            entity.HasIndex(e => e.StoreId);
+
+            // Index on product ID
+            entity.HasIndex(e => e.ProductId);
+
+            // Configure relationship with Order
+            entity.HasOne(e => e.Order)
+                .WithMany(o => o.Items)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with Product
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with ProductVariant (optional)
+            entity.HasOne(e => e.ProductVariant)
+                .WithMany()
+                .HasForeignKey(e => e.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.UnitPrice)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.Subtotal)
                 .HasPrecision(18, 2);
         });
 
