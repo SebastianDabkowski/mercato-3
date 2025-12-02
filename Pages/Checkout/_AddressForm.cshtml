@@ -1,0 +1,85 @@
+@model MercatoApp.Pages.Checkout.AddressModel
+
+<form method="post">
+    <input type="hidden" name="action" value="addNew" />
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="NewAddress.FullName" class="form-label"></label>
+            <input asp-for="NewAddress.FullName" class="form-control" />
+            <span asp-validation-for="NewAddress.FullName" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label asp-for="NewAddress.PhoneNumber" class="form-label"></label>
+            <input asp-for="NewAddress.PhoneNumber" class="form-control" type="tel" />
+            <span asp-validation-for="NewAddress.PhoneNumber" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="NewAddress.AddressLine1" class="form-label"></label>
+        <input asp-for="NewAddress.AddressLine1" class="form-control" />
+        <span asp-validation-for="NewAddress.AddressLine1" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="NewAddress.AddressLine2" class="form-label"></label>
+        <input asp-for="NewAddress.AddressLine2" class="form-control" />
+        <span asp-validation-for="NewAddress.AddressLine2" class="text-danger"></span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="NewAddress.City" class="form-label"></label>
+            <input asp-for="NewAddress.City" class="form-control" />
+            <span asp-validation-for="NewAddress.City" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label asp-for="NewAddress.StateProvince" class="form-label"></label>
+            <input asp-for="NewAddress.StateProvince" class="form-control" />
+            <span asp-validation-for="NewAddress.StateProvince" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="NewAddress.PostalCode" class="form-label"></label>
+            <input asp-for="NewAddress.PostalCode" class="form-control" />
+            <span asp-validation-for="NewAddress.PostalCode" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label asp-for="NewAddress.CountryCode" class="form-label">Country</label>
+            <select asp-for="NewAddress.CountryCode" class="form-select">
+                <option value="">Select a country</option>
+                <option value="US">United States</option>
+                <option value="CA">Canada</option>
+                <option value="GB">United Kingdom</option>
+                <option value="DE">Germany</option>
+                <option value="FR">France</option>
+                <option value="IT">Italy</option>
+                <option value="ES">Spain</option>
+                <option value="AU">Australia</option>
+                <option value="NZ">New Zealand</option>
+                <option value="JP">Japan</option>
+            </select>
+            <span asp-validation-for="NewAddress.CountryCode" class="text-danger"></span>
+        </div>
+    </div>
+
+    @if (Model.IsAuthenticated)
+    {
+        <div class="mb-3 form-check">
+            <input asp-for="NewAddress.SaveToProfile" class="form-check-input" type="checkbox" />
+            <label asp-for="NewAddress.SaveToProfile" class="form-check-label"></label>
+        </div>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-arrow-right"></i> Continue to Review
+    </button>
+</form>

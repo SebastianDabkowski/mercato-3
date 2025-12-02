@@ -1,0 +1,164 @@
+@page
+@model MercatoApp.Pages.Checkout.ConfirmationModel
+@{
+    ViewData["Title"] = "Order Confirmation";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-5">
+                <div class="mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" class="bi bi-check-circle-fill text-success" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>
+                </div>
+                <h1 class="mb-3">Order Confirmed!</h1>
+                <p class="lead text-muted">
+                    Thank you for your order. We've received it and will begin processing shortly.
+                </p>
+            </div>
+
+            @if (Model.Order != null)
+            {
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            Order #@Model.Order.OrderNumber
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6>Order Date</h6>
+                                <p class="text-muted">@Model.Order.OrderedAt.ToString("MMMM dd, yyyy 'at' hh:mm tt")</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Order Total</h6>
+                                <p class="h4 text-primary">@Model.Order.TotalAmount.ToString("C")</p>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Delivery Address</h6>
+                                <address class="text-muted">
+                                    <strong>@Model.Order.DeliveryAddress.FullName</strong><br />
+                                    @Model.Order.DeliveryAddress.AddressLine1<br />
+                                    @if (!string.IsNullOrEmpty(Model.Order.DeliveryAddress.AddressLine2))
+                                    {
+                                        @Model.Order.DeliveryAddress.AddressLine2<br />
+                                    }
+                                    @Model.Order.DeliveryAddress.City@(!string.IsNullOrEmpty(Model.Order.DeliveryAddress.StateProvince) ? $", {Model.Order.DeliveryAddress.StateProvince}" : "") @Model.Order.DeliveryAddress.PostalCode<br />
+                                    @Model.Order.DeliveryAddress.CountryCode<br />
+                                    Phone: @Model.Order.DeliveryAddress.PhoneNumber
+                                </address>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.Order.GuestEmail))
+                            {
+                                <div class="col-md-6">
+                                    <h6>Confirmation Email</h6>
+                                    <p class="text-muted">
+                                        We've sent an order confirmation to:<br />
+                                        <strong>@Model.Order.GuestEmail</strong>
+                                    </p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-md-6">
+                                    <h6>Order Tracking</h6>
+                                    <p class="text-muted">
+                                        You can track your order from your account dashboard.
+                                    </p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Items</h5>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var itemGroup in Model.Order.Items.GroupBy(i => i.Store))
+                        {
+                            var store = itemGroup.Key;
+                            
+                            <div class="mb-4">
+                                <h6>
+                                    <i class="bi bi-shop"></i> @store.StoreName
+                                </h6>
+                                
+                                @foreach (var item in itemGroup)
+                                {
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <strong>@item.ProductTitle</strong>
+                                            @if (!string.IsNullOrEmpty(item.VariantDescription))
+                                            {
+                                                <div class="text-muted small">@item.VariantDescription</div>
+                                            }
+                                            <div class="text-muted small">
+                                                Quantity: @item.Quantity × @item.UnitPrice.ToString("C")
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <strong>@item.Subtotal.ToString("C")</strong>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (itemGroup != Model.Order.Items.GroupBy(i => i.Store).Last())
+                            {
+                                <hr />
+                            }
+                        }
+
+                        <div class="border-top pt-3 mt-3">
+                            <dl class="row mb-0">
+                                <dt class="col-6">Subtotal:</dt>
+                                <dd class="col-6 text-end">@Model.Order.Subtotal.ToString("C")</dd>
+
+                                <dt class="col-6">Shipping:</dt>
+                                <dd class="col-6 text-end">@Model.Order.ShippingCost.ToString("C")</dd>
+
+                                @if (Model.Order.TaxAmount > 0)
+                                {
+                                    <dt class="col-6">Tax:</dt>
+                                    <dd class="col-6 text-end">@Model.Order.TaxAmount.ToString("C")</dd>
+                                }
+
+                                <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
+                                <dd class="col-6 text-end border-top pt-2 mt-2">
+                                    <strong class="h5 text-primary">@Model.Order.TotalAmount.ToString("C")</strong>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-info-circle"></i> What's Next?
+                    </h6>
+                    <p class="mb-0">
+                        Your order will be split into separate shipments from each seller. You'll receive tracking information for each shipment once it ships.
+                        @if (!string.IsNullOrEmpty(Model.Order.GuestEmail))
+                        {
+                            <text>We've sent a confirmation email to @Model.Order.GuestEmail with your order details.</text>
+                        }
+                    </p>
+                </div>
+
+                <div class="text-center">
+                    <a asp-page="/Index" class="btn btn-primary">
+                        <i class="bi bi-house"></i> Continue Shopping
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

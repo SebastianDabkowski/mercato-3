@@ -1,0 +1,198 @@
+@page
+@model MercatoApp.Pages.Checkout.ReviewModel
+@{
+    ViewData["Title"] = "Checkout - Review Order";
+}
+
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Cart">Cart</a></li>
+            <li class="breadcrumb-item"><a asp-page="/Checkout/Address">Delivery Address</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Review Order</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">
+        <i class="bi bi-clipboard-check"></i> Review Your Order
+    </h1>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Delivery Address -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt"></i> Delivery Address
+                    </h5>
+                    <a asp-page="/Checkout/Address" class="btn btn-sm btn-outline-primary">Change</a>
+                </div>
+                <div class="card-body">
+                    @if (Model.DeliveryAddress != null)
+                    {
+                        <address class="mb-0">
+                            <strong>@Model.DeliveryAddress.FullName</strong><br />
+                            @Model.DeliveryAddress.AddressLine1<br />
+                            @if (!string.IsNullOrEmpty(Model.DeliveryAddress.AddressLine2))
+                            {
+                                @Model.DeliveryAddress.AddressLine2<br />
+                            }
+                            @Model.DeliveryAddress.City@(!string.IsNullOrEmpty(Model.DeliveryAddress.StateProvince) ? $", {Model.DeliveryAddress.StateProvince}" : "") @Model.DeliveryAddress.PostalCode<br />
+                            @Model.DeliveryAddress.CountryCode<br />
+                            Phone: @Model.DeliveryAddress.PhoneNumber
+                        </address>
+                    }
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cart"></i> Order Items
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @foreach (var sellerGroup in Model.ItemsBySeller)
+                    {
+                        var store = sellerGroup.Key;
+                        var items = sellerGroup.Value;
+                        
+                        <div class="@(sellerGroup.Key != Model.ItemsBySeller.Keys.Last() ? "border-bottom" : "") p-3">
+                            <h6 class="mb-3">
+                                <i class="bi bi-shop"></i> 
+                                @store.StoreName
+                            </h6>
+                            
+                            @foreach (var item in items)
+                            {
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="flex-grow-1">
+                                        <div>
+                                            <strong>@item.Product.Title</strong>
+                                            @if (item.ProductVariant != null)
+                                            {
+                                                <div class="text-muted small">
+                                                    @foreach (var option in item.ProductVariant.Options)
+                                                    {
+                                                        <span class="badge bg-secondary me-1">
+                                                            @option.AttributeValue.VariantAttribute.Name: @option.AttributeValue.Value
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="text-muted small">
+                                            Quantity: @item.Quantity × @item.PriceAtAdd.ToString("C")
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong>@((item.PriceAtAdd * item.Quantity).ToString("C"))</strong>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Guest Email (if not authenticated) -->
+            @if (!User.Identity!.IsAuthenticated)
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Contact Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            <div class="mb-3">
+                                <label for="guestEmail" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="guestEmail" 
+                                       name="GuestEmailInput" value="@Model.GuestEmail" required
+                                       placeholder="Enter your email for order updates" />
+                                <div class="form-text">We'll send your order confirmation to this email.</div>
+                                <span asp-validation-for="GuestEmailInput" class="text-danger"></span>
+                            </div>
+
+                            <!-- Order Summary -->
+                            <div class="border-top pt-3 mt-3">
+                                <h6>Order Summary</h6>
+                                <dl class="row mb-0">
+                                    <dt class="col-6">Subtotal:</dt>
+                                    <dd class="col-6 text-end">@Model.CartTotals.ItemsSubtotal.ToString("C")</dd>
+
+                                    <dt class="col-6">Shipping:</dt>
+                                    <dd class="col-6 text-end">@Model.CartTotals.TotalShipping.ToString("C")</dd>
+
+                                    <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
+                                    <dd class="col-6 text-end border-top pt-2 mt-2">
+                                        <strong class="text-primary h5">@Model.CartTotals.TotalAmount.ToString("C")</strong>
+                                    </dd>
+                                </dl>
+                            </div>
+
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                            <button type="submit" class="btn btn-success w-100 mt-3">
+                                <i class="bi bi-check-circle"></i> Place Order
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-6">Subtotal:</dt>
+                            <dd class="col-6 text-end">@Model.CartTotals.ItemsSubtotal.ToString("C")</dd>
+
+                            <dt class="col-6">Shipping:</dt>
+                            <dd class="col-6 text-end">@Model.CartTotals.TotalShipping.ToString("C")</dd>
+
+                            <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
+                            <dd class="col-6 text-end border-top pt-2 mt-2">
+                                <strong class="text-primary h5">@Model.CartTotals.TotalAmount.ToString("C")</strong>
+                            </dd>
+                        </dl>
+
+                        <form method="post">
+                            <button type="submit" class="btn btn-success w-100 mt-3">
+                                <i class="bi bi-check-circle"></i> Place Order
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-shield-check"></i> Secure Checkout
+                    </h6>
+                    <p class="card-text small text-muted mb-0">
+                        Your payment information is protected with industry-standard encryption.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
