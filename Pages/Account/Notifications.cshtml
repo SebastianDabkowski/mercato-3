@@ -64,11 +64,7 @@
                     @foreach (var notification in Model.Notifications)
                     {
                         <a href="@(notification.RelatedUrl ?? "#")" 
-                           class="list-group-item list-group-item-action @(!notification.IsRead ? "bg-light" : "")"
-                           @if (!notification.IsRead)
-                           {
-                               <text>onclick="markAsRead(@notification.Id); return true;"</text>
-                           }>
+                           class="list-group-item list-group-item-action @(!notification.IsRead ? "bg-light" : "")">
                             <div class="d-flex w-100 justify-content-between align-items-start">
                                 <div class="d-flex align-items-start">
                                     <i class="bi @Model.GetNotificationIcon(notification.Type) fs-4 me-3 @(!notification.IsRead ? "text-primary" : "text-muted")"></i>
@@ -128,39 +124,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        function markAsRead(notificationId) {
-            // Send AJAX request to mark notification as read
-            fetch('/Account/Notifications?handler=MarkAsRead', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                },
-                body: `notificationId=${notificationId}`
-            }).then(() => {
-                // Update the notification count in the navbar
-                updateNotificationCount();
-            });
-        }
-
-        function updateNotificationCount() {
-            // Refresh notification count in navbar
-            fetch('/Account/Notifications?handler=GetUnreadCount')
-                .then(response => response.json())
-                .then(count => {
-                    const badge = document.getElementById('notification-count');
-                    if (badge) {
-                        if (count > 0) {
-                            badge.textContent = count > 99 ? '99+' : count;
-                            badge.style.display = '';
-                        } else {
-                            badge.style.display = 'none';
-                        }
-                    }
-                });
-        }
-    </script>
-}

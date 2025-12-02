@@ -295,31 +295,47 @@ public class OrderService : IOrderService
                     await _emailService.SendNewOrderNotificationToSellerAsync(subOrder, order);
                     
                     // Create notification for seller
-                    var store = await _context.Stores.FindAsync(subOrder.StoreId);
-                    if (store != null)
+                    try
                     {
-                        await _notificationService.CreateNotificationAsync(
-                            store.UserId,
-                            NotificationType.OrderPlaced,
-                            "New Order Received",
-                            $"You have received a new order #{subOrder.SubOrderNumber} with {subOrder.Items.Count} item(s).",
-                            $"/Seller/Orders/Details/{subOrder.Id}",
-                            subOrder.Id,
-                            "SellerSubOrder");
+                        var store = await _context.Stores.FindAsync(subOrder.StoreId);
+                        if (store != null)
+                        {
+                            await _notificationService.CreateNotificationAsync(
+                                store.UserId,
+                                NotificationType.OrderPlaced,
+                                "New Order Received",
+                                $"You have received a new order #{subOrder.SubOrderNumber} with {subOrder.Items.Count} item(s).",
+                                $"/Seller/Orders/Details/{subOrder.Id}",
+                                subOrder.Id,
+                                "SellerSubOrder");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to create notification for seller sub-order {SubOrderNumber}", subOrder.SubOrderNumber);
+                        // Don't fail order creation if notification fails
                     }
                 }
                 
                 // Create notification for buyer if they have an account
                 if (userId.HasValue)
                 {
-                    await _notificationService.CreateNotificationAsync(
-                        userId.Value,
-                        NotificationType.OrderPlaced,
-                        "Order Confirmed",
-                        $"Your order #{orderNumber} has been confirmed and is being processed.",
-                        $"/Account/Orders/Details/{order.Id}",
-                        order.Id,
-                        "Order");
+                    try
+                    {
+                        await _notificationService.CreateNotificationAsync(
+                            userId.Value,
+                            NotificationType.OrderPlaced,
+                            "Order Confirmed",
+                            $"Your order #{orderNumber} has been confirmed and is being processed.",
+                            $"/Account/Orders/Details/{order.Id}",
+                            order.Id,
+                            "Order");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to create notification for order {OrderNumber}", orderNumber);
+                        // Don't fail order creation if notification fails
+                    }
                 }
             }
             catch (Exception ex)

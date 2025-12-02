@@ -230,8 +230,23 @@ public class ReturnRequestService : IReturnRequestService
             if (returnRequestWithDetails != null)
             {
                 await _emailService.SendReturnRequestNotificationToSellerAsync(returnRequestWithDetails);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Don't fail the return request creation if email notification fails
+            _logger.LogError(ex, "Failed to send seller notification for return request {ReturnNumber}", returnNumber);
+        }
+        
+        // Create notification for seller
+        try
+        {
+            var returnRequestWithDetails = await _context.ReturnRequests
+                .Include(rr => rr.SubOrder)
+                .FirstOrDefaultAsync(rr => rr.Id == returnRequest.Id);
                 
-                // Create notification for seller
+            if (returnRequestWithDetails != null)
+            {
                 var store = await _context.Stores.FindAsync(returnRequestWithDetails.SubOrder.StoreId);
                 if (store != null)
                 {
@@ -244,22 +259,30 @@ public class ReturnRequestService : IReturnRequestService
                         returnRequestWithDetails.Id,
                         "ReturnRequest");
                 }
-                
-                // Create notification for buyer
-                await _notificationService.CreateNotificationAsync(
-                    buyerId,
-                    NotificationType.ReturnRequest,
-                    "Return Request Submitted",
-                    $"Your return request #{returnNumber} has been submitted and is being reviewed.",
-                    $"/Account/ReturnRequests/Details/{returnRequest.Id}",
-                    returnRequest.Id,
-                    "ReturnRequest");
             }
         }
         catch (Exception ex)
         {
-            // Don't fail the return request creation if email notification fails
-            _logger.LogError(ex, "Failed to send seller notification for return request {ReturnNumber}", returnNumber);
+            _logger.LogError(ex, "Failed to create seller notification for return request {ReturnNumber}", returnNumber);
+            // Don't fail the return request creation if notification fails
+        }
+        
+        // Create notification for buyer
+        try
+        {
+            await _notificationService.CreateNotificationAsync(
+                buyerId,
+                NotificationType.ReturnRequest,
+                "Return Request Submitted",
+                $"Your return request #{returnNumber} has been submitted and is being reviewed.",
+                $"/Account/ReturnRequests/Details/{returnRequest.Id}",
+                returnRequest.Id,
+                "ReturnRequest");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create buyer notification for return request {ReturnNumber}", returnNumber);
+            // Don't fail the return request creation if notification fails
         }
 
         return returnRequest;

@@ -158,9 +158,17 @@ public class OrderStatusService : IOrderStatusService
         try
         {
             await _emailService.SendShippingStatusUpdateEmailAsync(subOrder, subOrder.ParentOrder);
-            
-            // Create notification for buyer
-            if (subOrder.ParentOrder.UserId.HasValue)
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
+            // Don't fail the status update if email fails
+        }
+        
+        // Create notification for buyer
+        if (subOrder.ParentOrder.UserId.HasValue)
+        {
+            try
             {
                 await _notificationService.CreateNotificationAsync(
                     subOrder.ParentOrder.UserId.Value,
@@ -172,11 +180,11 @@ public class OrderStatusService : IOrderStatusService
                     subOrder.Id,
                     "SellerSubOrder");
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
-            // Don't fail the status update if email fails
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create notification for sub-order {SubOrderId}", subOrderId);
+                // Don't fail the status update if notification fails
+            }
         }
 
         _logger.LogInformation("Sub-order {SubOrderId} status updated to Shipped by user {UserId}", subOrderId, userId);
@@ -229,9 +237,17 @@ public class OrderStatusService : IOrderStatusService
         try
         {
             await _emailService.SendShippingStatusUpdateEmailAsync(subOrder, subOrder.ParentOrder);
-            
-            // Create notification for buyer
-            if (subOrder.ParentOrder.UserId.HasValue)
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
+            // Don't fail the status update if email fails
+        }
+        
+        // Create notification for buyer
+        if (subOrder.ParentOrder.UserId.HasValue)
+        {
+            try
             {
                 await _notificationService.CreateNotificationAsync(
                     subOrder.ParentOrder.UserId.Value,
@@ -242,11 +258,11 @@ public class OrderStatusService : IOrderStatusService
                     subOrder.Id,
                     "SellerSubOrder");
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
-            // Don't fail the status update if email fails
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create notification for sub-order {SubOrderId}", subOrderId);
+                // Don't fail the status update if notification fails
+            }
         }
 
         _logger.LogInformation("Sub-order {SubOrderId} status updated to Delivered by user {UserId}", subOrderId, userId);
