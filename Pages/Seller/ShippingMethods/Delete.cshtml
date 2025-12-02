@@ -1,0 +1,100 @@
+@page
+@model MercatoApp.Pages.Seller.ShippingMethods.DeleteModel
+@{
+    ViewData["Title"] = "Disable Shipping Method";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="mb-4">
+            <h1>Disable Shipping Method</h1>
+            <p class="text-muted">Confirm that you want to disable this shipping method.</p>
+        </div>
+
+        @if (Model.ShippingMethod != null)
+        {
+            <div class="alert alert-warning" role="alert">
+                <h5 class="alert-heading">
+                    <i class="bi bi-exclamation-triangle"></i> Important
+                </h5>
+                <p class="mb-0">
+                    Disabling this shipping method will make it unavailable at checkout for new orders.
+                    Existing orders that use this method will not be affected and will keep their shipping information for historical purposes.
+                </p>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Shipping Method Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">@Model.ShippingMethod.Name</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">
+                            @if (!string.IsNullOrEmpty(Model.ShippingMethod.Description))
+                            {
+                                @Model.ShippingMethod.Description
+                            }
+                            else
+                            {
+                                <span class="text-muted fst-italic">No description</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Estimated Delivery</dt>
+                        <dd class="col-sm-8">
+                            @if (!string.IsNullOrEmpty(Model.ShippingMethod.EstimatedDelivery))
+                            {
+                                @Model.ShippingMethod.EstimatedDelivery
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Base Cost</dt>
+                        <dd class="col-sm-8">$@Model.ShippingMethod.BaseCost.ToString("F2")</dd>
+
+                        <dt class="col-sm-4">Additional Item Cost</dt>
+                        <dd class="col-sm-8">$@Model.ShippingMethod.AdditionalItemCost.ToString("F2")</dd>
+
+                        <dt class="col-sm-4">Free Shipping At</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.ShippingMethod.FreeShippingThreshold.HasValue)
+                            {
+                                <span>$@Model.ShippingMethod.FreeShippingThreshold.Value.ToString("F2")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.ShippingMethod.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <form method="post">
+                <div class="d-flex justify-content-between">
+                    <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-danger">Disable Shipping Method</button>
+                </div>
+            </form>
+        }
+    </div>
+</div>

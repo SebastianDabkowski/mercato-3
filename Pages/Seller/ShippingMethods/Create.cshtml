@@ -1,0 +1,107 @@
+@page
+@model MercatoApp.Pages.Seller.ShippingMethods.CreateModel
+@{
+    ViewData["Title"] = "Add Shipping Method";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="mb-4">
+            <h1>Add Shipping Method</h1>
+            <p class="text-muted">Configure a new shipping option for your store.</p>
+        </div>
+
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+        <form method="post">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.Name" class="form-label"></label>
+                        <input asp-for="Input.Name" class="form-control" aria-required="true" placeholder="e.g., Standard Shipping, Express Delivery" />
+                        <span asp-validation-for="Input.Name" class="text-danger"></span>
+                        <div class="form-text">A descriptive name for this shipping method.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Description" class="form-label"></label>
+                        <textarea asp-for="Input.Description" class="form-control" rows="3" placeholder="Describe this shipping option..."></textarea>
+                        <span asp-validation-for="Input.Description" class="text-danger"></span>
+                        <div class="form-text">Optional description shown to buyers at checkout.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.EstimatedDelivery" class="form-label"></label>
+                        <input asp-for="Input.EstimatedDelivery" class="form-control" placeholder="e.g., 3-5 business days" />
+                        <span asp-validation-for="Input.EstimatedDelivery" class="text-danger"></span>
+                        <div class="form-text">Estimated delivery timeframe to set buyer expectations.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Pricing</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.BaseCost" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.BaseCost" class="form-control" type="number" step="0.01" min="0" aria-required="true" />
+                        </div>
+                        <span asp-validation-for="Input.BaseCost" class="text-danger"></span>
+                        <div class="form-text">Base shipping cost applied to the first item.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.AdditionalItemCost" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.AdditionalItemCost" class="form-control" type="number" step="0.01" min="0" />
+                        </div>
+                        <span asp-validation-for="Input.AdditionalItemCost" class="text-danger"></span>
+                        <div class="form-text">Additional cost per item after the first (e.g., for incremental packaging).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.FreeShippingThreshold" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.FreeShippingThreshold" class="form-control" type="number" step="0.01" min="0" />
+                        </div>
+                        <span asp-validation-for="Input.FreeShippingThreshold" class="text-danger"></span>
+                        <div class="form-text">Optional: Minimum order total for free shipping. Leave empty if not applicable.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Availability</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check">
+                        <input asp-for="Input.IsActive" class="form-check-input" type="checkbox" />
+                        <label asp-for="Input.IsActive" class="form-check-label">
+                            Active (available at checkout)
+                        </label>
+                        <div class="form-text">When active, buyers can select this method during checkout.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Shipping Method</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

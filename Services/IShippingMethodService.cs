@@ -36,4 +36,34 @@ public interface IShippingMethodService
     /// <param name="items">The cart items.</param>
     /// <returns>The calculated shipping cost.</returns>
     Task<decimal> CalculateShippingCostAsync(int shippingMethodId, List<CartItem> items);
+
+    /// <summary>
+    /// Gets all shipping methods for a store (including inactive ones).
+    /// </summary>
+    /// <param name="storeId">The store ID.</param>
+    /// <returns>A list of all shipping methods.</returns>
+    Task<List<ShippingMethod>> GetAllShippingMethodsAsync(int storeId);
+
+    /// <summary>
+    /// Creates a new shipping method for a store.
+    /// </summary>
+    /// <param name="shippingMethod">The shipping method to create.</param>
+    /// <returns>The created shipping method.</returns>
+    Task<ShippingMethod> CreateShippingMethodAsync(ShippingMethod shippingMethod);
+
+    /// <summary>
+    /// Updates an existing shipping method.
+    /// </summary>
+    /// <param name="shippingMethod">The shipping method with updated values.</param>
+    /// <param name="storeId">The store ID to verify ownership.</param>
+    /// <returns>True if successful, false otherwise.</returns>
+    Task<bool> UpdateShippingMethodAsync(ShippingMethod shippingMethod, int storeId);
+
+    /// <summary>
+    /// Deletes (soft delete by setting IsActive to false) a shipping method.
+    /// </summary>
+    /// <param name="id">The shipping method ID.</param>
+    /// <param name="storeId">The store ID to verify ownership.</param>
+    /// <returns>True if successful, false otherwise.</returns>
+    Task<bool> DeleteShippingMethodAsync(int id, int storeId);
 }
