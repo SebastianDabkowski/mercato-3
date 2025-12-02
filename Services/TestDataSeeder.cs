@@ -629,14 +629,15 @@ public static class TestDataSeeder
 
         // Add seller ratings for testing the rating display feature
         // These ratings demonstrate the seller rating functionality on the store page
-        // Ratings can only be added for delivered sub-orders
+        // Note: Ratings can only be added for delivered sub-orders per business rules
+        // subOrder2 (Fashion Boutique) has Status = OrderStatus.Delivered (see line 386)
         var sellerRating = new SellerRating
         {
             StoreId = store2.Id, // Fashion Boutique
             UserId = buyerUser.Id,
-            SellerSubOrderId = subOrder2.Id, // This sub-order is Delivered
+            SellerSubOrderId = subOrder2.Id, // This sub-order is in Delivered status
             Rating = 5,
-            CreatedAt = DateTime.UtcNow.AddDays(-1)
+            CreatedAt = DateTime.UtcNow.AddDays(-1) // Backdated to simulate a rating submitted yesterday
         };
 
         context.SellerRatings.Add(sellerRating);
