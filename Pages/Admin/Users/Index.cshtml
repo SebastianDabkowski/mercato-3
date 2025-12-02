@@ -1,0 +1,341 @@
+@page
+@model MercatoApp.Pages.Admin.Users.IndexModel
+@{
+    ViewData["Title"] = "User Management - Admin";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-people"></i> User Management
+                </h1>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-funnel"></i> Search and Filter
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="SearchQuery" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="SearchQuery" name="SearchQuery" 
+                                   value="@Model.Filter.SearchQuery" placeholder="Email, name, or user ID">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="RoleFilter" class="form-label">Role</label>
+                            <select name="RoleFilter" id="RoleFilter" class="form-select">
+                                <option value="">All Roles</option>
+                                <option value="Admin" selected="@(Model.Filter.RoleFilter == "Admin" ? "selected" : null)">Admin</option>
+                                <option value="Seller" selected="@(Model.Filter.RoleFilter == "Seller" ? "selected" : null)">Seller</option>
+                                <option value="Buyer" selected="@(Model.Filter.RoleFilter == "Buyer" ? "selected" : null)">Buyer</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="StatusFilter" class="form-label">Account Status</label>
+                            <select name="StatusFilter" id="StatusFilter" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="@((int)MercatoApp.Models.AccountStatus.Active)" 
+                                        selected="@(Model.Filter.StatusFilter == MercatoApp.Models.AccountStatus.Active ? "selected" : null)">
+                                    Active
+                                </option>
+                                <option value="@((int)MercatoApp.Models.AccountStatus.Unverified)" 
+                                        selected="@(Model.Filter.StatusFilter == MercatoApp.Models.AccountStatus.Unverified ? "selected" : null)">
+                                    Pending Verification
+                                </option>
+                                <option value="@((int)MercatoApp.Models.AccountStatus.Suspended)" 
+                                        selected="@(Model.Filter.StatusFilter == MercatoApp.Models.AccountStatus.Suspended ? "selected" : null)">
+                                    Suspended
+                                </option>
+                                <option value="@((int)MercatoApp.Models.AccountStatus.Blocked)" 
+                                        selected="@(Model.Filter.StatusFilter == MercatoApp.Models.AccountStatus.Blocked ? "selected" : null)">
+                                    Blocked
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="PageSize" class="form-label">Per Page</label>
+                            <select name="PageSize" id="PageSize" class="form-select">
+                                <option value="10" selected="@(Model.Filter.PageSize == 10 ? "selected" : null)">10</option>
+                                <option value="20" selected="@(Model.Filter.PageSize == 20 ? "selected" : null)">20</option>
+                                <option value="50" selected="@(Model.Filter.PageSize == 50 ? "selected" : null)">50</option>
+                                <option value="100" selected="@(Model.Filter.PageSize == 100 ? "selected" : null)">100</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                            <a href="@Url.Page("/Admin/Users/Index")" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results Info -->
+            @if (Model.Users != null && Model.Users.TotalCount > 0)
+            {
+                <div class="alert alert-info mb-3">
+                    <i class="bi bi-info-circle"></i> 
+                    Showing @Model.Users.Items.Count of @Model.Users.TotalCount total users
+                    (Page @Model.Users.PageNumber of @Model.Users.TotalPages)
+                </div>
+            }
+
+            <!-- Users Table -->
+            @if (Model.Users != null && Model.Users.Items.Count > 0)
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table"></i> Users
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>
+                                            <a asp-page="/Admin/Users/Index" 
+                                               asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                               asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                               asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                               asp-route-PageSize="@Model.Filter.PageSize"
+                                               asp-route-SortBy="Id"
+                                               asp-route-SortDirection="@(Model.Filter.SortBy == "Id" && Model.Filter.SortDirection == "asc" ? "desc" : "asc")"
+                                               class="text-decoration-none">
+                                                ID
+                                                @if (Model.Filter.SortBy == "Id")
+                                                {
+                                                    <i class="bi bi-@(Model.Filter.SortDirection == "asc" ? "arrow-up" : "arrow-down")"></i>
+                                                }
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a asp-page="/Admin/Users/Index" 
+                                               asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                               asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                               asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                               asp-route-PageSize="@Model.Filter.PageSize"
+                                               asp-route-SortBy="Email"
+                                               asp-route-SortDirection="@(Model.Filter.SortBy == "Email" && Model.Filter.SortDirection == "asc" ? "desc" : "asc")"
+                                               class="text-decoration-none">
+                                                Email
+                                                @if (Model.Filter.SortBy == "Email")
+                                                {
+                                                    <i class="bi bi-@(Model.Filter.SortDirection == "asc" ? "arrow-up" : "arrow-down")"></i>
+                                                }
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a asp-page="/Admin/Users/Index" 
+                                               asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                               asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                               asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                               asp-route-PageSize="@Model.Filter.PageSize"
+                                               asp-route-SortBy="Name"
+                                               asp-route-SortDirection="@(Model.Filter.SortBy == "Name" && Model.Filter.SortDirection == "asc" ? "desc" : "asc")"
+                                               class="text-decoration-none">
+                                                Name
+                                                @if (Model.Filter.SortBy == "Name")
+                                                {
+                                                    <i class="bi bi-@(Model.Filter.SortDirection == "asc" ? "arrow-up" : "arrow-down")"></i>
+                                                }
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a asp-page="/Admin/Users/Index" 
+                                               asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                               asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                               asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                               asp-route-PageSize="@Model.Filter.PageSize"
+                                               asp-route-SortBy="Role"
+                                               asp-route-SortDirection="@(Model.Filter.SortBy == "Role" && Model.Filter.SortDirection == "asc" ? "desc" : "asc")"
+                                               class="text-decoration-none">
+                                                Role
+                                                @if (Model.Filter.SortBy == "Role")
+                                                {
+                                                    <i class="bi bi-@(Model.Filter.SortDirection == "asc" ? "arrow-up" : "arrow-down")"></i>
+                                                }
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a asp-page="/Admin/Users/Index" 
+                                               asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                               asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                               asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                               asp-route-PageSize="@Model.Filter.PageSize"
+                                               asp-route-SortBy="Status"
+                                               asp-route-SortDirection="@(Model.Filter.SortBy == "Status" && Model.Filter.SortDirection == "asc" ? "desc" : "asc")"
+                                               class="text-decoration-none">
+                                                Status
+                                                @if (Model.Filter.SortBy == "Status")
+                                                {
+                                                    <i class="bi bi-@(Model.Filter.SortDirection == "asc" ? "arrow-up" : "arrow-down")"></i>
+                                                }
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a asp-page="/Admin/Users/Index" 
+                                               asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                               asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                               asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                               asp-route-PageSize="@Model.Filter.PageSize"
+                                               asp-route-SortBy="CreatedAt"
+                                               asp-route-SortDirection="@(Model.Filter.SortBy == "CreatedAt" && Model.Filter.SortDirection == "asc" ? "desc" : "asc")"
+                                               class="text-decoration-none">
+                                                Created
+                                                @if (Model.Filter.SortBy == "CreatedAt")
+                                                {
+                                                    <i class="bi bi-@(Model.Filter.SortDirection == "asc" ? "arrow-up" : "arrow-down")"></i>
+                                                }
+                                            </a>
+                                        </th>
+                                        <th>Last Login</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in Model.Users.Items)
+                                    {
+                                        <tr>
+                                            <td>@user.Id</td>
+                                            <td>@user.Email</td>
+                                            <td>@user.FullName</td>
+                                            <td>
+                                                <span class="badge bg-@(user.Role switch
+                                                {
+                                                    "Admin" => "danger",
+                                                    "Seller" => "primary",
+                                                    "Buyer" => "success",
+                                                    _ => "secondary"
+                                                })">
+                                                    @user.Role
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-@(user.Status switch
+                                                {
+                                                    MercatoApp.Models.AccountStatus.Active => "success",
+                                                    MercatoApp.Models.AccountStatus.Unverified => "warning",
+                                                    MercatoApp.Models.AccountStatus.Suspended => "danger",
+                                                    MercatoApp.Models.AccountStatus.Blocked => "dark",
+                                                    _ => "secondary"
+                                                })">
+                                                    @(user.Status switch
+                                                    {
+                                                        MercatoApp.Models.AccountStatus.Active => "Active",
+                                                        MercatoApp.Models.AccountStatus.Unverified => "Pending Verification",
+                                                        MercatoApp.Models.AccountStatus.Suspended => "Suspended",
+                                                        MercatoApp.Models.AccountStatus.Blocked => "Blocked",
+                                                        _ => "Unknown"
+                                                    })
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    @user.CreatedAt.ToString("MMM dd, yyyy")
+                                                </small>
+                                            </td>
+                                            <td>
+                                                @if (user.LastLoginAt.HasValue)
+                                                {
+                                                    <small class="text-muted">
+                                                        @user.LastLoginAt.Value.ToString("MMM dd, yyyy")
+                                                    </small>
+                                                }
+                                                else
+                                                {
+                                                    <small class="text-muted">Never</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <a asp-page="/Admin/Users/Details" asp-route-id="@user.Id" 
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.Users.TotalPages > 1)
+                {
+                    <nav aria-label="User list pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(!Model.Users.HasPreviousPage ? "disabled" : "")">
+                                <a class="page-link" 
+                                   asp-page="/Admin/Users/Index"
+                                   asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                   asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                   asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                   asp-route-PageSize="@Model.Filter.PageSize"
+                                   asp-route-Page="@(Model.Users.PageNumber - 1)"
+                                   asp-route-SortBy="@Model.Filter.SortBy"
+                                   asp-route-SortDirection="@Model.Filter.SortDirection">
+                                    Previous
+                                </a>
+                            </li>
+
+                            @for (int i = Math.Max(1, Model.Users.PageNumber - 2); i <= Math.Min(Model.Users.TotalPages, Model.Users.PageNumber + 2); i++)
+                            {
+                                <li class="page-item @(i == Model.Users.PageNumber ? "active" : "")">
+                                    <a class="page-link" 
+                                       asp-page="/Admin/Users/Index"
+                                       asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                       asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                       asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                       asp-route-PageSize="@Model.Filter.PageSize"
+                                       asp-route-Page="@i"
+                                       asp-route-SortBy="@Model.Filter.SortBy"
+                                       asp-route-SortDirection="@Model.Filter.SortDirection">
+                                        @i
+                                    </a>
+                                </li>
+                            }
+
+                            <li class="page-item @(!Model.Users.HasNextPage ? "disabled" : "")">
+                                <a class="page-link" 
+                                   asp-page="/Admin/Users/Index"
+                                   asp-route-SearchQuery="@Model.Filter.SearchQuery"
+                                   asp-route-RoleFilter="@Model.Filter.RoleFilter"
+                                   asp-route-StatusFilter="@((int?)Model.Filter.StatusFilter)"
+                                   asp-route-PageSize="@Model.Filter.PageSize"
+                                   asp-route-Page="@(Model.Users.PageNumber + 1)"
+                                   asp-route-SortBy="@Model.Filter.SortBy"
+                                   asp-route-SortDirection="@Model.Filter.SortDirection">
+                                    Next
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    No users found matching your search criteria.
+                </div>
+            }
+        </div>
+    </div>
+</div>

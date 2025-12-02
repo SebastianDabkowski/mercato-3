@@ -1,0 +1,324 @@
+@page
+@model MercatoApp.Pages.Admin.Users.DetailsModel
+@{
+    ViewData["Title"] = "User Details - Admin";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-person-circle"></i> User Details
+                </h1>
+                <a asp-page="/Admin/Users/Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+
+            @if (Model.User == null)
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> User not found.
+                </div>
+            }
+            else
+            {
+                <!-- User Information Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge"></i> User Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">User ID</label>
+                                <div class="fw-bold">@Model.User.Id</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">Role</label>
+                                <div>
+                                    <span class="badge bg-@(Model.UserRole switch
+                                    {
+                                        "Admin" => "danger",
+                                        "Seller" => "primary",
+                                        "Buyer" => "success",
+                                        _ => "secondary"
+                                    })">
+                                        @Model.UserRole
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">Email</label>
+                                <div class="fw-bold">@Model.User.Email</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">Account Status</label>
+                                <div>
+                                    <span class="badge bg-@(Model.User.Status switch
+                                    {
+                                        MercatoApp.Models.AccountStatus.Active => "success",
+                                        MercatoApp.Models.AccountStatus.Unverified => "warning",
+                                        MercatoApp.Models.AccountStatus.Suspended => "danger",
+                                        MercatoApp.Models.AccountStatus.Blocked => "dark",
+                                        _ => "secondary"
+                                    })">
+                                        @(Model.User.Status switch
+                                        {
+                                            MercatoApp.Models.AccountStatus.Active => "Active",
+                                            MercatoApp.Models.AccountStatus.Unverified => "Pending Verification",
+                                            MercatoApp.Models.AccountStatus.Suspended => "Suspended",
+                                            MercatoApp.Models.AccountStatus.Blocked => "Blocked",
+                                            _ => "Unknown"
+                                        })
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">First Name</label>
+                                <div>@Model.User.FirstName</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">Last Name</label>
+                                <div>@Model.User.LastName</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">Phone Number</label>
+                                <div>@(Model.User.PhoneNumber ?? "Not provided")</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">Created At</label>
+                                <div>@Model.User.CreatedAt.ToString("MMMM dd, yyyy h:mm tt") UTC</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verification Status Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-shield-check"></i> Verification Status
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">Email Verification</label>
+                                <div>
+                                    @if (Model.User.Status == MercatoApp.Models.AccountStatus.Active)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Verified
+                                        </span>
+                                    }
+                                    else if (Model.User.Status == MercatoApp.Models.AccountStatus.Unverified)
+                                    {
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-clock"></i> Pending
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-question-circle"></i> Unknown
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            @if (Model.User.UserType == MercatoApp.Models.UserType.Seller)
+                            {
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">KYC Status</label>
+                                    <div>
+                                        <span class="badge bg-@(Model.User.KycStatus switch
+                                        {
+                                            MercatoApp.Models.KycStatus.Approved => "success",
+                                            MercatoApp.Models.KycStatus.Pending => "warning",
+                                            MercatoApp.Models.KycStatus.Rejected => "danger",
+                                            _ => "secondary"
+                                        })">
+                                            @Model.User.KycStatus
+                                        </span>
+                                    </div>
+                                </div>
+                                @if (Model.User.KycSubmittedAt.HasValue)
+                                {
+                                    <div class="col-md-6 mb-3">
+                                        <label class="text-muted small">KYC Submitted</label>
+                                        <div>@Model.User.KycSubmittedAt.Value.ToString("MMMM dd, yyyy h:mm tt") UTC</div>
+                                    </div>
+                                }
+                                @if (Model.User.KycCompletedAt.HasValue)
+                                {
+                                    <div class="col-md-6 mb-3">
+                                        <label class="text-muted small">KYC Completed</label>
+                                        <div>@Model.User.KycCompletedAt.Value.ToString("MMMM dd, yyyy h:mm tt") UTC</div>
+                                    </div>
+                                }
+                            }
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">Two-Factor Authentication</label>
+                                <div>
+                                    @if (Model.User.TwoFactorEnabled)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-shield-fill-check"></i> Enabled
+                                        </span>
+                                        @if (Model.User.TwoFactorEnabledAt.HasValue)
+                                        {
+                                            <small class="text-muted d-block">
+                                                Since @Model.User.TwoFactorEnabledAt.Value.ToString("MMM dd, yyyy")
+                                            </small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-shield"></i> Not Enabled
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small">External Login Provider</label>
+                                <div>
+                                    @if (!string.IsNullOrEmpty(Model.User.ExternalProvider))
+                                    {
+                                        <span class="badge bg-info">@Model.User.ExternalProvider</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Email/Password</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Login History Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> Recent Login Activity
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.LoginHistory != null && Model.LoginHistory.Count > 0)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date/Time</th>
+                                            <th>Event Type</th>
+                                            <th>Status</th>
+                                            <th>IP Address</th>
+                                            <th>Location</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var loginEvent in Model.LoginHistory)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <small>@loginEvent.CreatedAt.ToString("MMM dd, yyyy h:mm tt")</small>
+                                                </td>
+                                                <td>
+                                                    <small>@loginEvent.EventType</small>
+                                                </td>
+                                                <td>
+                                                    @if (loginEvent.IsSuccessful)
+                                                    {
+                                                        <span class="badge bg-success">Success</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-danger" title="@loginEvent.FailureReason">Failed</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">@(loginEvent.IpAddress ?? "Unknown")</small>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        @if (!string.IsNullOrEmpty(loginEvent.Location))
+                                                        {
+                                                            @loginEvent.Location
+                                                        }
+                                                        else if (!string.IsNullOrEmpty(loginEvent.CountryCode))
+                                                        {
+                                                            @loginEvent.CountryCode
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>Unknown</span>
+                                                        }
+                                                    </small>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No login activity recorded for this user.</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Address Information Card (if provided) -->
+                @if (!string.IsNullOrEmpty(Model.User.Address) || !string.IsNullOrEmpty(Model.User.City) || 
+                     !string.IsNullOrEmpty(Model.User.Country))
+                {
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-geo-alt"></i> Address Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                @if (!string.IsNullOrEmpty(Model.User.Address))
+                                {
+                                    <div class="col-md-12 mb-3">
+                                        <label class="text-muted small">Address</label>
+                                        <div>@Model.User.Address</div>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.User.City))
+                                {
+                                    <div class="col-md-4 mb-3">
+                                        <label class="text-muted small">City</label>
+                                        <div>@Model.User.City</div>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.User.PostalCode))
+                                {
+                                    <div class="col-md-4 mb-3">
+                                        <label class="text-muted small">Postal Code</label>
+                                        <div>@Model.User.PostalCode</div>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.User.Country))
+                                {
+                                    <div class="col-md-4 mb-3">
+                                        <label class="text-muted small">Country</label>
+                                        <div>@Model.User.Country</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
