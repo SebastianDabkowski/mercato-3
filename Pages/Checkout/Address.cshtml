@@ -1,0 +1,155 @@
+@page
+@model MercatoApp.Pages.Checkout.AddressModel
+@{
+    ViewData["Title"] = "Checkout - Delivery Address";
+}
+
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Cart">Cart</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Delivery Address</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">
+        <i class="bi bi-geo-alt"></i> Delivery Address
+    </h1>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            @if (Model.IsAuthenticated && Model.SavedAddresses.Any())
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Select a Saved Address</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            <input type="hidden" name="action" value="useExisting" />
+                            
+                            @foreach (var address in Model.SavedAddresses)
+                            {
+                                <div class="form-check mb-3 p-3 border rounded @(address.IsDefault ? "border-primary" : "")">
+                                    <input class="form-check-input" type="radio" 
+                                           name="SelectedAddressId" value="@address.Id" 
+                                           id="address-@address.Id"
+                                           checked="@(Model.SelectedAddressId == address.Id)">
+                                    <label class="form-check-label w-100" for="address-@address.Id">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <strong>@address.FullName</strong>
+                                                @if (address.IsDefault)
+                                                {
+                                                    <span class="badge bg-primary ms-2">Default</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="text-muted small">
+                                            @address.AddressLine1
+                                            @if (!string.IsNullOrEmpty(address.AddressLine2))
+                                            {
+                                                <br />@address.AddressLine2
+                                            }
+                                            <br />@address.City@(!string.IsNullOrEmpty(address.StateProvince) ? $", {address.StateProvince}" : "") @address.PostalCode
+                                            <br />@address.CountryCode
+                                            <br />@address.PhoneNumber
+                                        </div>
+                                    </label>
+                                </div>
+                            }
+
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-arrow-right"></i> Continue to Review
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Or Add a New Address</h5>
+                    </div>
+                    <div class="card-body">
+                        <button type="button" class="btn btn-outline-primary" 
+                                onclick="document.getElementById('newAddressForm').style.display='block'; this.style.display='none';">
+                            <i class="bi bi-plus-circle"></i> Add New Address
+                        </button>
+
+                        <div id="newAddressForm" style="display: @(Model.IsNewAddress ? "block" : "none");">
+                            <hr class="my-3" />
+                            @await Html.PartialAsync("_AddressForm", Model)
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Enter Delivery Address</h5>
+                    </div>
+                    <div class="card-body">
+                        @await Html.PartialAsync("_AddressForm", Model)
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Shipping Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Supported Countries</h6>
+                    <p class="small text-muted">
+                        We currently ship to the following countries:
+                    </p>
+                    <ul class="small text-muted">
+                        <li>United States (US)</li>
+                        <li>Canada (CA)</li>
+                        <li>United Kingdom (GB)</li>
+                        <li>Germany (DE)</li>
+                        <li>France (FR)</li>
+                        <li>Italy (IT)</li>
+                        <li>Spain (ES)</li>
+                        <li>Australia (AU)</li>
+                        <li>New Zealand (NZ)</li>
+                        <li>Japan (JP)</li>
+                    </ul>
+                    <p class="small text-muted mb-0">
+                        If your country is not listed, we apologize but we cannot currently ship to your location.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-shield-check"></i> Secure Checkout
+                    </h6>
+                    <p class="card-text small text-muted mb-0">
+                        Your information is protected with industry-standard encryption.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
