@@ -102,6 +102,13 @@ public class LoginModel : PageModel
             return Page();
         }
 
+        // Check if password reset is required (e.g., after account reactivation)
+        if (result.RequiresPasswordReset)
+        {
+            TempData["InfoMessage"] = "Your account requires a password reset. Please create a new password to continue.";
+            return RedirectToPage("/Account/ForcedPasswordReset", new { userId = result.User!.Id });
+        }
+
         // Create a secure session token
         var sessionData = new SessionCreationData
         {

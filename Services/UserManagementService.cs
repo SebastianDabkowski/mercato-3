@@ -230,7 +230,7 @@ public class UserManagementService : IUserManagementService
     }
 
     /// <inheritdoc />
-    public async Task<bool> UnblockUserAsync(int userId, int adminUserId, string? notes)
+    public async Task<bool> UnblockUserAsync(int userId, int adminUserId, string? notes, bool requirePasswordReset = false)
     {
         try
         {
@@ -251,6 +251,9 @@ public class UserManagementService : IUserManagementService
             // Update user status - set to Active (they were previously active before being blocked)
             user.Status = AccountStatus.Active;
             
+            // Set password reset requirement if specified
+            user.RequirePasswordReset = requirePasswordReset;
+            
             // Keep block history for audit purposes, don't clear BlockedByUserId, BlockedAt, etc.
 
             // Create audit log entry
@@ -261,13 +264,14 @@ public class UserManagementService : IUserManagementService
                 Action = "UnblockUser",
                 Reason = notes,
                 ActionTimestamp = DateTime.UtcNow,
-                Metadata = $"Previous status: Blocked, New status: Active"
+                Metadata = $"Previous status: Blocked, New status: Active{(requirePasswordReset ? ", Password reset required" : "")}"
             };
 
             _context.AdminAuditLogs.Add(auditLog);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("User {UserId} unblocked by admin {AdminUserId}", userId, adminUserId);
+            _logger.LogInformation("User {UserId} unblocked by admin {AdminUserId}{PasswordResetRequired}", 
+                userId, adminUserId, requirePasswordReset ? " (password reset required)" : "");
 
             return true;
         }

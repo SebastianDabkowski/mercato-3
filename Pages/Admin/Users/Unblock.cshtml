@@ -1,7 +1,7 @@
 @page
 @model MercatoApp.Pages.Admin.Users.UnblockModel
 @{
-    ViewData["Title"] = "Unblock User Account - Admin";
+    ViewData["Title"] = "Reactivate User Account - Admin";
 }
 
 <div class="container my-5">
@@ -10,7 +10,7 @@
             <!-- Page Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>
-                    <i class="bi bi-unlock"></i> Unblock User Account
+                    <i class="bi bi-unlock"></i> Reactivate User Account
                 </h1>
                 <a asp-page="/Admin/Users/Details" asp-route-id="@Model.User?.Id" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Cancel
@@ -78,13 +78,13 @@
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="bi bi-clipboard-check"></i> Unblock Confirmation
+                            <i class="bi bi-clipboard-check"></i> Reactivation Confirmation
                         </h5>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-success">
                             <p class="mb-0">
-                                <i class="bi bi-check-circle"></i> After unblocking, the user will be able to log in and access their account normally.
+                                <i class="bi bi-check-circle"></i> After reactivating, the user will be able to log in and access their account normally.
                                 @if (Model.User.UserType == MercatoApp.Models.UserType.Seller)
                                 {
                                     <text>Their store and product listings will become visible again.</text>
@@ -98,9 +98,22 @@
                                     Notes (Optional)
                                 </label>
                                 <textarea asp-for="Notes" class="form-control" rows="3" 
-                                          placeholder="Provide any notes about why this account is being unblocked..."></textarea>
+                                          placeholder="Provide any notes about why this account is being reactivated..."></textarea>
                                 <span asp-validation-for="Notes" class="text-danger"></span>
                                 <small class="text-muted">Maximum 1000 characters</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input asp-for="RequirePasswordReset" class="form-check-input" type="checkbox" id="requirePasswordResetCheck">
+                                    <label class="form-check-label" for="requirePasswordResetCheck">
+                                        Require password reset on next login
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="bi bi-info-circle"></i> Recommended for accounts blocked due to security concerns or suspicious activity. 
+                                    The user will be prompted to change their password immediately after logging in.
+                                </small>
                             </div>
 
                             <div class="d-flex justify-content-between">
@@ -108,7 +121,7 @@
                                     <i class="bi bi-x-circle"></i> Cancel
                                 </a>
                                 <button type="submit" class="btn btn-success">
-                                    <i class="bi bi-unlock"></i> Confirm and Unblock Account
+                                    <i class="bi bi-unlock"></i> Confirm and Reactivate Account
                                 </button>
                             </div>
                         </form>
