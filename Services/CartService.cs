@@ -224,8 +224,18 @@ public class CartService : ICartService
         // If quantity is 0, remove the item instead
         if (quantity == 0)
         {
+            // Create a copy of the item before removing it for return
+            var itemCopy = new CartItem
+            {
+                Id = item.Id,
+                CartId = item.CartId,
+                ProductId = item.ProductId,
+                ProductVariantId = item.ProductVariantId,
+                Quantity = 0,
+                PriceAtAdd = item.PriceAtAdd
+            };
             await RemoveFromCartAsync(cartItemId);
-            return item;
+            return itemCopy;
         }
 
         if (quantity < 0)
@@ -235,9 +245,9 @@ public class CartService : ICartService
 
         // Validate against available stock
         int availableStock;
-        if (item.ProductVariantId.HasValue && item.ProductVariant != null)
+        if (item.ProductVariantId.HasValue)
         {
-            availableStock = item.ProductVariant.Stock;
+            availableStock = item.ProductVariant!.Stock;
         }
         else
         {
