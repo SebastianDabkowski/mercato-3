@@ -38,8 +38,9 @@ public class OrderService : IOrderService
         int paymentMethodId,
         string? guestEmail)
     {
-        // Use a transaction to ensure atomicity and prevent race conditions
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        // Use a transaction to ensure atomicity (skip for in-memory database)
+        var isInMemory = _context.Database.IsInMemory();
+        var transaction = isInMemory ? null : await _context.Database.BeginTransactionAsync();
         
         try
         {
@@ -261,8 +262,11 @@ public class OrderService : IOrderService
             // Clear the cart
             await _cartService.ClearCartAsync(userId, sessionId);
 
-            // Commit the transaction
-            await transaction.CommitAsync();
+            // Commit the transaction (if using a real database)
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
 
             _logger.LogInformation("Created order {OrderNumber} for user {UserId}", orderNumber, userId ?? 0);
 
@@ -270,9 +274,17 @@ public class OrderService : IOrderService
         }
         catch
         {
-            // Rollback transaction on any error
-            await transaction.RollbackAsync();
+            // Rollback transaction on any error (if using a real database)
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw;
+        }
+        finally
+        {
+            // Dispose transaction if it was created
+            transaction?.Dispose();
         }
     }
 

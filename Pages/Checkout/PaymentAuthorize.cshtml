@@ -39,6 +39,66 @@
 
                     <hr />
 
+                    @if (Model.RequiresBlik || Model.PaymentMethodProviderId == "blik")
+                    {
+                        <!-- BLIK Code Entry -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="bi bi-phone"></i> Enter BLIK Code
+                            </h5>
+                            <p class="text-muted small">
+                                Open your banking app and generate a 6-digit BLIK code, then enter it below.
+                            </p>
+                            
+                            @if (!string.IsNullOrEmpty(Model.BlikCode))
+                            {
+                                <div class="alert alert-success">
+                                    <i class="bi bi-check-circle"></i> BLIK code received: <strong>@Model.BlikCode</strong>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> Please enter your BLIK code to continue
+                                </div>
+                                <form method="post" asp-page-handler="SubmitBlikCode" class="mb-3">
+                                    <input type="hidden" name="transactionId" value="@Model.TransactionId" />
+                                    
+                                    <div class="input-group mb-3">
+                                        <input type="text" 
+                                               class="form-control form-control-lg text-center" 
+                                               name="blikCode" 
+                                               placeholder="000000" 
+                                               maxlength="6" 
+                                               pattern="[0-9]{6}" 
+                                               required 
+                                               style="letter-spacing: 0.5rem; font-size: 1.5rem;"
+                                               autofocus />
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-check-lg"></i> Submit Code
+                                        </button>
+                                    </div>
+                                    <p class="text-muted small">
+                                        <i class="bi bi-info-circle"></i> The code must be exactly 6 digits
+                                    </p>
+                                </form>
+                            }
+                        </div>
+                    }
+
+                    @if (Model.PaymentType == "bank")
+                    {
+                        <!-- Bank Transfer Details -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="bi bi-bank"></i> Select Your Bank
+                            </h5>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> You will be redirected to your bank to authorize the payment
+                            </div>
+                        </div>
+                    }
+
                     <p class="text-muted small mb-4">
                         <i class="bi bi-lock"></i> Your payment information is protected with industry-standard encryption.
                     </p>
