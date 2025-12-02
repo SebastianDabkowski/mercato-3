@@ -32,10 +32,12 @@ public class GuestCartService : IGuestCartService
 {
     private const string GuestCartCookieName = "MercatoGuestCart";
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IWebHostEnvironment _environment;
 
-    public GuestCartService(IHttpContextAccessor httpContextAccessor)
+    public GuestCartService(IHttpContextAccessor httpContextAccessor, IWebHostEnvironment environment)
     {
         _httpContextAccessor = httpContextAccessor;
+        _environment = environment;
     }
 
     /// <inheritdoc />
@@ -59,7 +61,7 @@ public class GuestCartService : IGuestCartService
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // HTTPS only for security
+                Secure = !_environment.IsDevelopment(), // HTTPS only in production
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddDays(7),
                 IsEssential = true // Required for cart functionality
