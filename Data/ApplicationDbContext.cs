@@ -227,6 +227,21 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<SettlementConfig> SettlementConfigs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the commission invoices table.
+    /// </summary>
+    public DbSet<CommissionInvoice> CommissionInvoices { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the commission invoice items table.
+    /// </summary>
+    public DbSet<CommissionInvoiceItem> CommissionInvoiceItems { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the commission invoice configuration table.
+    /// </summary>
+    public DbSet<CommissionInvoiceConfig> CommissionInvoiceConfigs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1233,6 +1248,69 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SettlementConfig>(entity =>
         {
             // No special indexes needed for global configuration
+        });
+
+        modelBuilder.Entity<CommissionInvoice>(entity =>
+        {
+            // Unique invoice number
+            entity.HasIndex(e => e.InvoiceNumber).IsUnique();
+
+            // Index on store for seller queries
+            entity.HasIndex(e => e.StoreId);
+
+            // Index on status for filtering
+            entity.HasIndex(e => e.Status);
+
+            // Composite index for date range queries
+            entity.HasIndex(e => new { e.StoreId, e.IssueDate });
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with CorrectingInvoice (self-referencing for credit notes)
+            entity.HasOne(e => e.CorrectingInvoice)
+                .WithMany()
+                .HasForeignKey(e => e.CorrectingInvoiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure decimal precision
+            entity.Property(e => e.Subtotal).HasPrecision(18, 2);
+            entity.Property(e => e.TaxAmount).HasPrecision(18, 2);
+            entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
+            entity.Property(e => e.TaxPercentage).HasPrecision(5, 2);
+        });
+
+        modelBuilder.Entity<CommissionInvoiceItem>(entity =>
+        {
+            // Index on invoice for fast item retrieval
+            entity.HasIndex(e => e.CommissionInvoiceId);
+
+            // Index on commission transaction for reverse lookup
+            entity.HasIndex(e => e.CommissionTransactionId);
+
+            // Configure relationship with CommissionInvoice
+            entity.HasOne(e => e.CommissionInvoice)
+                .WithMany(i => i.Items)
+                .HasForeignKey(e => e.CommissionInvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with CommissionTransaction
+            entity.HasOne(e => e.CommissionTransaction)
+                .WithMany()
+                .HasForeignKey(e => e.CommissionTransactionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<CommissionInvoiceConfig>(entity =>
+        {
+            // Configure decimal precision
+            entity.Property(e => e.DefaultTaxPercentage).HasPrecision(5, 2);
         });
     }
 }

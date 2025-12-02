@@ -90,6 +90,7 @@ builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPaymentProviderService, MockPaymentProviderService>();
 builder.Services.AddScoped<ICommissionService, CommissionService>();
+builder.Services.AddScoped<ICommissionInvoiceService, CommissionInvoiceService>();
 builder.Services.AddScoped<IEscrowService, EscrowService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<ISettlementService, SettlementService>();

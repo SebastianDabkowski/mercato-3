@@ -1,0 +1,217 @@
+@page
+@model MercatoApp.Pages.Seller.InvoiceDetailsModel
+@{
+    ViewData["Title"] = $"Invoice {Model.Invoice?.InvoiceNumber} - Seller Panel";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Seller/Invoices">Invoices</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.Invoice?.InvoiceNumber</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-receipt"></i> Invoice Details
+            </h1>
+        </div>
+    </div>
+
+    @if (Model.Invoice == null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Invoice not found.
+        </div>
+        return;
+    }
+
+    <!-- Invoice Header -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="row">
+                <div class="col">
+                    <h4 class="mb-0">
+                        @if (Model.Invoice.IsCreditNote)
+                        {
+                            <span>CREDIT NOTE</span>
+                        }
+                        else
+                        {
+                            <span>INVOICE</span>
+                        }
+                    </h4>
+                </div>
+                <div class="col text-end">
+                    <h4 class="mb-0">@Model.Invoice.InvoiceNumber</h4>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>From:</h5>
+                    <p>
+                        <strong>@Model.Config?.CompanyName</strong><br />
+                        @if (!string.IsNullOrEmpty(Model.Config?.CompanyAddress))
+                        {
+                            @Model.Config.CompanyAddress
+                            <br />
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Config?.CompanyTaxId))
+                        {
+                            <text>Tax ID: @Model.Config.CompanyTaxId</text>
+                        }
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Bill To:</h5>
+                    <p>
+                        <strong>@Model.Invoice.Store.StoreName</strong><br />
+                        Store ID: @Model.Invoice.StoreId
+                    </p>
+                </div>
+            </div>
+            <hr />
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Issue Date:</strong><br />
+                    @Model.Invoice.IssueDate.ToString("MMMM dd, yyyy")
+                </div>
+                <div class="col-md-3">
+                    <strong>Due Date:</strong><br />
+                    @Model.Invoice.DueDate.ToString("MMMM dd, yyyy")
+                </div>
+                <div class="col-md-3">
+                    <strong>Period:</strong><br />
+                    @Model.Invoice.PeriodStartDate.ToString("MMM yyyy")
+                </div>
+                <div class="col-md-3">
+                    <strong>Status:</strong><br />
+                    @switch (Model.Invoice.Status)
+                    {
+                        case MercatoApp.Models.CommissionInvoiceStatus.Draft:
+                            <span class="badge bg-secondary">Draft</span>
+                            break;
+                        case MercatoApp.Models.CommissionInvoiceStatus.Issued:
+                            <span class="badge bg-primary">Issued</span>
+                            break;
+                        case MercatoApp.Models.CommissionInvoiceStatus.Paid:
+                            <span class="badge bg-success">Paid</span>
+                            break;
+                        case MercatoApp.Models.CommissionInvoiceStatus.Cancelled:
+                            <span class="badge bg-danger">Cancelled</span>
+                            break;
+                        case MercatoApp.Models.CommissionInvoiceStatus.Superseded:
+                            <span class="badge bg-warning text-dark">Superseded</span>
+                            break;
+                    }
+                </div>
+            </div>
+            @if (Model.Invoice.IsCreditNote && Model.Invoice.CorrectingInvoice != null)
+            {
+                <hr />
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i>
+                    This is a credit note for invoice <strong>@Model.Invoice.CorrectingInvoice.InvoiceNumber</strong>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Invoice Items -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-list-ul"></i> Line Items
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Invoice.Items)
+                        {
+                            <tr>
+                                <td>@item.Description</td>
+                                <td class="text-end">@item.Amount.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Totals -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8"></div>
+                <div class="col-md-4">
+                    <table class="table">
+                        <tr>
+                            <td><strong>Subtotal:</strong></td>
+                            <td class="text-end">@Model.Invoice.Subtotal.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tax (@Model.Invoice.TaxPercentage%):</strong></td>
+                            <td class="text-end">@Model.Invoice.TaxAmount.ToString("C")</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>Total Amount:</strong></td>
+                            <td class="text-end"><strong>@Model.Invoice.TotalAmount.ToString("C") @Model.Invoice.Currency</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Invoice.Notes))
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-sticky"></i> Notes
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>@Model.Invoice.Notes</p>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.Config?.TermsAndConditions))
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-text"></i> Terms and Conditions
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>@Model.Config.TermsAndConditions</p>
+            </div>
+        </div>
+    }
+
+    <!-- Actions -->
+    <div class="card">
+        <div class="card-body">
+            <a href="/Seller/Invoices" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Invoices
+            </a>
+            <a href="/Seller/InvoiceDownload?id=@Model.Invoice.Id" class="btn btn-success ms-2" target="_blank">
+                <i class="bi bi-download"></i> Download PDF
+            </a>
+        </div>
+    </div>
+</div>
