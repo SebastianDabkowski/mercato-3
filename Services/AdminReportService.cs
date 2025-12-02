@@ -273,6 +273,7 @@ public class AdminReportService : IAdminReportService
             return new Dictionary<int, decimal>();
 
         var commissions = await _context.CommissionTransactions
+            .Include(ct => ct.EscrowTransaction)
             .Where(ct => subOrderIds.Contains(ct.EscrowTransaction.SellerSubOrderId))
             .GroupBy(ct => ct.EscrowTransaction.SellerSubOrderId)
             .Select(g => new { SubOrderId = g.Key, TotalCommission = g.Sum(ct => ct.CommissionAmount) })
@@ -334,5 +335,181 @@ public class AdminReportService : IAdminReportService
     private static string FormatCsvRow(params string[] values)
     {
         return string.Join(",", values);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<CommissionSummaryData>> GetCommissionSummaryAsync(
+        DateTime fromDate,
+        DateTime toDate)
+    {
+        // Include the entire day for toDate
+        var endOfDay = toDate.Date.AddDays(1).AddTicks(-1);
+
+        // Get all commission transactions for the period
+        var summaryData = await _context.CommissionTransactions
+            .Include(ct => ct.Store)
+            .Where(ct => ct.CreatedAt >= fromDate && ct.CreatedAt <= endOfDay)
+            .GroupBy(ct => new { ct.StoreId, ct.Store.StoreName })
+            .Select(g => new
+            {
+                StoreId = g.Key.StoreId,
+                StoreName = g.Key.StoreName,
+                TotalCommission = g.Sum(ct => ct.CommissionAmount),
+                TotalGrossAmount = g.Sum(ct => ct.GrossAmount)
+            })
+            .ToListAsync();
+
+        // Get order counts for all sellers in a single query to avoid N+1
+        var storeIds = summaryData.Select(s => s.StoreId).ToList();
+        var orderCounts = await _context.SellerSubOrders
+            .Where(so => storeIds.Contains(so.StoreId)
+                && so.ParentOrder.OrderedAt >= fromDate 
+                && so.ParentOrder.OrderedAt <= endOfDay)
+            .GroupBy(so => so.StoreId)
+            .Select(g => new { StoreId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.StoreId, x => x.Count);
+
+        // Build commission summary data
+        var result = new List<CommissionSummaryData>();
+        foreach (var item in summaryData)
+        {
+            var netPayout = item.TotalGrossAmount - item.TotalCommission;
+            var orderCount = orderCounts.GetValueOrDefault(item.StoreId, 0);
+
+            result.Add(new CommissionSummaryData
+            {
+                StoreId = item.StoreId,
+                StoreName = item.StoreName,
+                TotalGMV = item.TotalGrossAmount,
+                TotalCommission = item.TotalCommission,
+                TotalNetPayout = netPayout,
+                OrderCount = orderCount
+            });
+        }
+
+        return result.OrderByDescending(r => r.TotalGMV).ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<CommissionOrderDetail>> GetCommissionOrderDetailsAsync(
+        int storeId,
+        DateTime fromDate,
+        DateTime toDate)
+    {
+        // Include the entire day for toDate
+        var endOfDay = toDate.Date.AddDays(1).AddTicks(-1);
+
+        // Get all sub-orders for this seller in the period
+        var subOrders = await _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.User)
+            .Where(so => so.StoreId == storeId 
+                && so.ParentOrder.OrderedAt >= fromDate 
+                && so.ParentOrder.OrderedAt <= endOfDay)
+            .OrderByDescending(so => so.ParentOrder.OrderedAt)
+            .ToListAsync();
+
+        // Get commissions for these sub-orders
+        var subOrderIds = subOrders.Select(so => so.Id).ToList();
+        var commissions = await GetCommissionAmountsAsync(subOrderIds);
+
+        // Build order details
+        var result = new List<CommissionOrderDetail>();
+        foreach (var subOrder in subOrders)
+        {
+            var commission = commissions.GetValueOrDefault(subOrder.Id, 0);
+            var netPayout = subOrder.TotalAmount - commission;
+
+            result.Add(new CommissionOrderDetail
+            {
+                OrderId = subOrder.ParentOrderId,
+                OrderNumber = subOrder.ParentOrder.OrderNumber,
+                SubOrderNumber = subOrder.SubOrderNumber,
+                OrderDate = subOrder.ParentOrder.OrderedAt,
+                BuyerName = GetBuyerName(subOrder),
+                OrderValue = subOrder.TotalAmount,
+                Commission = commission,
+                NetPayout = netPayout,
+                OrderStatus = subOrder.Status.ToString()
+            });
+        }
+
+        return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<AdminReportExportResult> ExportCommissionSummaryToCsvAsync(
+        DateTime fromDate,
+        DateTime toDate)
+    {
+        var result = new AdminReportExportResult();
+
+        try
+        {
+            var summaryData = await GetCommissionSummaryAsync(fromDate, toDate);
+
+            if (summaryData.Count == 0)
+            {
+                result.Errors.Add("No commission data found for the specified period.");
+                return result;
+            }
+
+            var csv = new StringBuilder();
+
+            // Header row
+            csv.AppendLine(FormatCsvRow(
+                "Store ID",
+                "Store Name",
+                "Total GMV",
+                "Total Commission",
+                "Total Net Payout",
+                "Order Count"
+            ));
+
+            // Data rows
+            foreach (var summary in summaryData)
+            {
+                csv.AppendLine(FormatCsvRow(
+                    summary.StoreId.ToString(),
+                    EscapeCsvValue(summary.StoreName),
+                    summary.TotalGMV.ToString("F2", CultureInfo.InvariantCulture),
+                    summary.TotalCommission.ToString("F2", CultureInfo.InvariantCulture),
+                    summary.TotalNetPayout.ToString("F2", CultureInfo.InvariantCulture),
+                    summary.OrderCount.ToString()
+                ));
+            }
+
+            // Summary totals row
+            var totalGMV = summaryData.Sum(s => s.TotalGMV);
+            var totalCommission = summaryData.Sum(s => s.TotalCommission);
+            var totalNetPayout = summaryData.Sum(s => s.TotalNetPayout);
+            var totalOrders = summaryData.Sum(s => s.OrderCount);
+
+            csv.AppendLine();
+            csv.AppendLine(FormatCsvRow(
+                "",
+                "TOTAL",
+                totalGMV.ToString("F2", CultureInfo.InvariantCulture),
+                totalCommission.ToString("F2", CultureInfo.InvariantCulture),
+                totalNetPayout.ToString("F2", CultureInfo.InvariantCulture),
+                totalOrders.ToString()
+            ));
+
+            var fileName = $"commission_summary_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}_{DateTime.UtcNow:yyyyMMdd_HHmmss}_utc.csv";
+            result.FileData = Encoding.UTF8.GetBytes(csv.ToString());
+            result.FileName = fileName;
+            result.ContentType = "text/csv";
+            result.Success = true;
+
+            _logger.LogInformation("Exported commission summary for {Count} sellers from {FromDate} to {ToDate}", 
+                summaryData.Count, fromDate, toDate);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting commission summary to CSV");
+            result.Errors.Add($"An error occurred while exporting: {ex.Message}");
+        }
+
+        return result;
     }
 }

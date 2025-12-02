@@ -65,6 +65,8 @@
                                         <li><a class="dropdown-item" asp-page="/Admin/Refunds/Index"><i class="bi bi-cash-coin"></i> Refunds</a></li>
                                         <li><a class="dropdown-item" asp-page="/Admin/CommissionInvoices/Index"><i class="bi bi-file-earmark-text"></i> Commission Invoices</a></li>
                                         <li><a class="dropdown-item" asp-page="/Admin/Settlements/Index"><i class="bi bi-calculator"></i> Settlements</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Admin/Reports/CommissionSummaries"><i class="bi bi-currency-dollar"></i> Commission Summaries</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Admin/Reports/OrderRevenue"><i class="bi bi-graph-up-arrow"></i> Order & Revenue Report</a></li>
                                     }
                                     @if (User.IsInRole("Seller") || User.IsInRole("Admin"))
                                     {
