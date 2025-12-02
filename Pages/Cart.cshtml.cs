@@ -9,15 +9,21 @@ namespace MercatoApp.Pages;
 public class CartModel : PageModel
 {
     private readonly ICartService _cartService;
+    private readonly ICartTotalsService _cartTotalsService;
     private readonly ILogger<CartModel> _logger;
 
-    public CartModel(ICartService cartService, ILogger<CartModel> logger)
+    public CartModel(
+        ICartService cartService,
+        ICartTotalsService cartTotalsService,
+        ILogger<CartModel> logger)
     {
         _cartService = cartService;
+        _cartTotalsService = cartTotalsService;
         _logger = logger;
     }
 
     public Dictionary<Store, List<CartItem>> ItemsBySeller { get; set; } = new();
+    public CartTotals CartTotals { get; set; } = new();
     public decimal TotalAmount { get; set; }
     public int TotalItems { get; set; }
 
@@ -26,11 +32,10 @@ public class CartModel : PageModel
         var (userId, sessionId) = GetUserOrSessionId();
         ItemsBySeller = await _cartService.GetCartItemsBySellerAsync(userId, sessionId);
         
-        // Calculate totals
-        TotalAmount = ItemsBySeller.Values
-            .SelectMany(items => items)
-            .Sum(item => item.PriceAtAdd * item.Quantity);
+        // Calculate totals using the new service
+        CartTotals = await _cartTotalsService.CalculateCartTotalsAsync(userId, sessionId);
         
+        TotalAmount = CartTotals.TotalAmount;
         TotalItems = ItemsBySeller.Values
             .SelectMany(items => items)
             .Sum(item => item.Quantity);
