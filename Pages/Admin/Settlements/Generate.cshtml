@@ -1,0 +1,152 @@
+@page
+@model MercatoApp.Pages.Admin.Settlements.GenerateModel
+@{
+    ViewData["Title"] = "Generate Settlement";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Generate Monthly Settlement</h2>
+        <a asp-page="./Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Settlements
+        </a>
+    </div>
+
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Settlement Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label class="form-label">Period Type</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="periodType" id="periodTypeMonth" value="month" checked onchange="togglePeriodFields()">
+                                <label class="form-check-label" for="periodTypeMonth">
+                                    Generate for specific month (all stores)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="periodType" id="periodTypeCustom" value="custom" onchange="togglePeriodFields()">
+                                <label class="form-check-label" for="periodTypeCustom">
+                                    Custom period for single store
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="monthFields">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="year" class="form-label">Year</label>
+                                    <select name="year" id="year" class="form-select" required>
+                                        @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 5; y--)
+                                        {
+                                            <option value="@y" selected="@(y == DateTime.Now.Year)">@y</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="month" class="form-label">Month</label>
+                                    <select name="month" id="month" class="form-select" required>
+                                        @for (int m = 1; m <= 12; m++)
+                                        {
+                                            var previousMonth = DateTime.Now.Month == 1 ? 12 : DateTime.Now.Month - 1;
+                                            <option value="@m" selected="@(m == previousMonth)">
+                                                @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="customFields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="storeId" class="form-label">Store</label>
+                                <select name="storeId" id="storeId" class="form-select">
+                                    <option value="">Select a store...</option>
+                                    @foreach (var store in Model.Stores)
+                                    {
+                                        <option value="@store.Id">@store.StoreName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="startDate" class="form-label">Start Date</label>
+                                    <input type="date" name="startDate" id="startDate" class="form-control" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="endDate" class="form-label">End Date</label>
+                                    <input type="date" name="endDate" id="endDate" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-file-earmark-text"></i> Generate Settlement(s)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Monthly Generation</h6>
+                    <p class="small">Generates settlements for all active stores for the selected month. This is the recommended approach for monthly closing.</p>
+
+                    <h6>Custom Period</h6>
+                    <p class="small">Generates a settlement for a single store for a custom date range. Useful for corrections or special cases.</p>
+
+                    <h6>Note</h6>
+                    <p class="small text-muted">
+                        If a settlement already exists for a period, generation will be skipped. Use the Regenerate function on the settlement details page to create a new version.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePeriodFields() {
+    const periodType = document.querySelector('input[name="periodType"]:checked').value;
+    const monthFields = document.getElementById('monthFields');
+    const customFields = document.getElementById('customFields');
+    
+    if (periodType === 'month') {
+        monthFields.style.display = 'block';
+        customFields.style.display = 'none';
+        document.getElementById('year').required = true;
+        document.getElementById('month').required = true;
+        document.getElementById('storeId').required = false;
+        document.getElementById('startDate').required = false;
+        document.getElementById('endDate').required = false;
+    } else {
+        monthFields.style.display = 'none';
+        customFields.style.display = 'block';
+        document.getElementById('year').required = false;
+        document.getElementById('month').required = false;
+        document.getElementById('storeId').required = true;
+        document.getElementById('startDate').required = true;
+        document.getElementById('endDate').required = true;
+    }
+}
+</script>

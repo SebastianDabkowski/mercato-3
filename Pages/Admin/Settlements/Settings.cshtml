@@ -1,0 +1,141 @@
+@page
+@model MercatoApp.Pages.Admin.Settlements.SettingsModel
+@{
+    ViewData["Title"] = "Settlement Settings";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Settlement Settings</h2>
+        <a asp-page="./Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Settlements
+        </a>
+    </div>
+
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model.SuccessMessage != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Settlement Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label for="generationDayOfMonth" class="form-label">Generation Day of Month</label>
+                            <input type="number" 
+                                   name="generationDayOfMonth" 
+                                   id="generationDayOfMonth" 
+                                   class="form-control" 
+                                   min="1" 
+                                   max="28" 
+                                   value="@Model.Config.GenerationDayOfMonth" 
+                                   required />
+                            <small class="form-text text-muted">Day of the month when settlements should be auto-generated (1-28)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       name="autoGenerateEnabled" 
+                                       id="autoGenerateEnabled" 
+                                       checked="@Model.Config.AutoGenerateEnabled" />
+                                <label class="form-check-label" for="autoGenerateEnabled">
+                                    Enable Auto-Generation
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Automatically generate settlements on the specified day</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="gracePeriodDays" class="form-label">Grace Period Days</label>
+                            <input type="number" 
+                                   name="gracePeriodDays" 
+                                   id="gracePeriodDays" 
+                                   class="form-control" 
+                                   min="0" 
+                                   max="7" 
+                                   value="@Model.Config.GracePeriodDays" 
+                                   required />
+                            <small class="form-text text-muted">
+                                Number of days after period end to include orders (0-7). 
+                                For example, 3 means orders placed up to 3 days into the next month are included in the previous month's settlement.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       name="useCalendarMonth" 
+                                       id="useCalendarMonth" 
+                                       checked="@Model.Config.UseCalendarMonth" />
+                                <label class="form-check-label" for="useCalendarMonth">
+                                    Use Calendar Month
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                If checked, settlements are based on calendar months (1st to last day of month). 
+                                If unchecked, rolling 30-day periods are used.
+                            </small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Calendar Rules</h6>
+                    <p class="small">
+                        These settings control when and how monthly settlements are generated for all sellers.
+                    </p>
+
+                    <h6>Auto-Generation</h6>
+                    <p class="small">
+                        When enabled, the system will automatically generate settlements on the specified day of each month. 
+                        This requires a background job to be configured.
+                    </p>
+
+                    <h6>Grace Period</h6>
+                    <p class="small">
+                        The grace period allows you to include orders placed slightly after the month ends. 
+                        This is useful for handling delayed order processing or timezone differences.
+                    </p>
+
+                    <h6>Calendar vs Rolling</h6>
+                    <p class="small">
+                        Calendar month mode aligns with standard accounting periods (Jan 1-31, Feb 1-28/29, etc.). 
+                        Rolling mode uses fixed 30-day periods which may be easier for some businesses.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -92,6 +92,7 @@ builder.Services.AddScoped<IPaymentProviderService, MockPaymentProviderService>(
 builder.Services.AddScoped<ICommissionService, CommissionService>();
 builder.Services.AddScoped<IEscrowService, EscrowService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
+builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Configure role-based authorization policies
