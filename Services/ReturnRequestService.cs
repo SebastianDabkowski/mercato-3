@@ -11,7 +11,7 @@ public class ReturnRequestService : IReturnRequestService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ReturnRequestService> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly int _returnWindowDays;
 
     // Default return window in days (configurable)
     private const int DefaultReturnWindowDays = 30;
@@ -23,7 +23,7 @@ public class ReturnRequestService : IReturnRequestService
     {
         _context = context;
         _logger = logger;
-        _configuration = configuration;
+        _returnWindowDays = configuration.GetValue<int?>("ReturnPolicy:ReturnWindowDays") ?? DefaultReturnWindowDays;
     }
 
     /// <inheritdoc />
@@ -62,12 +62,11 @@ public class ReturnRequestService : IReturnRequestService
         DateTime deliveryDate = deliveredStatusChange?.ChangedAt ?? subOrder.UpdatedAt;
 
         // Check if within return window
-        var returnWindowDays = _configuration.GetValue<int?>("ReturnPolicy:ReturnWindowDays") ?? DefaultReturnWindowDays;
-        var returnDeadline = deliveryDate.AddDays(returnWindowDays);
+        var returnDeadline = deliveryDate.AddDays(_returnWindowDays);
 
         if (DateTime.UtcNow > returnDeadline)
         {
-            return (false, $"Return window has expired. Returns must be initiated within {returnWindowDays} days of delivery.");
+            return (false, $"Return window has expired. Returns must be initiated within {_returnWindowDays} days of delivery.");
         }
 
         // Check if a return has already been requested for this sub-order
@@ -158,7 +157,7 @@ public class ReturnRequestService : IReturnRequestService
 
         // Generate return number
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
-        var returnNumber = $"RTN-{timestamp}-{Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()}";
+        var returnNumber = $"RTN-{timestamp}-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
 
         // Create return request
         var returnRequest = new ReturnRequest

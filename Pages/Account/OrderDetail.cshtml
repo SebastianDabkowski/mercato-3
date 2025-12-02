@@ -361,7 +361,7 @@
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="subOrderId" value="@subOrder.Id" />
                                                 <input type="hidden" name="isFullReturn" value="true" />
-                                                <input type="hidden" id="orderIdInput" value="@Model.Order.Id" />
+                                                <input type="hidden" name="orderId" value="@Model.Order.Id" />
                                                 
                                                 <div class="modal-header">
                                                     <h5 class="modal-title" id="returnModalLabel-@subOrder.Id">
@@ -468,26 +468,4 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        // Store order ID in TempData via hidden input when submitting return form
-        document.addEventListener('DOMContentLoaded', function() {
-            const returnForms = document.querySelectorAll('form[asp-page-handler="InitiateReturn"]');
-            returnForms.forEach(form => {
-                form.addEventListener('submit', function() {
-                    const orderIdInput = document.getElementById('orderIdInput');
-                    if (orderIdInput) {
-                        // Create hidden input for orderId in TempData
-                        const hiddenOrderId = document.createElement('input');
-                        hiddenOrderId.type = 'hidden';
-                        hiddenOrderId.name = 'orderId';
-                        hiddenOrderId.value = orderIdInput.value;
-                        form.appendChild(hiddenOrderId);
-                    }
-                });
-            });
-        });
-    </script>
-}
 
