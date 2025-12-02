@@ -37,6 +37,11 @@ public class ProductModel : PageModel
     public ProductVariant? SelectedVariant { get; set; }
     public List<ProductReview> Reviews { get; set; } = new();
     public decimal? AverageRating { get; set; }
+    public int TotalReviewCount { get; set; }
+    public int CurrentPage { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public int TotalPages => TotalReviewCount > 0 ? (int)Math.Ceiling((double)TotalReviewCount / PageSize) : 0;
+    public ReviewSortOption SortOption { get; set; } = ReviewSortOption.Newest;
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -64,8 +69,12 @@ public class ProductModel : PageModel
     /// </summary>
     public bool HasReferrer => !string.IsNullOrEmpty(ReferrerUrl);
 
-    public async Task<IActionResult> OnGetAsync(int id, int? variantId = null)
+    public async Task<IActionResult> OnGetAsync(int id, int? variantId = null, ReviewSortOption sort = ReviewSortOption.Newest, int page = 1)
     {
+        // Validate and set pagination parameters
+        CurrentPage = page < 1 ? 1 : page;
+        SortOption = sort;
+        
         // Try to get the product - we want to handle the case where a product
         // exists but is not available (archived/inactive) vs doesn't exist at all
         Product = await _productService.GetProductByIdAsync(id);
@@ -115,8 +124,9 @@ public class ProductModel : PageModel
             // Track the product view only if the product is available
             _recentlyViewedService.TrackProductView(id);
             
-            // Load reviews for available products
-            Reviews = await _reviewService.GetApprovedReviewsForProductAsync(id);
+            // Load reviews for available products with pagination and sorting
+            TotalReviewCount = await _reviewService.GetApprovedReviewCountAsync(id);
+            Reviews = await _reviewService.GetApprovedReviewsForProductAsync(id, SortOption, CurrentPage, PageSize);
             AverageRating = await _reviewService.GetAverageRatingAsync(id);
         }
 

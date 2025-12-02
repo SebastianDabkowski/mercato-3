@@ -173,6 +173,97 @@ public class ProductReviewTestScenario
     }
 
     /// <summary>
+    /// Tests the sorting and pagination of product reviews.
+    /// </summary>
+    public async Task RunReviewSortingAndPaginationTestAsync()
+    {
+        _logger.LogInformation("=== Starting Product Review Sorting and Pagination Test Scenario ===");
+
+        try
+        {
+            // Step 1: Create a product with multiple reviews if needed
+            var product = await _context.Products.FirstOrDefaultAsync();
+            if (product == null)
+            {
+                _logger.LogWarning("No products found for testing.");
+                return;
+            }
+
+            // Step 2: Ensure we have enough reviews for pagination testing
+            var existingReviews = await _reviewService.GetApprovedReviewsForProductAsync(product.Id);
+            _logger.LogInformation("Product {ProductId} has {Count} existing reviews", product.Id, existingReviews.Count);
+
+            // Step 3: Test sorting by newest (default)
+            _logger.LogInformation("\n--- Testing Sort by Newest ---");
+            var newestReviews = await _reviewService.GetApprovedReviewsForProductAsync(
+                product.Id, ReviewSortOption.Newest, 1, 5);
+            _logger.LogInformation("Retrieved {Count} reviews sorted by newest", newestReviews.Count);
+            for (int i = 0; i < newestReviews.Count; i++)
+            {
+                _logger.LogInformation("  {Index}. Rating: {Rating}, Date: {Date}",
+                    i + 1, newestReviews[i].Rating, newestReviews[i].CreatedAt);
+            }
+
+            // Step 4: Test sorting by highest rating
+            _logger.LogInformation("\n--- Testing Sort by Highest Rating ---");
+            var highestRatingReviews = await _reviewService.GetApprovedReviewsForProductAsync(
+                product.Id, ReviewSortOption.HighestRating, 1, 5);
+            _logger.LogInformation("Retrieved {Count} reviews sorted by highest rating", highestRatingReviews.Count);
+            for (int i = 0; i < highestRatingReviews.Count; i++)
+            {
+                _logger.LogInformation("  {Index}. Rating: {Rating}, Date: {Date}",
+                    i + 1, highestRatingReviews[i].Rating, highestRatingReviews[i].CreatedAt);
+            }
+
+            // Step 5: Test sorting by lowest rating
+            _logger.LogInformation("\n--- Testing Sort by Lowest Rating ---");
+            var lowestRatingReviews = await _reviewService.GetApprovedReviewsForProductAsync(
+                product.Id, ReviewSortOption.LowestRating, 1, 5);
+            _logger.LogInformation("Retrieved {Count} reviews sorted by lowest rating", lowestRatingReviews.Count);
+            for (int i = 0; i < lowestRatingReviews.Count; i++)
+            {
+                _logger.LogInformation("  {Index}. Rating: {Rating}, Date: {Date}",
+                    i + 1, lowestRatingReviews[i].Rating, lowestRatingReviews[i].CreatedAt);
+            }
+
+            // Step 6: Test pagination
+            _logger.LogInformation("\n--- Testing Pagination ---");
+            var totalCount = await _reviewService.GetApprovedReviewCountAsync(product.Id);
+            _logger.LogInformation("Total approved reviews: {Count}", totalCount);
+
+            int pageSize = 3;
+            int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            _logger.LogInformation("With page size {PageSize}, total pages: {TotalPages}", pageSize, totalPages);
+
+            for (int page = 1; page <= Math.Min(totalPages, 3); page++)
+            {
+                var pageReviews = await _reviewService.GetApprovedReviewsForProductAsync(
+                    product.Id, ReviewSortOption.Newest, page, pageSize);
+                _logger.LogInformation("Page {Page}: Retrieved {Count} reviews", page, pageReviews.Count);
+            }
+
+            // Step 7: Test edge cases
+            _logger.LogInformation("\n--- Testing Edge Cases ---");
+            
+            // Invalid page number (should default to 1)
+            var invalidPageReviews = await _reviewService.GetApprovedReviewsForProductAsync(
+                product.Id, ReviewSortOption.Newest, -1, 5);
+            _logger.LogInformation("Invalid page number test: Retrieved {Count} reviews", invalidPageReviews.Count);
+
+            // Invalid page size (should default to reasonable value)
+            var invalidSizeReviews = await _reviewService.GetApprovedReviewsForProductAsync(
+                product.Id, ReviewSortOption.Newest, 1, 0);
+            _logger.LogInformation("Invalid page size test: Retrieved {Count} reviews", invalidSizeReviews.Count);
+
+            _logger.LogInformation("\n=== Sorting and Pagination Test Scenario Completed Successfully ===");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during sorting and pagination test scenario");
+        }
+    }
+
+    /// <summary>
     /// Creates a test delivered order for testing purposes.
     /// </summary>
     private async Task CreateTestDeliveredOrderAsync()

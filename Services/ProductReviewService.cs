@@ -118,6 +118,45 @@ public class ProductReviewService : IProductReviewService
     }
 
     /// <inheritdoc />
+    public async Task<List<ProductReview>> GetApprovedReviewsForProductAsync(int productId, ReviewSortOption sortOption, int page, int pageSize)
+    {
+        if (page < 1)
+        {
+            page = 1;
+        }
+
+        if (pageSize < 1 || pageSize > 100)
+        {
+            pageSize = 10;
+        }
+
+        var query = _context.ProductReviews
+            .Include(r => r.User)
+            .Where(r => r.ProductId == productId && r.IsApproved);
+
+        // Apply sorting
+        query = sortOption switch
+        {
+            ReviewSortOption.HighestRating => query.OrderByDescending(r => r.Rating).ThenByDescending(r => r.CreatedAt),
+            ReviewSortOption.LowestRating => query.OrderBy(r => r.Rating).ThenByDescending(r => r.CreatedAt),
+            ReviewSortOption.Newest or _ => query.OrderByDescending(r => r.CreatedAt)
+        };
+
+        // Apply pagination
+        return await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<int> GetApprovedReviewCountAsync(int productId)
+    {
+        return await _context.ProductReviews
+            .CountAsync(r => r.ProductId == productId && r.IsApproved);
+    }
+
+    /// <inheritdoc />
     public async Task<decimal?> GetAverageRatingAsync(int productId)
     {
         var hasReviews = await _context.ProductReviews
