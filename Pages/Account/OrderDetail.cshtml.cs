@@ -14,13 +14,16 @@ namespace MercatoApp.Pages.Account;
 public class OrderDetailModel : PageModel
 {
     private readonly IOrderService _orderService;
+    private readonly IReturnRequestService _returnRequestService;
     private readonly ILogger<OrderDetailModel> _logger;
 
     public OrderDetailModel(
         IOrderService orderService,
+        IReturnRequestService returnRequestService,
         ILogger<OrderDetailModel> logger)
     {
         _orderService = orderService;
+        _returnRequestService = returnRequestService;
         _logger = logger;
     }
 
@@ -38,6 +41,11 @@ public class OrderDetailModel : PageModel
     /// Gets a value indicating whether the order has any cancelled or refunded sub-orders.
     /// </summary>
     public bool HasCancellations => Order != null && Order.SubOrders.Any(so => so.Status == OrderStatus.Cancelled || so.Status == OrderStatus.Refunded);
+
+    /// <summary>
+    /// Gets or sets the return requests for this order's sub-orders.
+    /// </summary>
+    public Dictionary<int, List<ReturnRequest>> ReturnRequestsBySubOrder { get; set; } = new Dictionary<int, List<ReturnRequest>>();
 
     /// <summary>
     /// Handles GET request to display order details.
@@ -63,6 +71,62 @@ public class OrderDetailModel : PageModel
             return RedirectToPage("/Account/Orders");
         }
 
+        // Load return requests for all sub-orders
+        foreach (var subOrder in Order.SubOrders)
+        {
+            var returns = await _returnRequestService.GetReturnRequestsBySubOrderAsync(subOrder.Id);
+            if (returns.Any())
+            {
+                ReturnRequestsBySubOrder[subOrder.Id] = returns;
+            }
+        }
+
         return Page();
+    }
+
+    /// <summary>
+    /// Handles POST request to initiate a return for a sub-order.
+    /// </summary>
+    /// <param name="subOrderId">The sub-order ID to return.</param>
+    /// <param name="orderId">The parent order ID for redirect.</param>
+    /// <param name="reason">The return reason.</param>
+    /// <param name="description">Optional description from buyer.</param>
+    /// <param name="isFullReturn">Whether to return all items.</param>
+    /// <returns>The page result.</returns>
+    public async Task<IActionResult> OnPostInitiateReturnAsync(
+        int subOrderId,
+        int orderId,
+        ReturnReason reason, 
+        string? description, 
+        bool isFullReturn = true)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("User ID claim not found or invalid");
+            return RedirectToPage("/Account/Login");
+        }
+
+        try
+        {
+            // Create the return request
+            var returnRequest = await _returnRequestService.CreateReturnRequestAsync(
+                subOrderId,
+                userId,
+                reason,
+                description,
+                isFullReturn);
+
+            TempData["SuccessMessage"] = $"Return request {returnRequest.ReturnNumber} has been submitted successfully. The seller will review it shortly.";
+            
+            // Redirect back to order detail to show the return status
+            return RedirectToPage(new { orderId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to create return request for sub-order {SubOrderId}", subOrderId);
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToPage(new { orderId });
+        }
     }
 }

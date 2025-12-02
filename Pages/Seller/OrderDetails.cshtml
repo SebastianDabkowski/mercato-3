@@ -246,6 +246,94 @@
                     </div>
                 </div>
 
+                @if (Model.ReturnRequests.Any())
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="bi bi-arrow-return-left"></i> Return Requests
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var returnRequest in Model.ReturnRequests)
+                            {
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h6 class="mb-1">Return #@returnRequest.ReturnNumber</h6>
+                                            <partial name="_ReturnStatusBadge" model="returnRequest.Status" />
+                                        </div>
+                                        <small class="text-muted">
+                                            @returnRequest.RequestedAt.ToString("MMM dd, yyyy")
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <p class="mb-1">
+                                            <strong>Reason:</strong> 
+                                            @switch (returnRequest.Reason)
+                                            {
+                                                case MercatoApp.Models.ReturnReason.Damaged:
+                                                    <span>Item arrived damaged or defective</span>
+                                                    break;
+                                                case MercatoApp.Models.ReturnReason.WrongItem:
+                                                    <span>Wrong item was sent</span>
+                                                    break;
+                                                case MercatoApp.Models.ReturnReason.NotAsDescribed:
+                                                    <span>Item does not match description</span>
+                                                    break;
+                                                case MercatoApp.Models.ReturnReason.ChangedMind:
+                                                    <span>Buyer changed their mind</span>
+                                                    break;
+                                                case MercatoApp.Models.ReturnReason.ArrivedLate:
+                                                    <span>Item arrived too late</span>
+                                                    break;
+                                                case MercatoApp.Models.ReturnReason.Other:
+                                                    <span>Other reason</span>
+                                                    break;
+                                            }
+                                        </p>
+                                        
+                                        @if (!string.IsNullOrEmpty(returnRequest.Description))
+                                        {
+                                            <p class="mb-1">
+                                                <strong>Buyer Description:</strong> @returnRequest.Description
+                                            </p>
+                                        }
+                                        
+                                        <p class="mb-1">
+                                            <strong>Return Type:</strong> 
+                                            @(returnRequest.IsFullReturn ? "Full Return (All Items)" : "Partial Return")
+                                        </p>
+                                        
+                                        <p class="mb-1">
+                                            <strong>Refund Amount:</strong> 
+                                            <span class="text-danger">@returnRequest.RefundAmount.ToString("C")</span>
+                                        </p>
+
+                                        @if (!string.IsNullOrEmpty(returnRequest.SellerNotes))
+                                        {
+                                            <p class="mb-1">
+                                                <strong>Your Notes:</strong> @returnRequest.SellerNotes
+                                            </p>
+                                        }
+                                    </div>
+
+                                    @if (returnRequest.Status == MercatoApp.Models.ReturnStatus.Requested)
+                                    {
+                                        <div class="alert alert-warning mt-3 mb-0">
+                                            <small>
+                                                <i class="bi bi-info-circle"></i> 
+                                                This return request is awaiting your review. In a future update, you'll be able to approve or reject it here.
+                                            </small>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">

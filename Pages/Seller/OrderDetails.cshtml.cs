@@ -14,23 +14,27 @@ public class OrderDetailsModel : PageModel
 {
     private readonly IOrderService _orderService;
     private readonly IOrderStatusService _orderStatusService;
+    private readonly IReturnRequestService _returnRequestService;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OrderDetailsModel> _logger;
 
     public OrderDetailsModel(
         IOrderService orderService,
         IOrderStatusService orderStatusService,
+        IReturnRequestService returnRequestService,
         ApplicationDbContext context,
         ILogger<OrderDetailsModel> logger)
     {
         _orderService = orderService;
         _orderStatusService = orderStatusService;
+        _returnRequestService = returnRequestService;
         _context = context;
         _logger = logger;
     }
 
     public SellerSubOrder? SubOrder { get; set; }
     public Store? CurrentStore { get; set; }
+    public List<ReturnRequest> ReturnRequests { get; set; } = new List<ReturnRequest>();
 
     [BindProperty]
     public string? TrackingNumber { get; set; }
@@ -74,6 +78,9 @@ public class OrderDetailsModel : PageModel
             TempData["ErrorMessage"] = "You don't have permission to view this order.";
             return RedirectToPage("/Seller/Orders");
         }
+
+        // Load return requests for this sub-order
+        ReturnRequests = await _returnRequestService.GetReturnRequestsBySubOrderAsync(subOrderId);
 
         return Page();
     }
