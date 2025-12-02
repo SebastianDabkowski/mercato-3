@@ -12,17 +12,20 @@ public class PaymentService : IPaymentService
     private readonly ApplicationDbContext _context;
     private readonly IOrderStatusService _orderStatusService;
     private readonly IPaymentProviderService _paymentProviderService;
+    private readonly IEscrowService _escrowService;
     private readonly ILogger<PaymentService> _logger;
 
     public PaymentService(
         ApplicationDbContext context,
         IOrderStatusService orderStatusService,
         IPaymentProviderService paymentProviderService,
+        IEscrowService escrowService,
         ILogger<PaymentService> logger)
     {
         _context = context;
         _orderStatusService = orderStatusService;
         _paymentProviderService = paymentProviderService;
+        _escrowService = escrowService;
         _logger = logger;
     }
 
@@ -194,6 +197,18 @@ public class PaymentService : IPaymentService
             }
             
             await _context.SaveChangesAsync();
+
+            // Create escrow allocations for immediate payments
+            try
+            {
+                await _escrowService.CreateEscrowAllocationsAsync(transactionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create escrow allocations for immediate payment transaction {TransactionId}", transactionId);
+                // Don't throw - escrow can be created in a retry/background job
+            }
+
             _logger.LogInformation("Payment transaction {TransactionId} authorized immediately", transactionId);
             return null; // No redirect needed
         }
@@ -248,6 +263,21 @@ public class PaymentService : IPaymentService
                         throw new InvalidOperationException("Failed to update order status to paid.");
                     }
                 }
+            }
+
+            // Save payment transaction changes first
+            await _context.SaveChangesAsync();
+
+            // Create escrow allocations for each seller
+            try
+            {
+                await _escrowService.CreateEscrowAllocationsAsync(transactionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create escrow allocations for payment transaction {TransactionId}", transactionId);
+                // Don't throw - escrow can be created in a retry/background job
+                // Payment is already completed and order is marked as paid
             }
 
             _logger.LogInformation("Payment transaction {TransactionId} completed successfully", transactionId);

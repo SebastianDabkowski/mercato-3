@@ -11,13 +11,16 @@ namespace MercatoApp.Services;
 public class OrderStatusService : IOrderStatusService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IEscrowService _escrowService;
     private readonly ILogger<OrderStatusService> _logger;
 
     public OrderStatusService(
         ApplicationDbContext context,
+        IEscrowService escrowService,
         ILogger<OrderStatusService> logger)
     {
         _context = context;
+        _escrowService = escrowService;
         _logger = logger;
     }
 
@@ -163,6 +166,17 @@ public class OrderStatusService : IOrderStatusService
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
 
+        // Mark escrow as eligible for payout when order is delivered
+        try
+        {
+            await _escrowService.MarkEscrowEligibleForPayoutAsync(subOrderId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to mark escrow eligible for payout for sub-order {SubOrderId}", subOrderId);
+            // Don't fail the status update - escrow can be updated separately
+        }
+
         _logger.LogInformation("Sub-order {SubOrderId} status updated to Delivered by user {UserId}", subOrderId, userId);
 
         return (true, null);
@@ -195,6 +209,24 @@ public class OrderStatusService : IOrderStatusService
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
+
+        // Return full escrow to buyer for cancelled orders
+        try
+        {
+            var escrowTransaction = await _escrowService.GetEscrowTransactionBySubOrderAsync(subOrderId);
+            if (escrowTransaction != null)
+            {
+                await _escrowService.ReturnEscrowToBuyerAsync(
+                    escrowTransaction.Id, 
+                    escrowTransaction.GrossAmount,
+                    $"Order cancelled by user {userId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to return escrow for cancelled sub-order {SubOrderId}", subOrderId);
+            // Don't fail the cancellation - escrow can be returned separately
+        }
 
         _logger.LogInformation("Sub-order {SubOrderId} cancelled by user {UserId}", subOrderId, userId);
 
@@ -243,6 +275,24 @@ public class OrderStatusService : IOrderStatusService
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
+
+        // Return escrow to buyer for refunded amount
+        try
+        {
+            var escrowTransaction = await _escrowService.GetEscrowTransactionBySubOrderAsync(subOrderId);
+            if (escrowTransaction != null)
+            {
+                await _escrowService.ReturnEscrowToBuyerAsync(
+                    escrowTransaction.Id, 
+                    refundAmount,
+                    $"Refund amount: {refundAmount:C}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to return escrow for refunded sub-order {SubOrderId}", subOrderId);
+            // Don't fail the refund - escrow can be returned separately
+        }
 
         _logger.LogInformation("Sub-order {SubOrderId} refunded with amount {RefundAmount:C}", 
             subOrderId, refundAmount);
