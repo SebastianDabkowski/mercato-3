@@ -287,6 +287,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ProductReview> ProductReviews { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the seller ratings table.
+    /// </summary>
+    public DbSet<SellerRating> SellerRatings { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1480,6 +1485,22 @@ public class ApplicationDbContext : DbContext
                 .WithMany(s => s.StatusUpdates)
                 .HasForeignKey(e => e.ShipmentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SellerRating>(entity =>
+        {
+            // Create index on StoreId for efficient average rating queries
+            entity.HasIndex(e => e.StoreId);
+
+            // Create index on UserId for user rating history queries
+            entity.HasIndex(e => e.UserId);
+
+            // Create index on SellerSubOrderId for checking existing ratings
+            entity.HasIndex(e => e.SellerSubOrderId);
+
+            // Create composite unique constraint to enforce one rating per sub-order per user
+            entity.HasIndex(e => new { e.UserId, e.SellerSubOrderId })
+                .IsUnique();
         });
     }
 }

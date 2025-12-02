@@ -31,6 +31,24 @@
                             {
                                 <span class="badge bg-secondary mb-2">@Model.Store.Category</span>
                             }
+                            
+                            @* Seller Rating Display *@
+                            @if (Model.AverageRating.HasValue && Model.RatingCount > 0)
+                            {
+                                <div class="mb-2">
+                                    <span class="text-warning">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <i class="bi @MercatoApp.Helpers.RatingHelper.GetStarIconClass(i, Model.AverageRating.Value)"></i>
+                                        }
+                                    </span>
+                                    <span class="ms-2">
+                                        <strong>@MercatoApp.Helpers.RatingHelper.FormatRating(Model.AverageRating.Value)</strong>
+                                        <small class="text-muted">(@Model.RatingCount @MercatoApp.Helpers.RatingHelper.GetRatingLabel(Model.RatingCount))</small>
+                                    </span>
+                                </div>
+                            }
+                            
                             @if (!string.IsNullOrEmpty(Model.Store.Description))
                             {
                                 <p class="text-muted mb-0">@Model.Store.Description</p>

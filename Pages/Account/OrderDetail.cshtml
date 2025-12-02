@@ -627,6 +627,74 @@
                                     </div>
                                 </div>
                             }
+
+                            <!-- Seller Rating Section -->
+                            @{
+                                var hasSellerRating = Model.ExistingSellerRatings.ContainsKey(subOrder.Id);
+                                var canRateSeller = subOrder.Status == MercatoApp.Models.OrderStatus.Delivered && !hasSellerRating;
+                            }
+
+                            @if (hasSellerRating)
+                            {
+                                <!-- Display that seller has been rated -->
+                                <div class="mt-3">
+                                    <div class="alert alert-success">
+                                        <i class="bi bi-check-circle"></i> You have rated this seller. Thank you for your feedback!
+                                    </div>
+                                </div>
+                            }
+                            else if (canRateSeller)
+                            {
+                                <!-- Show seller rating button for delivered sub-orders -->
+                                <div class="mt-3">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#sellerRatingModal-@subOrder.Id">
+                                        <i class="bi bi-star"></i> Rate This Seller
+                                    </button>
+                                </div>
+
+                                <!-- Seller Rating Modal -->
+                                <div class="modal fade" id="sellerRatingModal-@subOrder.Id" tabindex="-1" aria-labelledby="sellerRatingModalLabel-@subOrder.Id" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" asp-page-handler="SubmitSellerRating" id="sellerRatingForm-@subOrder.Id">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="sellerSubOrderId" value="@subOrder.Id" />
+                                                <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                                                
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="sellerRatingModalLabel-@subOrder.Id">
+                                                        <i class="bi bi-star"></i> Rate @subOrder.Store.StoreName
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <p>How would you rate your experience with this seller?</p>
+                                                        <label class="form-label">Rating <span class="text-danger">*</span></label>
+                                                        <div class="rating-stars">
+                                                            @for (int i = 1; i <= 5; i++)
+                                                            {
+                                                                var starId = $"sellerStar{i}-{subOrder.Id}";
+                                                                <label class="star-label" for="@starId" title="@i stars">
+                                                                    <input type="radio" name="rating" id="@starId" value="@i" class="d-none star-input" required />
+                                                                    <i class="bi bi-star star-icon" data-rating="@i"></i>
+                                                                </label>
+                                                            }
+                                                        </div>
+                                                        <small class="text-muted">Click on a star to select your rating (1-5 stars)</small>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="bi bi-send"></i> Submit Rating
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 }
@@ -685,6 +753,34 @@
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .rating-stars {
+            display: flex;
+            gap: 0.25rem;
+            font-size: 1.5rem;
+        }
+
+        .star-label {
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .star-icon {
+            color: #ffc107;
+            transition: transform 0.2s;
+        }
+
+        .star-label:hover .star-icon {
+            transform: scale(1.2);
+        }
+
+        .star-icon.bi-star-fill {
+            color: #ffc107;
+        }
+    </style>
+}
+
 @section Scripts {
     <script>
         // Bootstrap form validation
@@ -737,6 +833,54 @@
                 textElement.textContent = ratingText;
             }
         }
+
+        // Seller rating star click handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click handlers to all star icons in seller rating modals
+            document.querySelectorAll('.star-label').forEach(function(label) {
+                label.addEventListener('click', function() {
+                    var input = this.querySelector('.star-input');
+                    var container = this.closest('.rating-stars');
+                    var allStars = container.querySelectorAll('.star-icon');
+                    var rating = parseInt(input.value);
+                    
+                    // Update visual state of all stars
+                    allStars.forEach(function(star, index) {
+                        if (index < rating) {
+                            star.classList.remove('bi-star');
+                            star.classList.add('bi-star-fill');
+                        } else {
+                            star.classList.remove('bi-star-fill');
+                            star.classList.add('bi-star');
+                        }
+                    });
+                });
+            });
+
+            // Hover effect for seller rating stars
+            document.querySelectorAll('.star-label').forEach(function(label) {
+                label.addEventListener('mouseenter', function() {
+                    var container = this.closest('.rating-stars');
+                    var allStars = container.querySelectorAll('.star-icon');
+                    var rating = parseInt(this.querySelector('.star-input').value);
+                    
+                    allStars.forEach(function(star, index) {
+                        if (index < rating) {
+                            star.classList.add('text-warning');
+                        }
+                    });
+                });
+
+                label.addEventListener('mouseleave', function() {
+                    var container = this.closest('.rating-stars');
+                    var allStars = container.querySelectorAll('.star-icon');
+                    
+                    allStars.forEach(function(star) {
+                        star.classList.remove('text-warning');
+                    });
+                });
+            });
+        });
     </script>
 }
 
