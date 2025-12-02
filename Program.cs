@@ -223,6 +223,10 @@ if (app.Environment.IsDevelopment())
     // Run return/complaint request test scenario
     var returnRequestService = scope.ServiceProvider.GetRequiredService<IReturnRequestService>();
     await ReturnComplaintTestScenario.RunTestAsync(context, returnRequestService);
+
+    // Run case resolution and refund linkage test scenario
+    var refundService = scope.ServiceProvider.GetRequiredService<IRefundService>();
+    await CaseResolutionTestScenario.RunTestAsync(context, returnRequestService, refundService);
 }
 
 // Configure the HTTP request pipeline.
