@@ -626,6 +626,21 @@ public static class TestDataSeeder
 
         context.ShippingProviderConfigs.Add(providerConfig);
         await context.SaveChangesAsync();
+
+        // Add seller ratings for testing the rating display feature
+        // These ratings demonstrate the seller rating functionality on the store page
+        // Ratings can only be added for delivered sub-orders
+        var sellerRating = new SellerRating
+        {
+            StoreId = store2.Id, // Fashion Boutique
+            UserId = buyerUser.Id,
+            SellerSubOrderId = subOrder2.Id, // This sub-order is Delivered
+            Rating = 5,
+            CreatedAt = DateTime.UtcNow.AddDays(-1)
+        };
+
+        context.SellerRatings.Add(sellerRating);
+        await context.SaveChangesAsync();
     }
 
     private static string HashPassword(string password)
