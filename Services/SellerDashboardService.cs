@@ -39,7 +39,7 @@ public class SellerDashboardService : ISellerDashboardService
             var query = _context.OrderItems
                 .Include(oi => oi.Order)
                 .Include(oi => oi.Product)
-                .ThenInclude(p => p.Category)
+                .ThenInclude(p => p.CategoryEntity)
                 .Where(oi => oi.StoreId == storeId
                     && oi.Order.OrderedAt >= startDateTime
                     && oi.Order.OrderedAt <= endDateTime);

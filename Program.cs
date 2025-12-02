@@ -252,6 +252,11 @@ if (app.Environment.IsDevelopment())
 
     // Run comprehensive reputation test with sample data
     await SellerReputationComprehensiveTest.RunTestAsync(context, reputationService);
+
+    // Run seller dashboard test scenario
+    var dashboardService = scope.ServiceProvider.GetRequiredService<ISellerDashboardService>();
+    var dashboardTest = new SellerDashboardTestScenario(context, dashboardService);
+    await dashboardTest.RunAsync();
 }
 
 // Configure the HTTP request pipeline.
