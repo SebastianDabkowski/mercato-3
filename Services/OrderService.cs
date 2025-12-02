@@ -101,6 +101,13 @@ public class OrderService : IOrderService
             decimal itemsSubtotal = 0;
             decimal totalShipping = 0;
 
+            // Collect all product IDs for batch loading
+            var allProductIds = itemsBySeller.SelectMany(s => s.Value).Select(i => i.ProductId).Distinct().ToList();
+            var productsDict = await _context.Products
+                .Include(p => p.Variants)
+                .Where(p => allProductIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
             foreach (var sellerGroup in itemsBySeller)
             {
                 var store = sellerGroup.Key;
@@ -196,25 +203,23 @@ public class OrderService : IOrderService
 
                     _context.OrderItems.Add(orderItem);
                     
-                    // Deduct stock from inventory
-                    var product = await _context.Products
-                        .Include(p => p.Variants)
-                        .FirstOrDefaultAsync(p => p.Id == cartItem.ProductId);
-                    
-                    if (product != null)
+                    // Deduct stock from inventory using cached products
+                    if (productsDict.TryGetValue(cartItem.ProductId, out var product))
                     {
                         if (cartItem.ProductVariantId.HasValue)
                         {
                             var variant = product.Variants.FirstOrDefault(v => v.Id == cartItem.ProductVariantId.Value);
                             if (variant != null)
                             {
-                                variant.Stock -= cartItem.Quantity;
+                                // Ensure stock doesn't go negative (defensive check)
+                                variant.Stock = Math.Max(0, variant.Stock - cartItem.Quantity);
                                 variant.UpdatedAt = DateTime.UtcNow;
                             }
                         }
                         else
                         {
-                            product.Stock -= cartItem.Quantity;
+                            // Ensure stock doesn't go negative (defensive check)
+                            product.Stock = Math.Max(0, product.Stock - cartItem.Quantity);
                             product.UpdatedAt = DateTime.UtcNow;
                         }
                     }
@@ -308,17 +313,20 @@ public class OrderService : IOrderService
                 return result;
             }
 
+            // Collect all product IDs and fetch products in batch to avoid N+1 queries
+            var allProductIds = itemsBySeller.SelectMany(s => s.Value).Select(i => i.ProductId).Distinct().ToList();
+            var productsDict = await _context.Products
+                .Include(p => p.Variants)
+                .Where(p => allProductIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
             // Validate each cart item for stock and price
             foreach (var sellerGroup in itemsBySeller)
             {
                 foreach (var cartItem in sellerGroup.Value)
                 {
-                    // Get fresh product data from database to check current stock and price
-                    var product = await _context.Products
-                        .Include(p => p.Variants)
-                        .FirstOrDefaultAsync(p => p.Id == cartItem.ProductId);
-
-                    if (product == null)
+                    // Get fresh product data from batch-loaded dictionary
+                    if (!productsDict.TryGetValue(cartItem.ProductId, out var product))
                     {
                         result.IsValid = false;
                         result.GeneralError = $"Product '{cartItem.Product.Title}' is no longer available.";
