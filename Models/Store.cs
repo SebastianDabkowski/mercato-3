@@ -131,6 +131,19 @@ public class Store
     public decimal? FixedCommissionAmountOverride { get; set; }
 
     /// <summary>
+    /// Gets or sets the aggregated reputation score for this seller (0-100).
+    /// Calculated based on seller ratings, dispute rate, on-time shipping, and cancelled orders.
+    /// Updated periodically through batch recalculation.
+    /// </summary>
+    [Range(0, 100)]
+    public decimal? ReputationScore { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when the reputation score was last calculated.
+    /// </summary>
+    public DateTime? ReputationScoreUpdatedAt { get; set; }
+
+    /// <summary>
     /// Gets or sets the date and time when the store was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

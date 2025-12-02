@@ -48,6 +48,29 @@
                                     </span>
                                 </div>
                             }
+
+                            @* Reputation Score Display *@
+                            @if (Model.ReputationScore.HasValue)
+                            {
+                                <div class="mb-2">
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-award-fill"></i>
+                                        Reputation Score: @Model.ReputationScore.Value.ToString("F0")/100
+                                    </span>
+                                    @if (Model.ReputationScore >= 90)
+                                    {
+                                        <span class="badge bg-success ms-1">
+                                            <i class="bi bi-shield-fill-check"></i> Trusted Seller
+                                        </span>
+                                    }
+                                    else if (Model.ReputationScore >= 75)
+                                    {
+                                        <span class="badge bg-info ms-1">
+                                            <i class="bi bi-check-circle-fill"></i> Verified Seller
+                                        </span>
+                                    }
+                                </div>
+                            }
                             
                             @if (!string.IsNullOrEmpty(Model.Store.Description))
                             {
@@ -198,6 +221,26 @@
                                 <span class="badge bg-warning text-dark">@Model.Store.Status</span>
                             }
                         </dd>
+
+                        @if (Model.ReputationScore.HasValue)
+                        {
+                            <dt class="mt-2">Reputation Score</dt>
+                            <dd>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar @(Model.ReputationScore >= 90 ? "bg-success" : Model.ReputationScore >= 75 ? "bg-info" : Model.ReputationScore >= 50 ? "bg-warning" : "bg-danger")" 
+                                         role="progressbar" 
+                                         style="width: @Model.ReputationScore.Value%" 
+                                         aria-valuenow="@Model.ReputationScore.Value" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        @Model.ReputationScore.Value.ToString("F0")/100
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    Based on ratings, on-time delivery, and dispute rate
+                                </small>
+                            </dd>
+                        }
                     </dl>
                 </div>
             </div>

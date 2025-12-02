@@ -94,6 +94,7 @@ builder.Services.AddScoped<IShippingProviderIntegrationService, ShippingProvider
 builder.Services.AddScoped<IProductReviewService, ProductReviewService>();
 builder.Services.AddScoped<IReviewModerationService, ReviewModerationService>();
 builder.Services.AddScoped<ISellerRatingService, SellerRatingService>();
+builder.Services.AddScoped<ISellerReputationService, SellerReputationService>();
 
 // Register shipping provider services as singleton collection
 builder.Services.AddSingleton<IShippingProviderService>(sp => 
@@ -238,6 +239,13 @@ if (app.Environment.IsDevelopment())
     // Run SLA tracking test scenario
     var slaService = scope.ServiceProvider.GetRequiredService<ISLAService>();
     await SLATrackingTestScenario.RunTestAsync(context, returnRequestService, slaService);
+
+    // Run seller reputation test scenario
+    var reputationService = scope.ServiceProvider.GetRequiredService<ISellerReputationService>();
+    await SellerReputationTestScenario.RunTestAsync(context, reputationService);
+
+    // Run comprehensive reputation test with sample data
+    await SellerReputationComprehensiveTest.RunTestAsync(context, reputationService);
 }
 
 // Configure the HTTP request pipeline.
