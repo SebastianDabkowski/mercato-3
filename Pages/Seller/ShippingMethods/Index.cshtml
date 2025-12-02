@@ -1,0 +1,144 @@
+@page
+@model MercatoApp.Pages.Seller.ShippingMethods.IndexModel
+@{
+    ViewData["Title"] = "Shipping Methods";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-12 col-lg-10">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>Shipping Methods</h1>
+                <p class="text-muted mb-0">Manage shipping options available for your store.</p>
+            </div>
+            <div>
+                <a asp-page="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Add Shipping Method
+                </a>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @Model.ErrorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (Model.ShippingMethods.Count == 0)
+        {
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <h4 class="text-muted mb-3">No Shipping Methods Configured</h4>
+                    <p class="text-muted mb-4">Set up shipping methods to allow buyers to choose delivery options at checkout.</p>
+                    <a asp-page="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Add Your First Shipping Method
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Estimated Delivery</th>
+                                <th class="text-end">Base Cost</th>
+                                <th class="text-end">Additional Item</th>
+                                <th class="text-end">Free Shipping At</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var method in Model.ShippingMethods)
+                            {
+                                <tr class="@(!method.IsActive ? "table-secondary" : "")">
+                                    <td>
+                                        <strong>@method.Name</strong>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(method.Description))
+                                        {
+                                            <span class="text-muted">@method.Description</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">No description</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(method.EstimatedDelivery))
+                                        {
+                                            <span>@method.EstimatedDelivery</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        $@method.BaseCost.ToString("F2")
+                                    </td>
+                                    <td class="text-end">
+                                        $@method.AdditionalItemCost.ToString("F2")
+                                    </td>
+                                    <td class="text-end">
+                                        @if (method.FreeShippingThreshold.HasValue)
+                                        {
+                                            <span>$@method.FreeShippingThreshold.Value.ToString("F2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (method.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-page="Edit" asp-route-id="@method.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        @if (method.IsActive)
+                                        {
+                                            <a asp-page="Delete" asp-route-id="@method.Id" class="btn btn-sm btn-outline-danger" title="Disable">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <div class="mt-4">
+            <a asp-page="/Seller/StoreSettings" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Store Settings
+            </a>
+        </div>
+    </div>
+</div>

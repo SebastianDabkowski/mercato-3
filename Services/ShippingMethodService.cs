@@ -114,4 +114,75 @@ public class ShippingMethodService : IShippingMethodService
 
         return shippingCost;
     }
+
+    /// <inheritdoc />
+    public async Task<List<ShippingMethod>> GetAllShippingMethodsAsync(int storeId)
+    {
+        return await _context.ShippingMethods
+            .Where(sm => sm.StoreId == storeId)
+            .OrderBy(sm => sm.DisplayOrder)
+            .ThenBy(sm => sm.BaseCost)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<ShippingMethod> CreateShippingMethodAsync(ShippingMethod shippingMethod)
+    {
+        shippingMethod.CreatedAt = DateTime.UtcNow;
+        shippingMethod.UpdatedAt = DateTime.UtcNow;
+
+        _context.ShippingMethods.Add(shippingMethod);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Created shipping method {MethodId} for store {StoreId}", 
+            shippingMethod.Id, shippingMethod.StoreId);
+
+        return shippingMethod;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateShippingMethodAsync(ShippingMethod shippingMethod)
+    {
+        var existingMethod = await GetShippingMethodByIdAsync(shippingMethod.Id);
+        if (existingMethod == null)
+        {
+            return false;
+        }
+
+        existingMethod.Name = shippingMethod.Name;
+        existingMethod.Description = shippingMethod.Description;
+        existingMethod.EstimatedDelivery = shippingMethod.EstimatedDelivery;
+        existingMethod.BaseCost = shippingMethod.BaseCost;
+        existingMethod.AdditionalItemCost = shippingMethod.AdditionalItemCost;
+        existingMethod.FreeShippingThreshold = shippingMethod.FreeShippingThreshold;
+        existingMethod.IsActive = shippingMethod.IsActive;
+        existingMethod.DisplayOrder = shippingMethod.DisplayOrder;
+        existingMethod.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Updated shipping method {MethodId}", shippingMethod.Id);
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> DeleteShippingMethodAsync(int id)
+    {
+        var shippingMethod = await GetShippingMethodByIdAsync(id);
+        if (shippingMethod == null)
+        {
+            return false;
+        }
+
+        // Soft delete - just mark as inactive
+        shippingMethod.IsActive = false;
+        shippingMethod.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Deleted (soft delete) shipping method {MethodId}", id);
+
+        return true;
+    }
 }
