@@ -273,6 +273,7 @@ public class AdminReportService : IAdminReportService
             return new Dictionary<int, decimal>();
 
         var commissions = await _context.CommissionTransactions
+            .Include(ct => ct.EscrowTransaction)
             .Where(ct => subOrderIds.Contains(ct.EscrowTransaction.SellerSubOrderId))
             .GroupBy(ct => ct.EscrowTransaction.SellerSubOrderId)
             .Select(g => new { SubOrderId = g.Key, TotalCommission = g.Sum(ct => ct.CommissionAmount) })
@@ -358,18 +359,22 @@ public class AdminReportService : IAdminReportService
             })
             .ToListAsync();
 
+        // Get order counts for all sellers in a single query to avoid N+1
+        var storeIds = summaryData.Select(s => s.StoreId).ToList();
+        var orderCounts = await _context.SellerSubOrders
+            .Where(so => storeIds.Contains(so.StoreId)
+                && so.ParentOrder.OrderedAt >= fromDate 
+                && so.ParentOrder.OrderedAt <= endOfDay)
+            .GroupBy(so => so.StoreId)
+            .Select(g => new { StoreId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.StoreId, x => x.Count);
+
         // Build commission summary data
         var result = new List<CommissionSummaryData>();
         foreach (var item in summaryData)
         {
             var netPayout = item.TotalGrossAmount - item.TotalCommission;
-            
-            // Get order count for this seller in the period
-            var orderCount = await _context.SellerSubOrders
-                .Where(so => so.StoreId == item.StoreId 
-                    && so.ParentOrder.OrderedAt >= fromDate 
-                    && so.ParentOrder.OrderedAt <= endOfDay)
-                .CountAsync();
+            var orderCount = orderCounts.GetValueOrDefault(item.StoreId, 0);
 
             result.Add(new CommissionSummaryData
             {

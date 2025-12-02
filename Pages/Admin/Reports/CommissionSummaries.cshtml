@@ -250,7 +250,12 @@
                                                         @detail.NetPayout.ToString("C")
                                                     </td>
                                                     <td>
-                                                        <partial name="_OrderStatusBadge" model="Enum.Parse<MercatoApp.Models.OrderStatus>(detail.OrderStatus)" />
+                                                        @{
+                                                            var status = Enum.TryParse<MercatoApp.Models.OrderStatus>(detail.OrderStatus, out var parsedStatus) 
+                                                                ? parsedStatus 
+                                                                : MercatoApp.Models.OrderStatus.New;
+                                                        }
+                                                        <partial name="_OrderStatusBadge" model="status" />
                                                     </td>
                                                 </tr>
                                             }
