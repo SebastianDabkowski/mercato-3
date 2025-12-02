@@ -302,6 +302,36 @@ public class OrderService : IOrderService
     }
 
     /// <inheritdoc />
+    public async Task<Order?> GetOrderByIdForBuyerAsync(int orderId, int userId)
+    {
+        var order = await _context.Orders
+            .Include(o => o.User)
+            .Include(o => o.DeliveryAddress)
+            .Include(o => o.PaymentMethod)
+            .Include(o => o.PaymentTransactions)
+                .ThenInclude(t => t.PaymentMethod)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.Store)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.ShippingMethod)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.Items)
+                    .ThenInclude(i => i.Product)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.Items)
+                    .ThenInclude(i => i.ProductVariant)
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+
+        // Authorization check - only return order if it belongs to the requesting user
+        if (order == null || order.UserId != userId)
+        {
+            return null;
+        }
+
+        return order;
+    }
+
+    /// <inheritdoc />
     public async Task<List<Order>> GetUserOrdersAsync(int userId)
     {
         return await _context.Orders

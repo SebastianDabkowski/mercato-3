@@ -1,0 +1,419 @@
+@page
+@model MercatoApp.Pages.Account.OrderDetailModel
+@{
+    ViewData["Title"] = "Order Details";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-page="/Account/Orders">My Orders</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Order #@Model.Order?.OrderNumber</li>
+                </ol>
+            </nav>
+
+            @if (Model.Order != null)
+            {
+                <!-- Order Header -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h3 class="mb-0">
+                                    <i class="bi bi-receipt"></i> Order #@Model.Order.OrderNumber
+                                </h3>
+                            </div>
+                            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                                @if (Model.Order.Status == MercatoApp.Models.OrderStatus.New)
+                                {
+                                    <span class="badge bg-warning text-dark fs-6">
+                                        <i class="bi bi-hourglass-split"></i> New
+                                    </span>
+                                }
+                                else if (Model.Order.Status == MercatoApp.Models.OrderStatus.Paid)
+                                {
+                                    <span class="badge bg-success fs-6">
+                                        <i class="bi bi-check-circle"></i> Paid
+                                    </span>
+                                }
+                                else if (Model.Order.Status == MercatoApp.Models.OrderStatus.Preparing)
+                                {
+                                    <span class="badge bg-info fs-6">
+                                        <i class="bi bi-box-seam"></i> Preparing
+                                    </span>
+                                }
+                                else if (Model.Order.Status == MercatoApp.Models.OrderStatus.Shipped)
+                                {
+                                    <span class="badge bg-primary fs-6">
+                                        <i class="bi bi-truck"></i> Shipped
+                                    </span>
+                                }
+                                else if (Model.Order.Status == MercatoApp.Models.OrderStatus.Delivered)
+                                {
+                                    <span class="badge bg-success fs-6">
+                                        <i class="bi bi-check-circle"></i> Delivered
+                                    </span>
+                                }
+                                else if (Model.Order.Status == MercatoApp.Models.OrderStatus.Cancelled)
+                                {
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="bi bi-x-circle"></i> Cancelled
+                                    </span>
+                                }
+                                else if (Model.Order.Status == MercatoApp.Models.OrderStatus.Refunded)
+                                {
+                                    <span class="badge bg-dark fs-6">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Refunded
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Order Date</h6>
+                                <p class="mb-3 mb-md-0">
+                                    <i class="bi bi-calendar"></i> @Model.Order.OrderedAt.ToString("MMMM dd, yyyy")<br/>
+                                    <small class="text-muted">@Model.Order.OrderedAt.ToString("h:mm tt")</small>
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Payment Method</h6>
+                                <p class="mb-3 mb-md-0">
+                                    @if (Model.Order.PaymentMethod != null)
+                                    {
+                                        <i class="bi bi-credit-card"></i> @Model.Order.PaymentMethod.Name
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not specified</span>
+                                    }
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Payment Status</h6>
+                                <p class="mb-3 mb-md-0">
+                                    @if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Completed)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle-fill"></i> Paid
+                                        </span>
+                                    }
+                                    else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Authorized)
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-clock-fill"></i> Authorized
+                                        </span>
+                                    }
+                                    else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Pending)
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-hourglass-split"></i> Pending
+                                        </span>
+                                    }
+                                    else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Failed)
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle-fill"></i> Failed
+                                        </span>
+                                    }
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Total Amount</h6>
+                                <p class="h4 text-primary mb-0">@Model.Order.TotalAmount.ToString("C")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delivery Address -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-geo-alt"></i> Delivery Address
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Order.DeliveryAddress != null)
+                        {
+                            <address class="mb-0">
+                                <strong>@Model.Order.DeliveryAddress.FullName</strong><br />
+                                @Model.Order.DeliveryAddress.AddressLine1<br />
+                                @if (!string.IsNullOrEmpty(Model.Order.DeliveryAddress.AddressLine2))
+                                {
+                                    @Model.Order.DeliveryAddress.AddressLine2<br />
+                                }
+                                @Model.Order.DeliveryAddress.City@(!string.IsNullOrEmpty(Model.Order.DeliveryAddress.StateProvince) ? $", {Model.Order.DeliveryAddress.StateProvince}" : "") @Model.Order.DeliveryAddress.PostalCode<br />
+                                @Model.Order.DeliveryAddress.CountryCode<br />
+                                <br />
+                                <i class="bi bi-telephone"></i> @Model.Order.DeliveryAddress.PhoneNumber
+                            </address>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No delivery address</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Refunds/Cancellations Alert -->
+                @if (Model.HasRefunds || Model.HasCancellations)
+                {
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i> Refunds or Cancellations
+                        </h6>
+                        @if (Model.Order.RefundedAmount > 0)
+                        {
+                            <p class="mb-1">
+                                <strong>Total Refunded:</strong> @Model.Order.RefundedAmount.ToString("C")
+                            </p>
+                        }
+                        @if (Model.HasCancellations)
+                        {
+                            <p class="mb-0">
+                                One or more seller sub-orders have been cancelled or refunded. See details below.
+                            </p>
+                        }
+                    </div>
+                }
+
+                <!-- Multi-Seller Notice -->
+                @if (Model.Order.SubOrders.Count > 1)
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Multi-Seller Order:</strong> Your order contains items from @Model.Order.SubOrders.Count different sellers. 
+                        Each seller will fulfill their portion independently, so delivery dates and tracking may differ.
+                    </div>
+                }
+
+                <!-- Seller Sub-Orders -->
+                <h4 class="mb-3">
+                    <i class="bi bi-box-seam"></i> Order Items
+                    @if (Model.Order.SubOrders.Count > 1)
+                    {
+                        <small class="text-muted">(@Model.Order.SubOrders.Count seller shipments)</small>
+                    }
+                </h4>
+
+                @foreach (var subOrder in Model.Order.SubOrders.OrderBy(so => so.CreatedAt))
+                {
+                    <div class="card mb-3">
+                        <div class="card-header @(subOrder.Status == MercatoApp.Models.OrderStatus.Cancelled || subOrder.Status == MercatoApp.Models.OrderStatus.Refunded ? "bg-light" : "")">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h6 class="mb-1">
+                                        <i class="bi bi-shop"></i> @subOrder.Store.StoreName
+                                    </h6>
+                                    <small class="text-muted">Sub-Order: @subOrder.SubOrderNumber</small>
+                                </div>
+                                <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                                    @if (subOrder.Status == MercatoApp.Models.OrderStatus.New)
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-hourglass-split"></i> New
+                                        </span>
+                                    }
+                                    else if (subOrder.Status == MercatoApp.Models.OrderStatus.Paid)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Paid
+                                        </span>
+                                    }
+                                    else if (subOrder.Status == MercatoApp.Models.OrderStatus.Preparing)
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-box-seam"></i> Preparing
+                                        </span>
+                                    }
+                                    else if (subOrder.Status == MercatoApp.Models.OrderStatus.Shipped)
+                                    {
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-truck"></i> Shipped
+                                        </span>
+                                    }
+                                    else if (subOrder.Status == MercatoApp.Models.OrderStatus.Delivered)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Delivered
+                                        </span>
+                                    }
+                                    else if (subOrder.Status == MercatoApp.Models.OrderStatus.Cancelled)
+                                    {
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-x-circle"></i> Cancelled
+                                        </span>
+                                    }
+                                    else if (subOrder.Status == MercatoApp.Models.OrderStatus.Refunded)
+                                    {
+                                        <span class="badge bg-dark">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Refunded
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Items -->
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Product</th>
+                                            <th class="text-center">Quantity</th>
+                                            <th class="text-end">Unit Price</th>
+                                            <th class="text-end">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in subOrder.Items)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>@item.ProductTitle</strong>
+                                                    @if (!string.IsNullOrEmpty(item.VariantDescription))
+                                                    {
+                                                        <br/><small class="text-muted">@item.VariantDescription</small>
+                                                    }
+                                                </td>
+                                                <td class="text-center">@item.Quantity</td>
+                                                <td class="text-end">@item.UnitPrice.ToString("C")</td>
+                                                <td class="text-end">@item.Subtotal.ToString("C")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Shipping & Tracking Info -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    @if (subOrder.ShippingMethod != null)
+                                    {
+                                        <h6 class="text-muted mb-1">Shipping Method</h6>
+                                        <p class="mb-2">
+                                            <i class="bi bi-truck"></i> <strong>@subOrder.ShippingMethod.Name</strong><br/>
+                                            @if (!string.IsNullOrEmpty(subOrder.ShippingMethod.EstimatedDelivery))
+                                            {
+                                                <small class="text-muted">Estimated Delivery: @subOrder.ShippingMethod.EstimatedDelivery</small>
+                                            }
+                                        </p>
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(subOrder.TrackingNumber))
+                                    {
+                                        <h6 class="text-muted mb-1 mt-3">Tracking Information</h6>
+                                        <div class="card bg-light">
+                                            <div class="card-body p-3">
+                                                <p class="mb-1">
+                                                    <strong>Tracking Number:</strong> 
+                                                    @if (!string.IsNullOrEmpty(subOrder.TrackingUrl))
+                                                    {
+                                                        <a href="@subOrder.TrackingUrl" target="_blank" class="text-decoration-none">
+                                                            @subOrder.TrackingNumber <i class="bi bi-box-arrow-up-right"></i>
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@subOrder.TrackingNumber</span>
+                                                    }
+                                                </p>
+                                                @if (!string.IsNullOrEmpty(subOrder.CarrierName))
+                                                {
+                                                    <p class="mb-0">
+                                                        <strong>Carrier:</strong> @subOrder.CarrierName
+                                                    </p>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="col-md-6">
+                                    <!-- Sub-order totals -->
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <dl class="row mb-0 small">
+                                                <dt class="col-6">Items Subtotal:</dt>
+                                                <dd class="col-6 text-end">@subOrder.Subtotal.ToString("C")</dd>
+                                                
+                                                <dt class="col-6">Shipping Cost:</dt>
+                                                <dd class="col-6 text-end">@subOrder.ShippingCost.ToString("C")</dd>
+                                                
+                                                @if (subOrder.RefundedAmount > 0)
+                                                {
+                                                    <dt class="col-6 text-danger">Refunded:</dt>
+                                                    <dd class="col-6 text-end text-danger">-@subOrder.RefundedAmount.ToString("C")</dd>
+                                                }
+                                                
+                                                <dt class="col-6 border-top pt-2 mt-2"><strong>Sub-Order Total:</strong></dt>
+                                                <dd class="col-6 text-end border-top pt-2 mt-2">
+                                                    <strong>@subOrder.TotalAmount.ToString("C")</strong>
+                                                </dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Order Summary -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calculator"></i> Order Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-6 col-md-9">Items Subtotal:</dt>
+                            <dd class="col-6 col-md-3 text-end">@Model.Order.Subtotal.ToString("C")</dd>
+
+                            <dt class="col-6 col-md-9">Total Shipping:</dt>
+                            <dd class="col-6 col-md-3 text-end">@Model.Order.ShippingCost.ToString("C")</dd>
+
+                            @if (Model.Order.TaxAmount > 0)
+                            {
+                                <dt class="col-6 col-md-9">Tax:</dt>
+                                <dd class="col-6 col-md-3 text-end">@Model.Order.TaxAmount.ToString("C")</dd>
+                            }
+
+                            @if (Model.Order.RefundedAmount > 0)
+                            {
+                                <dt class="col-6 col-md-9 text-danger">Total Refunded:</dt>
+                                <dd class="col-6 col-md-3 text-end text-danger">-@Model.Order.RefundedAmount.ToString("C")</dd>
+                            }
+
+                            <dt class="col-6 col-md-9 border-top pt-2 mt-2">
+                                <strong>Order Total:</strong>
+                            </dt>
+                            <dd class="col-6 col-md-3 text-end border-top pt-2 mt-2">
+                                <strong class="h5 text-primary">@Model.Order.TotalAmount.ToString("C")</strong>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="text-center">
+                    <a asp-page="/Account/Orders" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Orders
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Order not found.
+                </div>
+            }
+        </div>
+    </div>
+</div>
