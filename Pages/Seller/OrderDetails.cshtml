@@ -481,9 +481,20 @@
                             }
                             else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Preparing)
                             {
+                                @if (Model.Shipment == null)
+                                {
+                                    <!-- Create Shipment with Provider Integration -->
+                                    <form method="post" asp-page-handler="CreateShipment" asp-route-subOrderId="@Model.SubOrder.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="bi bi-box-seam"></i> Create Shipment & Generate Label
+                                        </button>
+                                    </form>
+                                }
+
                                 <!-- Ship Order Form with Tracking Info -->
                                 <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#shipOrderModal">
-                                    <i class="bi bi-truck"></i> Mark as Shipped
+                                    <i class="bi bi-truck"></i> Mark as Shipped (Manual)
                                 </button>
                                 <form method="post" asp-page-handler="UpdateStatus" asp-route-subOrderId="@Model.SubOrder.Id" asp-route-action="cancel">
                                     @Html.AntiForgeryToken()
@@ -546,12 +557,28 @@
                             }
                             @if (!string.IsNullOrEmpty(Model.SubOrder.TrackingUrl))
                             {
-                                <p class="mb-0">
+                                <p class="mb-1">
                                     <a href="@Model.SubOrder.TrackingUrl" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-box-arrow-up-right"></i> Track Shipment
                                     </a>
                                 </p>
                             }
+                            @if (Model.HasShippingLabel)
+                            {
+                                <p class="mb-0">
+                                    <a asp-page-handler="DownloadLabel" asp-route-subOrderId="@Model.SubOrder.Id" class="btn btn-sm btn-success">
+                                        <i class="bi bi-file-earmark-pdf"></i> Download Shipping Label
+                                    </a>
+                                </p>
+                            }
+                        }
+
+                        @if (Model.Shipment != null && !Model.HasShippingLabel)
+                        {
+                            <hr class="my-3" />
+                            <div class="alert alert-warning mb-0">
+                                <small><i class="bi bi-exclamation-triangle"></i> Shipment created but label not available.</small>
+                            </div>
                         }
                     </div>
                 </div>

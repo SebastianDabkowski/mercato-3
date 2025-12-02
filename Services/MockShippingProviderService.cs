@@ -83,6 +83,14 @@ public class MockShippingProviderService : IShippingProviderService
         // Simulate shipping cost
         var shippingCost = ProviderId.Contains("express", StringComparison.OrdinalIgnoreCase) ? 15.99m : 8.99m;
 
+        // Generate a mock PDF label
+        var labelData = GenerateMockPdfLabel(
+            trackingNumber,
+            providerShipmentId,
+            carrierService,
+            shipFromAddress,
+            shipToAddress);
+
         _logger.LogInformation(
             "Shipment created successfully. Tracking: {TrackingNumber}, Provider ID: {ProviderShipmentId}",
             trackingNumber, providerShipmentId);
@@ -95,6 +103,9 @@ public class MockShippingProviderService : IShippingProviderService
             CarrierService = carrierService,
             TrackingUrl = $"https://track.example.com/{trackingNumber}",
             LabelUrl = $"https://labels.example.com/{providerShipmentId}.pdf",
+            LabelData = labelData,
+            LabelFormat = "PDF",
+            LabelContentType = "application/pdf",
             ShippingCost = shippingCost,
             EstimatedDeliveryDate = estimatedDelivery,
             Metadata = new Dictionary<string, string>
@@ -369,5 +380,121 @@ public class MockShippingProviderService : IShippingProviderService
             "exception" => ShipmentStatus.Exception,
             _ => ShipmentStatus.InTransit
         };
+    }
+
+    /// <summary>
+    /// Generates a mock PDF shipping label.
+    /// In production, this would be replaced with actual PDF generation from the carrier.
+    /// NOTE: This is a minimal valid PDF for testing purposes only.
+    /// Real implementations should use a PDF library or receive pre-generated labels from the carrier API.
+    /// </summary>
+    private byte[] GenerateMockPdfLabel(
+        string trackingNumber,
+        string providerShipmentId,
+        string carrierService,
+        Address shipFromAddress,
+        Address shipToAddress)
+    {
+        // Create a minimal but valid PDF structure
+        // This approach creates a simple text-based PDF that most readers can parse
+        var content = $@"BT
+/F1 18 Tf
+50 750 Td
+({carrierService}) Tj
+/F1 12 Tf
+50 720 Td
+(Shipment ID: {providerShipmentId}) Tj
+0 -20 Td
+(Date: {DateTime.UtcNow:yyyy-MM-dd}) Tj
+0 -40 Td
+/F1 14 Tf
+(FROM:) Tj
+0 -20 Td
+/F1 12 Tf
+({shipFromAddress.FullName}) Tj
+0 -18 Td
+({shipFromAddress.AddressLine1}) Tj
+0 -18 Td
+({shipFromAddress.City}, {shipFromAddress.StateProvince} {shipFromAddress.PostalCode}) Tj
+0 -18 Td
+({shipFromAddress.CountryCode}) Tj
+0 -40 Td
+/F1 14 Tf
+(TO:) Tj
+0 -20 Td
+/F1 12 Tf
+({shipToAddress.FullName}) Tj
+0 -18 Td
+({shipToAddress.AddressLine1}) Tj
+0 -18 Td
+({shipToAddress.City}, {shipToAddress.StateProvince} {shipToAddress.PostalCode}) Tj
+0 -18 Td
+({shipToAddress.CountryCode}) Tj
+0 -40 Td
+/F1 24 Tf
+(Tracking:) Tj
+0 -30 Td
+({trackingNumber}) Tj
+ET";
+
+        var contentLength = System.Text.Encoding.ASCII.GetByteCount(content);
+
+        var pdfStructure = $@"%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica-Bold
+>>
+>>
+>>
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length {contentLength}
+>>
+stream
+{content}
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000315 00000 n
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+{400 + contentLength}
+%%EOF";
+
+        // Convert to bytes using ASCII encoding (PDF structure uses ASCII)
+        return System.Text.Encoding.ASCII.GetBytes(pdfStructure);
     }
 }
