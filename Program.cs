@@ -91,6 +91,7 @@ builder.Services.AddScoped<ISLAService, SLAService>();
 builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();
 builder.Services.AddScoped<IShippingLabelService, ShippingLabelService>();
 builder.Services.AddScoped<IShippingProviderIntegrationService, ShippingProviderIntegrationService>();
+builder.Services.AddScoped<IProductReviewService, ProductReviewService>();
 
 // Register shipping provider services as singleton collection
 builder.Services.AddSingleton<IShippingProviderService>(sp => 

@@ -298,6 +298,120 @@
                                 </table>
                             </div>
 
+                            <!-- Review Section for Delivered Items -->
+                            @if (subOrder.Status == MercatoApp.Models.OrderStatus.Delivered)
+                            {
+                                <div class="mb-3">
+                                    <h6 class="text-muted mb-2">
+                                        <i class="bi bi-star"></i> Review Your Purchase
+                                    </h6>
+                                    @foreach (var item in subOrder.Items)
+                                    {
+                                        var hasReview = Model.ExistingReviews.ContainsKey(item.Id);
+                                        <div class="card mb-2 @(hasReview ? "border-success" : "")">
+                                            <div class="card-body p-2">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <strong class="small">@item.ProductTitle</strong>
+                                                        @if (!string.IsNullOrEmpty(item.VariantDescription))
+                                                        {
+                                                            <br/><small class="text-muted">@item.VariantDescription</small>
+                                                        }
+                                                    </div>
+                                                    <div class="ms-2">
+                                                        @if (hasReview)
+                                                        {
+                                                            <span class="badge bg-success">
+                                                                <i class="bi bi-check-circle"></i> Reviewed
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reviewModal-@item.Id">
+                                                                <i class="bi bi-star"></i> Write Review
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @if (!hasReview)
+                                        {
+                                            <!-- Review Modal -->
+                                            <div class="modal fade" id="reviewModal-@item.Id" tabindex="-1" aria-labelledby="reviewModalLabel-@item.Id" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form method="post" asp-page-handler="SubmitReview" id="reviewForm-@item.Id">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="orderItemId" value="@item.Id" />
+                                                            <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                                                            
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="reviewModalLabel-@item.Id">
+                                                                    <i class="bi bi-star"></i> Review Product
+                                                                </h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p class="text-muted">
+                                                                    <strong>@item.ProductTitle</strong>
+                                                                    @if (!string.IsNullOrEmpty(item.VariantDescription))
+                                                                    {
+                                                                        <br/><small>@item.VariantDescription</small>
+                                                                    }
+                                                                </p>
+                                                                
+                                                                <div class="mb-3">
+                                                                    <label for="rating-@item.Id" class="form-label">Rating <span class="text-danger">*</span></label>
+                                                                    <div class="rating-input" id="rating-display-@item.Id">
+                                                                        <input type="hidden" id="rating-@item.Id" name="rating" value="5" />
+                                                                        <div class="btn-group" role="group" aria-label="Rating">
+                                                                            @for (int i = 1; i <= 5; i++)
+                                                                            {
+                                                                                var starValue = i;
+                                                                                <button type="button" class="btn btn-outline-warning rating-star @(i == 5 ? "active" : "")" 
+                                                                                        data-rating="@starValue" 
+                                                                                        data-target="rating-@item.Id"
+                                                                                        onclick="setRating(@starValue, 'rating-@item.Id')">
+                                                                                    <i class="bi bi-star-fill"></i>
+                                                                                </button>
+                                                                            }
+                                                                        </div>
+                                                                        <div class="mt-1">
+                                                                            <small class="text-muted" id="rating-text-@item.Id">Excellent (5 stars)</small>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="mb-3">
+                                                                    <label for="reviewText-@item.Id" class="form-label">Your Review (optional)</label>
+                                                                    <textarea class="form-control" id="reviewText-@item.Id" name="reviewText" rows="4" maxlength="2000" placeholder="Share your experience with this product..."></textarea>
+                                                                    <small class="text-muted">Maximum 2000 characters</small>
+                                                                </div>
+
+                                                                <div class="alert alert-info">
+                                                                    <small>
+                                                                        <i class="bi bi-info-circle"></i> 
+                                                                        Your review will be visible to other buyers and will help them make informed decisions.
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-primary">
+                                                                    <i class="bi bi-send"></i> Submit Review
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+
                             @if (subOrder.Items.Any(i => i.QuantityShipped > 0 || i.QuantityCancelled > 0))
                             {
                                 <div class="alert alert-info mb-3">
@@ -591,6 +705,38 @@
                 }, false)
             })
         })()
+
+        // Rating functionality
+        function setRating(rating, targetId) {
+            // Set the hidden input value
+            document.getElementById(targetId).value = rating;
+            
+            // Update star button states
+            var buttons = document.querySelectorAll('[data-target="' + targetId + '"]');
+            buttons.forEach(function(btn) {
+                var btnRating = parseInt(btn.getAttribute('data-rating'));
+                if (btnRating <= rating) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Update rating text
+            var ratingText = '';
+            switch(rating) {
+                case 1: ratingText = 'Poor (1 star)'; break;
+                case 2: ratingText = 'Fair (2 stars)'; break;
+                case 3: ratingText = 'Good (3 stars)'; break;
+                case 4: ratingText = 'Very Good (4 stars)'; break;
+                case 5: ratingText = 'Excellent (5 stars)'; break;
+            }
+            
+            var textElement = document.getElementById('rating-text-' + targetId.replace('rating-', ''));
+            if (textElement) {
+                textElement.textContent = ratingText;
+            }
+        }
     </script>
 }
 

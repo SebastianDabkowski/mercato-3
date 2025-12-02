@@ -15,15 +15,18 @@ public class OrderDetailModel : PageModel
 {
     private readonly IOrderService _orderService;
     private readonly IReturnRequestService _returnRequestService;
+    private readonly IProductReviewService _reviewService;
     private readonly ILogger<OrderDetailModel> _logger;
 
     public OrderDetailModel(
         IOrderService orderService,
         IReturnRequestService returnRequestService,
+        IProductReviewService reviewService,
         ILogger<OrderDetailModel> logger)
     {
         _orderService = orderService;
         _returnRequestService = returnRequestService;
+        _reviewService = reviewService;
         _logger = logger;
     }
 
@@ -46,6 +49,12 @@ public class OrderDetailModel : PageModel
     /// Gets or sets the return requests for this order's sub-orders.
     /// </summary>
     public Dictionary<int, List<ReturnRequest>> ReturnRequestsBySubOrder { get; set; } = new Dictionary<int, List<ReturnRequest>>();
+
+    /// <summary>
+    /// Gets or sets the reviews that the user has already submitted for order items.
+    /// Key is OrderItemId, value is the review.
+    /// </summary>
+    public Dictionary<int, ProductReview> ExistingReviews { get; set; } = new Dictionary<int, ProductReview>();
 
     /// <summary>
     /// Handles GET request to display order details.
@@ -78,6 +87,18 @@ public class OrderDetailModel : PageModel
             if (returns.Any())
             {
                 ReturnRequestsBySubOrder[subOrder.Id] = returns;
+            }
+
+            // Load existing reviews for order items
+            foreach (var item in subOrder.Items)
+            {
+                var hasReview = await _reviewService.HasUserReviewedOrderItemAsync(userId, item.Id);
+                if (hasReview)
+                {
+                    // Note: We only need to know if a review exists for now
+                    // Could enhance to load the actual review if needed for display
+                    ExistingReviews[item.Id] = new ProductReview { OrderItemId = item.Id };
+                }
             }
         }
 
@@ -158,6 +179,55 @@ public class OrderDetailModel : PageModel
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Failed to create return request for sub-order {SubOrderId}", subOrderId);
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToPage(new { orderId });
+        }
+    }
+
+    /// <summary>
+    /// Handles POST request to submit a product review.
+    /// </summary>
+    /// <param name="orderItemId">The order item ID being reviewed.</param>
+    /// <param name="orderId">The parent order ID for redirect.</param>
+    /// <param name="rating">The rating (1-5 stars).</param>
+    /// <param name="reviewText">Optional review text.</param>
+    /// <returns>The page result.</returns>
+    public async Task<IActionResult> OnPostSubmitReviewAsync(
+        int orderItemId,
+        int orderId,
+        int rating,
+        string? reviewText)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("User ID claim not found or invalid");
+            return RedirectToPage("/Account/Login");
+        }
+
+        // Validate rating
+        if (rating < 1 || rating > 5)
+        {
+            TempData["ErrorMessage"] = "Rating must be between 1 and 5 stars.";
+            return RedirectToPage(new { orderId });
+        }
+
+        // Validate review text length
+        if (!string.IsNullOrEmpty(reviewText) && reviewText.Length > 2000)
+        {
+            TempData["ErrorMessage"] = "Review text must not exceed 2000 characters.";
+            return RedirectToPage(new { orderId });
+        }
+
+        try
+        {
+            var review = await _reviewService.SubmitReviewAsync(userId, orderItemId, rating, reviewText);
+            TempData["SuccessMessage"] = "Thank you for your review! It has been submitted successfully.";
+            return RedirectToPage(new { orderId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to submit review for order item {OrderItemId}", orderItemId);
             TempData["ErrorMessage"] = ex.Message;
             return RedirectToPage(new { orderId });
         }
