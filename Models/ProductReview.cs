@@ -64,6 +64,11 @@ public class ProductReview
     public bool IsApproved { get; set; } = false;
 
     /// <summary>
+    /// Gets or sets the moderation status of the review.
+    /// </summary>
+    public ReviewModerationStatus ModerationStatus { get; set; } = ReviewModerationStatus.PendingReview;
+
+    /// <summary>
     /// Gets or sets the date and time when the review was submitted.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -72,4 +77,29 @@ public class ProductReview
     /// Gets or sets the date and time when the review was approved (if applicable).
     /// </summary>
     public DateTime? ApprovedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the admin user ID who last moderated this review.
+    /// </summary>
+    public int? ModeratedByUserId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the admin who last moderated this review (navigation property).
+    /// </summary>
+    public User? ModeratedByUser { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when the review was last moderated.
+    /// </summary>
+    public DateTime? ModeratedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the collection of flags raised on this review.
+    /// </summary>
+    public ICollection<ReviewFlag> Flags { get; set; } = new List<ReviewFlag>();
+
+    /// <summary>
+    /// Gets or sets the collection of moderation log entries for this review.
+    /// </summary>
+    public ICollection<ReviewModerationLog> ModerationLogs { get; set; } = new List<ReviewModerationLog>();
 }

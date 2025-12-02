@@ -94,7 +94,8 @@ public class ProductReviewService : IProductReviewService
             OrderItemId = orderItemId,
             Rating = rating,
             ReviewText = reviewText,
-            IsApproved = true, // Auto-approve for now; can add moderation later
+            IsApproved = true, // Auto-approve initially; automated checks may flag for review
+            ModerationStatus = ReviewModerationStatus.Approved,
             CreatedAt = DateTime.UtcNow,
             ApprovedAt = DateTime.UtcNow
         };

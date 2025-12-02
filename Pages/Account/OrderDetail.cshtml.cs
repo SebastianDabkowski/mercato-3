@@ -16,6 +16,7 @@ public class OrderDetailModel : PageModel
     private readonly IOrderService _orderService;
     private readonly IReturnRequestService _returnRequestService;
     private readonly IProductReviewService _reviewService;
+    private readonly IReviewModerationService _moderationService;
     private readonly ISellerRatingService _sellerRatingService;
     private readonly ILogger<OrderDetailModel> _logger;
 
@@ -23,12 +24,14 @@ public class OrderDetailModel : PageModel
         IOrderService orderService,
         IReturnRequestService returnRequestService,
         IProductReviewService reviewService,
+        IReviewModerationService moderationService,
         ISellerRatingService sellerRatingService,
         ILogger<OrderDetailModel> logger)
     {
         _orderService = orderService;
         _returnRequestService = returnRequestService;
         _reviewService = reviewService;
+        _moderationService = moderationService;
         _sellerRatingService = sellerRatingService;
         _logger = logger;
     }
@@ -238,6 +241,18 @@ public class OrderDetailModel : PageModel
         try
         {
             var review = await _reviewService.SubmitReviewAsync(userId, orderItemId, rating, reviewText);
+            
+            // Automatically check the review for potential issues
+            try
+            {
+                await _moderationService.AutoCheckReviewAsync(review.Id);
+            }
+            catch (Exception autoCheckEx)
+            {
+                // Log but don't fail the submission if auto-check fails
+                _logger.LogError(autoCheckEx, "Auto-check failed for review {ReviewId}", review.Id);
+            }
+            
             TempData["SuccessMessage"] = "Thank you for your review! It has been submitted successfully.";
             return RedirectToPage(new { orderId });
         }

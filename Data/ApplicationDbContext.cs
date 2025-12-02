@@ -288,6 +288,16 @@ public class ApplicationDbContext : DbContext
     public DbSet<ProductReview> ProductReviews { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the review flags table.
+    /// </summary>
+    public DbSet<ReviewFlag> ReviewFlags { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the review moderation logs table.
+    /// </summary>
+    public DbSet<ReviewModerationLog> ReviewModerationLogs { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the seller ratings table.
     /// </summary>
     public DbSet<SellerRating> SellerRatings { get; set; } = null!;
