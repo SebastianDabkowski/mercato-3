@@ -29,6 +29,23 @@ public interface IProductReviewService
     Task<List<ProductReview>> GetApprovedReviewsForProductAsync(int productId);
 
     /// <summary>
+    /// Gets paginated and sorted approved reviews for a specific product.
+    /// </summary>
+    /// <param name="productId">The product ID.</param>
+    /// <param name="sortOption">The sort option to apply.</param>
+    /// <param name="page">The page number (1-based).</param>
+    /// <param name="pageSize">The number of reviews per page.</param>
+    /// <returns>A list of approved reviews for the product.</returns>
+    Task<List<ProductReview>> GetApprovedReviewsForProductAsync(int productId, ReviewSortOption sortOption, int page, int pageSize);
+
+    /// <summary>
+    /// Gets the total count of approved reviews for a specific product.
+    /// </summary>
+    /// <param name="productId">The product ID.</param>
+    /// <returns>The total count of approved reviews.</returns>
+    Task<int> GetApprovedReviewCountAsync(int productId);
+
+    /// <summary>
     /// Gets the average rating for a product.
     /// </summary>
     /// <param name="productId">The product ID.</param>
