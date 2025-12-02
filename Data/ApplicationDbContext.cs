@@ -247,6 +247,26 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<CommissionInvoiceConfig> CommissionInvoiceConfigs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the shipping providers table.
+    /// </summary>
+    public DbSet<ShippingProvider> ShippingProviders { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the shipping provider configurations table.
+    /// </summary>
+    public DbSet<ShippingProviderConfig> ShippingProviderConfigs { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the shipments table.
+    /// </summary>
+    public DbSet<Shipment> Shipments { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the shipment status updates table.
+    /// </summary>
+    public DbSet<ShipmentStatusUpdate> ShipmentStatusUpdates { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1316,6 +1336,90 @@ public class ApplicationDbContext : DbContext
         {
             // Configure decimal precision
             entity.Property(e => e.DefaultTaxPercentage).HasPrecision(5, 2);
+        });
+
+        modelBuilder.Entity<ShippingProvider>(entity =>
+        {
+            // Unique index on provider ID
+            entity.HasIndex(e => e.ProviderId).IsUnique();
+
+            // Index for finding active providers
+            entity.HasIndex(e => e.IsActive);
+
+            // Index for ordering providers
+            entity.HasIndex(e => new { e.IsActive, e.DisplayOrder });
+        });
+
+        modelBuilder.Entity<ShippingProviderConfig>(entity =>
+        {
+            // Composite unique index - one config per provider per store
+            entity.HasIndex(e => new { e.StoreId, e.ShippingProviderId }).IsUnique();
+
+            // Index for finding configs by store
+            entity.HasIndex(e => e.StoreId);
+
+            // Index for finding enabled configs
+            entity.HasIndex(e => new { e.StoreId, e.IsEnabled });
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with ShippingProvider
+            entity.HasOne(e => e.ShippingProvider)
+                .WithMany()
+                .HasForeignKey(e => e.ShippingProviderId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Shipment>(entity =>
+        {
+            // Unique index on seller sub-order ID - one shipment per sub-order
+            entity.HasIndex(e => e.SellerSubOrderId).IsUnique();
+
+            // Unique index on provider shipment ID
+            entity.HasIndex(e => e.ProviderShipmentId).IsUnique();
+
+            // Index on tracking number for quick lookups
+            entity.HasIndex(e => e.TrackingNumber);
+
+            // Index for finding shipments by provider config
+            entity.HasIndex(e => e.ShippingProviderConfigId);
+
+            // Index for filtering by status
+            entity.HasIndex(e => e.Status);
+
+            // Configure relationship with SellerSubOrder
+            entity.HasOne(e => e.SellerSubOrder)
+                .WithMany()
+                .HasForeignKey(e => e.SellerSubOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with ShippingProviderConfig
+            entity.HasOne(e => e.ShippingProviderConfig)
+                .WithMany()
+                .HasForeignKey(e => e.ShippingProviderConfigId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.ShippingCost).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<ShipmentStatusUpdate>(entity =>
+        {
+            // Index on shipment ID for finding updates
+            entity.HasIndex(e => e.ShipmentId);
+
+            // Composite index for ordering updates by date
+            entity.HasIndex(e => new { e.ShipmentId, e.StatusChangedAt });
+
+            // Configure relationship with Shipment
+            entity.HasOne(e => e.Shipment)
+                .WithMany(s => s.StatusUpdates)
+                .HasForeignKey(e => e.ShipmentId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
