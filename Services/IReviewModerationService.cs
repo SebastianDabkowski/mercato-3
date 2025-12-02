@@ -96,4 +96,19 @@ public interface IReviewModerationService
     /// </summary>
     /// <returns>Dictionary with moderation statistics.</returns>
     Task<Dictionary<string, int>> GetModerationStatsAsync();
+
+    /// <summary>
+    /// Gets a review by its ID.
+    /// </summary>
+    /// <param name="reviewId">The review ID.</param>
+    /// <returns>The review, or null if not found.</returns>
+    Task<ProductReview?> GetReviewByIdAsync(int reviewId);
+
+    /// <summary>
+    /// Gets all flags for a specific review.
+    /// </summary>
+    /// <param name="reviewId">The review ID.</param>
+    /// <param name="includeResolved">Whether to include resolved flags.</param>
+    /// <returns>List of flags for the review.</returns>
+    Task<List<ReviewFlag>> GetFlagsByReviewIdAsync(int reviewId, bool includeResolved = false);
 }

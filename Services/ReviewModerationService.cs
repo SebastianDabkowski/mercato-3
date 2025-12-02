@@ -349,13 +349,12 @@ public class ReviewModerationService : IReviewModerationService
             return false;
         }
 
-        var reviewText = review.ReviewText.ToLowerInvariant();
         var flagged = false;
 
         // Check for inappropriate keywords
         foreach (var keyword in InappropriateKeywords)
         {
-            if (Regex.IsMatch(reviewText, $@"\b{Regex.Escape(keyword)}\b", RegexOptions.IgnoreCase))
+            if (Regex.IsMatch(review.ReviewText, $@"\b{Regex.Escape(keyword)}\b", RegexOptions.IgnoreCase))
             {
                 await FlagReviewAsync(
                     reviewId,
@@ -388,7 +387,7 @@ public class ReviewModerationService : IReviewModerationService
         }
 
         // Check for URL patterns (might be spam)
-        if (!flagged && Regex.IsMatch(reviewText, @"(http|www\.|\w+\.(com|org|net|io))", RegexOptions.IgnoreCase))
+        if (!flagged && Regex.IsMatch(review.ReviewText, @"(http|www\.|\w+\.(com|org|net|io))", RegexOptions.IgnoreCase))
         {
             await FlagReviewAsync(
                 reviewId,
@@ -401,7 +400,7 @@ public class ReviewModerationService : IReviewModerationService
         }
 
         // Check for email patterns (personal information)
-        if (!flagged && Regex.IsMatch(reviewText, @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"))
+        if (!flagged && Regex.IsMatch(review.ReviewText, @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"))
         {
             await FlagReviewAsync(
                 reviewId,
@@ -414,7 +413,7 @@ public class ReviewModerationService : IReviewModerationService
         }
 
         // Check for phone number patterns (personal information)
-        if (!flagged && Regex.IsMatch(reviewText, @"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"))
+        if (!flagged && Regex.IsMatch(review.ReviewText, @"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"))
         {
             await FlagReviewAsync(
                 reviewId,
@@ -447,6 +446,34 @@ public class ReviewModerationService : IReviewModerationService
         stats["TotalReviews"] = totalReviews;
 
         return stats;
+    }
+
+    /// <inheritdoc />
+    public async Task<ProductReview?> GetReviewByIdAsync(int reviewId)
+    {
+        return await _context.ProductReviews
+            .Include(r => r.Product)
+            .Include(r => r.User)
+            .Include(r => r.ModeratedByUser)
+            .FirstOrDefaultAsync(r => r.Id == reviewId);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<ReviewFlag>> GetFlagsByReviewIdAsync(int reviewId, bool includeResolved = false)
+    {
+        var query = _context.ReviewFlags
+            .Include(f => f.FlaggedByUser)
+            .Include(f => f.ResolvedByUser)
+            .Where(f => f.ProductReviewId == reviewId);
+
+        if (!includeResolved)
+        {
+            query = query.Where(f => f.IsActive);
+        }
+
+        return await query
+            .OrderByDescending(f => f.CreatedAt)
+            .ToListAsync();
     }
 
     /// <summary>

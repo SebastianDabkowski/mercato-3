@@ -13,16 +13,13 @@ namespace MercatoApp.Pages.Admin.Reviews;
 public class DetailsModel : PageModel
 {
     private readonly IReviewModerationService _moderationService;
-    private readonly IProductReviewService _reviewService;
     private readonly ILogger<DetailsModel> _logger;
 
     public DetailsModel(
         IReviewModerationService moderationService,
-        IProductReviewService reviewService,
         ILogger<DetailsModel> logger)
     {
         _moderationService = moderationService;
-        _reviewService = reviewService;
         _logger = logger;
     }
 
@@ -40,22 +37,8 @@ public class DetailsModel : PageModel
     {
         try
         {
-            // Get all reviews to find the one we need (since we don't have a direct GetById method)
-            var allReviews = await _reviewService.GetApprovedReviewsForProductAsync(0);
-            Review = allReviews.FirstOrDefault(r => r.Id == reviewId);
-
-            if (Review == null)
-            {
-                // Try getting from other statuses
-                var pendingReviews = await _moderationService.GetReviewsByStatusAsync(ReviewModerationStatus.PendingReview, 1, 1000);
-                Review = pendingReviews.FirstOrDefault(r => r.Id == reviewId);
-            }
-
-            if (Review == null)
-            {
-                var rejectedReviews = await _moderationService.GetReviewsByStatusAsync(ReviewModerationStatus.Rejected, 1, 1000);
-                Review = rejectedReviews.FirstOrDefault(r => r.Id == reviewId);
-            }
+            // Get the review by ID
+            Review = await _moderationService.GetReviewByIdAsync(reviewId);
 
             if (Review == null)
             {
@@ -67,8 +50,7 @@ public class DetailsModel : PageModel
             ModerationHistory = await _moderationService.GetReviewModerationHistoryAsync(reviewId);
 
             // Get all flags for this review
-            var allFlags = await _moderationService.GetFlaggedReviewsAsync(includeResolved: true);
-            Flags = allFlags.Where(f => f.ProductReviewId == reviewId).ToList();
+            Flags = await _moderationService.GetFlagsByReviewIdAsync(reviewId, includeResolved: true);
         }
         catch (Exception ex)
         {
