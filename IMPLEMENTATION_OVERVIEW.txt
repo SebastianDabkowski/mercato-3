@@ -1,0 +1,171 @@
+# Partial Fulfillment Implementation - Visual Overview
+
+## Data Flow
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                           SELLER ACTION                             │
+│  (Ship or Cancel specific quantity of items via Partial Fulfillment)│
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              IOrderItemFulfillmentService                           │
+│  ┌────────────────────────────────────────────────────────────┐    │
+│  │ 1. Validate authorization (seller owns store)               │    │
+│  │ 2. Validate payment status (completed)                      │    │
+│  │ 3. Validate quantity (available qty >= requested qty)       │    │
+│  │ 4. Calculate refund (if cancelling)                         │    │
+│  │ 5. Update OrderItem fields                                  │    │
+│  │ 6. Update SubOrder refunded amount                          │    │
+│  │ 7. Update ParentOrder refunded amount                       │    │
+│  │ 8. Aggregate SubOrder status from items                     │    │
+│  └────────────────────────────────────────────────────────────┘    │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      DATABASE UPDATE                                │
+│  ┌────────────────────────────────────────────────────────────┐    │
+│  │ OrderItem:                                                  │    │
+│  │   - Status (New → Preparing → Shipped or Cancelled)        │    │
+│  │   - QuantityShipped += quantity                            │    │
+│  │   - QuantityCancelled += quantity (if cancelling)          │    │
+│  │   - RefundedAmount += refund (if cancelling)               │    │
+│  │                                                             │    │
+│  │ SellerSubOrder:                                             │    │
+│  │   - Status (aggregated from items)                         │    │
+│  │   - RefundedAmount += item refunds                         │    │
+│  │                                                             │    │
+│  │ Order (Parent):                                             │    │
+│  │   - RefundedAmount += item refunds                         │    │
+│  └────────────────────────────────────────────────────────────┘    │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      UI UPDATE                                      │
+│  ┌───────────────────────┐     ┌────────────────────────────────┐  │
+│  │   Seller View         │     │      Buyer View                │  │
+│  │   (OrderDetails)      │     │   (OrderDetail)                │  │
+│  ├───────────────────────┤     ├────────────────────────────────┤  │
+│  │ ✓ Item statuses       │     │ ✓ Item statuses                │  │
+│  │ ✓ Qty shipped/cancel  │     │ ✓ Qty shipped/cancelled        │  │
+│  │ ✓ Refund amounts      │     │ ✓ Refund amounts               │  │
+│  │ ✓ Link to partial     │     │ ✓ Partial fulfillment notice   │  │
+│  │   fulfillment page    │     │                                │  │
+│  └───────────────────────┘     └────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+
+## Item Status Transitions
+
+┌─────┐  Paid    ┌───────────┐  Ship Qty  ┌───────────┐  All Shipped  ┌─────────┐
+│ New ├─────────►│ Preparing ├───────────►│ Preparing ├──────────────►│ Shipped │
+└──┬──┘          └─────┬─────┘            └───────────┘               └─────────┘
+   │                   │
+   │ Cancel All        │ Cancel All
+   │                   │
+   ▼                   ▼
+┌───────────┐    ┌───────────┐
+│ Cancelled │    │ Cancelled │
+└───────────┘    └───────────┘
+
+Key Points:
+- Partial shipment keeps item in "Preparing" until all shipped
+- Full shipment transitions to "Shipped"
+- Cancellation can happen from New or Preparing
+- Cannot cancel items already shipped
+
+## Sub-Order Status Aggregation
+
+Item States                    Sub-Order Status
+─────────────────────────────────────────────────
+All items: Shipped         →   Shipped
+All items: Cancelled       →   Cancelled
+Any items: Shipped         →   Shipped (partial)
+Any items: Preparing       →   Preparing
+All items: New             →   Paid/New
+
+Priority: Shipped > Preparing > Paid > Cancelled
+
+## Refund Calculation Formula
+
+For each cancelled item:
+
+    Tax Per Unit = Total Tax Amount / Total Quantity
+    Refund Per Unit = Unit Price + Tax Per Unit
+    Total Refund = Refund Per Unit × Cancelled Quantity
+
+Example:
+    Item: 5 units @ $20/unit, $10 total tax
+    Cancel: 2 units
+    
+    Tax Per Unit = $10 / 5 = $2
+    Refund Per Unit = $20 + $2 = $22
+    Total Refund = $22 × 2 = $44
+
+## Key Components Architecture
+
+┌──────────────────────────────────────────────────────────────┐
+│                        Models Layer                          │
+│  ┌────────────────┐  ┌──────────────────────────────────┐   │
+│  │ OrderItemStatus│  │ OrderItem                        │   │
+│  │ ├─ New         │  │ ├─ Status: OrderItemStatus       │   │
+│  │ ├─ Preparing   │  │ ├─ QuantityShipped: int          │   │
+│  │ ├─ Shipped     │  │ ├─ QuantityCancelled: int        │   │
+│  │ └─ Cancelled   │  │ └─ RefundedAmount: decimal       │   │
+│  └────────────────┘  └──────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────┘
+                              ▲
+                              │ Uses
+                              │
+┌──────────────────────────────────────────────────────────────┐
+│                       Services Layer                         │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ IOrderItemFulfillmentService                          │ │
+│  │ ├─ ShipItemQuantityAsync()                            │ │
+│  │ ├─ CancelItemQuantityAsync()                          │ │
+│  │ ├─ CalculateItemRefundAmountAsync()                   │ │
+│  │ └─ ValidateItemFulfillmentAsync()                     │ │
+│  └────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
+                              ▲
+                              │ Injected into
+                              │
+┌──────────────────────────────────────────────────────────────┐
+│                      UI Pages Layer                          │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ Seller/PartialFulfillment.cshtml                     │   │
+│  │ ├─ Table of items with ship/cancel inputs           │   │
+│  │ ├─ Status badges                                     │   │
+│  │ └─ Ship/Cancel action buttons                        │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ Seller/OrderDetails.cshtml                           │   │
+│  │ ├─ Item status display                               │   │
+│  │ ├─ Quantity tracking                                 │   │
+│  │ └─ Link to partial fulfillment                       │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ Account/OrderDetail.cshtml (Buyer)                   │   │
+│  │ ├─ Item status visibility                            │   │
+│  │ └─ Partial fulfillment notice                        │   │
+│  └──────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────┘
+
+## Security & Validation Chain
+
+Request
+  │
+  ├─► Authorization Check (SellerOnly policy)
+  │
+  ├─► Store Ownership Validation
+  │
+  ├─► Payment Status Check (must be completed)
+  │
+  ├─► Quantity Validation (available >= requested)
+  │
+  ├─► Status Validation (not already shipped/cancelled)
+  │
+  └─► Anti-Forgery Token Verification
+       │
+       └─► Proceed with Action
