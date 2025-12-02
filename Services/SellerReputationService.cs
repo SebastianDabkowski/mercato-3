@@ -41,7 +41,7 @@ public class SellerReputationService : ISellerReputationService
             return null;
         }
 
-        var metrics = await GetReputationMetricsAsync(storeId);
+        var metrics = await GetReputationMetricsInternalAsync(storeId, store);
 
         // Check if the store has enough orders to calculate reputation
         if (metrics.TotalCompletedOrders < MINIMUM_ORDERS_FOR_REPUTATION)
@@ -138,7 +138,15 @@ public class SellerReputationService : ISellerReputationService
     }
 
     /// <inheritdoc />
-    public async Task<SellerReputationMetrics> GetReputationMetricsAsync(int storeId)
+    public Task<SellerReputationMetrics> GetReputationMetricsAsync(int storeId)
+    {
+        return GetReputationMetricsInternalAsync(storeId, null);
+    }
+
+    /// <summary>
+    /// Internal method to get reputation metrics with optional pre-loaded store entity.
+    /// </summary>
+    private async Task<SellerReputationMetrics> GetReputationMetricsInternalAsync(int storeId, Store? store)
     {
         var metrics = new SellerReputationMetrics
         {
@@ -179,16 +187,17 @@ public class SellerReputationService : ISellerReputationService
             metrics.TotalCompletedOrders = orderStats.TotalCompleted;
         }
 
-        // Count disputed orders (return requests) - optimized query
-        var subOrderIds = await _context.SellerSubOrders
+        // Count disputed orders - optimized to work with both in-memory and SQL databases
+        // Get sub-order IDs first, then use Contains (EF Core translates this efficiently to SQL IN clause)
+        var storeSubOrderIds = await _context.SellerSubOrders
             .Where(so => so.StoreId == storeId)
             .Select(so => so.Id)
             .ToListAsync();
-
-        if (subOrderIds.Any())
+        
+        if (storeSubOrderIds.Any())
         {
             metrics.TotalDisputedOrders = await _context.ReturnRequests
-                .Where(rr => subOrderIds.Contains(rr.SubOrderId))
+                .Where(rr => storeSubOrderIds.Contains(rr.SubOrderId))
                 .Select(rr => rr.SubOrderId)
                 .Distinct()
                 .CountAsync();
@@ -214,13 +223,20 @@ public class SellerReputationService : ISellerReputationService
                 (decimal)metrics.TotalCancelledOrders / totalOrdersIncludingCancelled * 100m, 2);
         }
 
-        // Get current reputation score from database
-        var store = await _context.Stores
-            .Where(s => s.Id == storeId)
-            .Select(s => s.ReputationScore)
-            .FirstOrDefaultAsync();
-        
-        metrics.ReputationScore = store;
+        // Use pre-loaded store entity if available, otherwise query
+        if (store != null)
+        {
+            metrics.ReputationScore = store.ReputationScore;
+        }
+        else
+        {
+            var reputationScore = await _context.Stores
+                .Where(s => s.Id == storeId)
+                .Select(s => s.ReputationScore)
+                .FirstOrDefaultAsync();
+            
+            metrics.ReputationScore = reputationScore;
+        }
 
         return metrics;
     }
