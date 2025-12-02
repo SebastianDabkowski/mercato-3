@@ -1,32 +1,37 @@
 namespace MercatoApp.Models;
 
 /// <summary>
-/// Represents the status of an order.
+/// Represents the status of an order or sub-order in the fulfillment lifecycle.
 /// </summary>
 public enum OrderStatus
 {
     /// <summary>
-    /// Order is pending payment.
+    /// Order is new and awaiting payment confirmation.
     /// </summary>
-    Pending,
+    New,
 
     /// <summary>
-    /// Order has been paid and is being processed.
+    /// Payment has been authorized and confirmed. Order is ready to be prepared.
     /// </summary>
-    Processing,
+    Paid,
 
     /// <summary>
-    /// Order has been shipped.
+    /// Seller is preparing the shipment.
+    /// </summary>
+    Preparing,
+
+    /// <summary>
+    /// Order has been shipped to the customer.
     /// </summary>
     Shipped,
 
     /// <summary>
-    /// Order has been delivered.
+    /// Order has been delivered to the customer.
     /// </summary>
     Delivered,
 
     /// <summary>
-    /// Order has been cancelled.
+    /// Order has been cancelled (before shipment).
     /// </summary>
     Cancelled,
 

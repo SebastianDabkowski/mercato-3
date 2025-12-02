@@ -153,7 +153,48 @@
                                                 <small class="text-muted">Sub-Order: @subOrder.SubOrderNumber</small>
                                             </div>
                                             <div class="col-md-6 text-md-end">
-                                                <span class="badge bg-secondary">@subOrder.Status.ToString()</span>
+                                                @if (subOrder.Status == MercatoApp.Models.OrderStatus.New)
+                                                {
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="bi bi-hourglass-split"></i> New
+                                                    </span>
+                                                }
+                                                else if (subOrder.Status == MercatoApp.Models.OrderStatus.Paid)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle"></i> Paid
+                                                    </span>
+                                                }
+                                                else if (subOrder.Status == MercatoApp.Models.OrderStatus.Preparing)
+                                                {
+                                                    <span class="badge bg-info">
+                                                        <i class="bi bi-box-seam"></i> Preparing
+                                                    </span>
+                                                }
+                                                else if (subOrder.Status == MercatoApp.Models.OrderStatus.Shipped)
+                                                {
+                                                    <span class="badge bg-primary">
+                                                        <i class="bi bi-truck"></i> Shipped
+                                                    </span>
+                                                }
+                                                else if (subOrder.Status == MercatoApp.Models.OrderStatus.Delivered)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle"></i> Delivered
+                                                    </span>
+                                                }
+                                                else if (subOrder.Status == MercatoApp.Models.OrderStatus.Cancelled)
+                                                {
+                                                    <span class="badge bg-secondary">
+                                                        <i class="bi bi-x-circle"></i> Cancelled
+                                                    </span>
+                                                }
+                                                else if (subOrder.Status == MercatoApp.Models.OrderStatus.Refunded)
+                                                {
+                                                    <span class="badge bg-dark">
+                                                        <i class="bi bi-arrow-counterclockwise"></i> Refunded
+                                                    </span>
+                                                }
                                             </div>
                                         </div>
                                     </div>
@@ -191,6 +232,35 @@
                                                 <dd class="col-6 text-end text-muted">
                                                     <small>@subOrder.ShippingMethod.Name</small>
                                                 </dd>
+                                            }
+                                            
+                                            @if (!string.IsNullOrEmpty(subOrder.TrackingNumber))
+                                            {
+                                                <dt class="col-6">Tracking:</dt>
+                                                <dd class="col-6 text-end">
+                                                    <small>
+                                                        @if (!string.IsNullOrEmpty(subOrder.TrackingUrl))
+                                                        {
+                                                            <a href="@subOrder.TrackingUrl" target="_blank" class="text-decoration-none">
+                                                                @subOrder.TrackingNumber <i class="bi bi-box-arrow-up-right"></i>
+                                                            </a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>@subOrder.TrackingNumber</text>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(subOrder.CarrierName))
+                                                        {
+                                                            <br/><span class="text-muted">via @subOrder.CarrierName</span>
+                                                        }
+                                                    </small>
+                                                </dd>
+                                            }
+                                            
+                                            @if (subOrder.RefundedAmount > 0)
+                                            {
+                                                <dt class="col-6 text-danger">Refunded:</dt>
+                                                <dd class="col-6 text-end text-danger">-@subOrder.RefundedAmount.ToString("C")</dd>
                                             }
                                             
                                             <dt class="col-6 border-top pt-2"><strong>Sub-Order Total:</strong></dt>

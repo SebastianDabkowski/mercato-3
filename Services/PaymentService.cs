@@ -10,13 +10,16 @@ namespace MercatoApp.Services;
 public class PaymentService : IPaymentService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IOrderStatusService _orderStatusService;
     private readonly ILogger<PaymentService> _logger;
 
     public PaymentService(
         ApplicationDbContext context,
+        IOrderStatusService orderStatusService,
         ILogger<PaymentService> logger)
     {
         _context = context;
+        _orderStatusService = orderStatusService;
         _logger = logger;
     }
 
@@ -134,13 +137,20 @@ public class PaymentService : IPaymentService
             transaction.ProviderTransactionId = $"COD-{transaction.OrderId}-{transaction.Id}";
             transaction.UpdatedAt = DateTime.UtcNow;
             
-            // Update order status to Processing for cash on delivery
+            // Update order status to Paid for cash on delivery
             var order = await _context.Orders.FindAsync(transaction.OrderId);
-            if (order != null && order.Status == OrderStatus.Pending)
+            if (order != null && order.Status == OrderStatus.New)
             {
-                order.Status = OrderStatus.Processing;
                 order.PaymentStatus = PaymentStatus.Authorized;
                 order.UpdatedAt = DateTime.UtcNow;
+                
+                // Mark the order and sub-orders as Paid
+                var paymentSuccess = await _orderStatusService.MarkOrderAsPaidAsync(order.Id);
+                if (!paymentSuccess)
+                {
+                    _logger.LogError("Failed to mark order {OrderId} as paid", order.Id);
+                    throw new InvalidOperationException("Failed to update order status to paid.");
+                }
             }
             
             await _context.SaveChangesAsync();
@@ -182,11 +192,16 @@ public class PaymentService : IPaymentService
             if (transaction.Order != null)
             {
                 transaction.Order.PaymentStatus = PaymentStatus.Completed;
-                // Update order status to Processing when payment is confirmed
-                if (transaction.Order.Status == OrderStatus.Pending)
+                // Mark the order and sub-orders as Paid when payment is confirmed
+                if (transaction.Order.Status == OrderStatus.New)
                 {
-                    transaction.Order.Status = OrderStatus.Processing;
                     transaction.Order.UpdatedAt = DateTime.UtcNow;
+                    var paymentSuccess = await _orderStatusService.MarkOrderAsPaidAsync(transaction.Order.Id);
+                    if (!paymentSuccess)
+                    {
+                        _logger.LogError("Failed to mark order {OrderId} as paid", transaction.Order.Id);
+                        throw new InvalidOperationException("Failed to update order status to paid.");
+                    }
                 }
             }
 

@@ -27,16 +27,22 @@
                     <div class="card-header bg-primary text-white">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Sub-Order #@Model.SubOrder.SubOrderNumber</h5>
-                            @if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Pending)
+                            @if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.New)
                             {
                                 <span class="badge bg-warning text-dark">
-                                    <i class="bi bi-hourglass-split"></i> Pending
+                                    <i class="bi bi-hourglass-split"></i> New
                                 </span>
                             }
-                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Processing)
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Paid)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Paid
+                                </span>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Preparing)
                             {
                                 <span class="badge bg-info">
-                                    <i class="bi bi-box-seam"></i> Processing
+                                    <i class="bi bi-box-seam"></i> Preparing
                                 </span>
                             }
                             else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Shipped)
@@ -238,20 +244,145 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                @TempData["SuccessMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                @TempData["ErrorMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-primary" disabled>
-                                <i class="bi bi-printer"></i> Print Packing Slip
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" disabled>
-                                <i class="bi bi-pencil"></i> Update Status
-                            </button>
-                            <button type="button" class="btn btn-outline-info" disabled>
-                                <i class="bi bi-tag"></i> Add Tracking
-                            </button>
+                            @if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Paid)
+                            {
+                                <form method="post" asp-page-handler="UpdateStatus" asp-route-subOrderId="@Model.SubOrder.Id" asp-route-action="preparing">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-box-seam"></i> Start Preparing
+                                    </button>
+                                </form>
+                                <form method="post" asp-page-handler="UpdateStatus" asp-route-subOrderId="@Model.SubOrder.Id" asp-route-action="cancel">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Are you sure you want to cancel this order?');">
+                                        <i class="bi bi-x-circle"></i> Cancel Order
+                                    </button>
+                                </form>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Preparing)
+                            {
+                                <!-- Ship Order Form with Tracking Info -->
+                                <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#shipOrderModal">
+                                    <i class="bi bi-truck"></i> Mark as Shipped
+                                </button>
+                                <form method="post" asp-page-handler="UpdateStatus" asp-route-subOrderId="@Model.SubOrder.Id" asp-route-action="cancel">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Are you sure you want to cancel this order?');">
+                                        <i class="bi bi-x-circle"></i> Cancel Order
+                                    </button>
+                                </form>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Shipped)
+                            {
+                                <form method="post" asp-page-handler="UpdateStatus" asp-route-subOrderId="@Model.SubOrder.Id" asp-route-action="delivered">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-check-circle"></i> Mark as Delivered
+                                    </button>
+                                </form>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.New)
+                            {
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle"></i> Waiting for payment confirmation.
+                                </div>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Delivered)
+                            {
+                                <div class="alert alert-success mb-0">
+                                    <i class="bi bi-check-circle"></i> Order completed!
+                                </div>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Cancelled)
+                            {
+                                <div class="alert alert-secondary mb-0">
+                                    <i class="bi bi-x-circle"></i> Order cancelled.
+                                </div>
+                            }
+                            else if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Refunded)
+                            {
+                                <div class="alert alert-dark mb-0">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Order refunded.
+                                </div>
+                            }
                         </div>
-                        <p class="text-muted small mt-3 mb-0">
-                            <i class="bi bi-info-circle"></i> Advanced order management features coming soon.
-                        </p>
+
+                        @if (!string.IsNullOrEmpty(Model.SubOrder.TrackingNumber))
+                        {
+                            <hr class="my-3" />
+                            <h6 class="mb-2">Tracking Information</h6>
+                            <p class="mb-1"><strong>Tracking Number:</strong> @Model.SubOrder.TrackingNumber</p>
+                            @if (!string.IsNullOrEmpty(Model.SubOrder.CarrierName))
+                            {
+                                <p class="mb-1"><strong>Carrier:</strong> @Model.SubOrder.CarrierName</p>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.SubOrder.TrackingUrl))
+                            {
+                                <p class="mb-0">
+                                    <a href="@Model.SubOrder.TrackingUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-box-arrow-up-right"></i> Track Shipment
+                                    </a>
+                                </p>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- Ship Order Modal -->
+                <div class="modal fade" id="shipOrderModal" tabindex="-1" aria-labelledby="shipOrderModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="post" asp-page-handler="UpdateStatus" asp-route-subOrderId="@Model.SubOrder.Id" asp-route-action="shipped">
+                                @Html.AntiForgeryToken()
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="shipOrderModalLabel">Mark Order as Shipped</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-muted">Add tracking information for this shipment (optional).</p>
+                                    <div class="mb-3">
+                                        <label for="trackingNumber" class="form-label">Tracking Number</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="trackingNumber" 
+                                               name="TrackingNumber" 
+                                               placeholder="e.g., 1Z999AA10123456784"
+                                               aria-describedby="trackingNumberHelp" />
+                                        <div id="trackingNumberHelp" class="form-text">Enter the shipment tracking number (optional)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="carrierName" class="form-label">Carrier Name</label>
+                                        <input type="text" class="form-control" id="carrierName" name="CarrierName" placeholder="e.g., UPS, FedEx, USPS" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="trackingUrl" class="form-label">Tracking URL</label>
+                                        <input type="url" class="form-control" id="trackingUrl" name="TrackingUrl" placeholder="https://..." />
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-truck"></i> Mark as Shipped
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,369 @@
+using MercatoApp.Data;
+using MercatoApp.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace MercatoApp.Services;
+
+/// <summary>
+/// Service for managing order status transitions.
+/// Implements business logic and validation for order lifecycle.
+/// </summary>
+public class OrderStatusService : IOrderStatusService
+{
+    private readonly ApplicationDbContext _context;
+    private readonly ILogger<OrderStatusService> _logger;
+
+    public OrderStatusService(
+        ApplicationDbContext context,
+        ILogger<OrderStatusService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> MarkOrderAsPaidAsync(int orderId)
+    {
+        var order = await _context.Orders
+            .Include(o => o.SubOrders)
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+
+        if (order == null)
+        {
+            _logger.LogWarning("Order {OrderId} not found for payment update", orderId);
+            return false;
+        }
+
+        // Update order status to Paid
+        order.Status = OrderStatus.Paid;
+        order.PaymentStatus = PaymentStatus.Completed;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        // Update all sub-orders to Paid
+        foreach (var subOrder in order.SubOrders)
+        {
+            subOrder.Status = OrderStatus.Paid;
+            subOrder.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Order {OrderId} marked as paid with {SubOrderCount} sub-orders", 
+            orderId, order.SubOrders.Count);
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage)> UpdateSubOrderToPreparingAsync(int subOrderId)
+    {
+        var subOrder = await _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+            .FirstOrDefaultAsync(so => so.Id == subOrderId);
+
+        if (subOrder == null)
+        {
+            return (false, "Sub-order not found.");
+        }
+
+        // Validate status transition
+        if (!IsValidStatusTransition(subOrder.Status, OrderStatus.Preparing))
+        {
+            return (false, $"Cannot change status from {subOrder.Status} to Preparing. Order must be in Paid status.");
+        }
+
+        subOrder.Status = OrderStatus.Preparing;
+        subOrder.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
+
+        _logger.LogInformation("Sub-order {SubOrderId} status updated to Preparing", subOrderId);
+
+        return (true, null);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage)> UpdateSubOrderToShippedAsync(
+        int subOrderId,
+        string? trackingNumber = null,
+        string? carrierName = null,
+        string? trackingUrl = null)
+    {
+        var subOrder = await _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+            .FirstOrDefaultAsync(so => so.Id == subOrderId);
+
+        if (subOrder == null)
+        {
+            return (false, "Sub-order not found.");
+        }
+
+        // Validate status transition
+        if (!IsValidStatusTransition(subOrder.Status, OrderStatus.Shipped))
+        {
+            return (false, $"Cannot change status from {subOrder.Status} to Shipped. Order must be in Preparing status.");
+        }
+
+        subOrder.Status = OrderStatus.Shipped;
+        subOrder.TrackingNumber = trackingNumber;
+        subOrder.CarrierName = carrierName;
+        subOrder.TrackingUrl = trackingUrl;
+        subOrder.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
+
+        _logger.LogInformation("Sub-order {SubOrderId} status updated to Shipped", subOrderId);
+
+        return (true, null);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage)> UpdateSubOrderToDeliveredAsync(int subOrderId)
+    {
+        var subOrder = await _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+            .FirstOrDefaultAsync(so => so.Id == subOrderId);
+
+        if (subOrder == null)
+        {
+            return (false, "Sub-order not found.");
+        }
+
+        // Validate status transition
+        if (!IsValidStatusTransition(subOrder.Status, OrderStatus.Delivered))
+        {
+            return (false, $"Cannot change status from {subOrder.Status} to Delivered. Order must be in Shipped status.");
+        }
+
+        subOrder.Status = OrderStatus.Delivered;
+        subOrder.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
+
+        _logger.LogInformation("Sub-order {SubOrderId} status updated to Delivered", subOrderId);
+
+        return (true, null);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage)> CancelSubOrderAsync(int subOrderId)
+    {
+        var subOrder = await _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+            .FirstOrDefaultAsync(so => so.Id == subOrderId);
+
+        if (subOrder == null)
+        {
+            return (false, "Sub-order not found.");
+        }
+
+        // Validate status transition
+        if (!IsValidStatusTransition(subOrder.Status, OrderStatus.Cancelled))
+        {
+            return (false, $"Cannot cancel order in {subOrder.Status} status. Order can only be cancelled before shipment.");
+        }
+
+        subOrder.Status = OrderStatus.Cancelled;
+        subOrder.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
+
+        _logger.LogInformation("Sub-order {SubOrderId} cancelled", subOrderId);
+
+        return (true, null);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage)> RefundSubOrderAsync(int subOrderId, decimal refundAmount)
+    {
+        var subOrder = await _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+            .FirstOrDefaultAsync(so => so.Id == subOrderId);
+
+        if (subOrder == null)
+        {
+            return (false, "Sub-order not found.");
+        }
+
+        // Calculate remaining refundable amount
+        var remainingRefundableAmount = subOrder.TotalAmount - subOrder.RefundedAmount;
+
+        if (refundAmount <= 0 || refundAmount > remainingRefundableAmount)
+        {
+            return (false, $"Invalid refund amount. Must be between 0 and {remainingRefundableAmount:C} (remaining refundable amount).");
+        }
+
+        // Validate status transition
+        if (!IsValidStatusTransition(subOrder.Status, OrderStatus.Refunded))
+        {
+            return (false, $"Cannot refund order in {subOrder.Status} status.");
+        }
+
+        subOrder.Status = OrderStatus.Refunded;
+        subOrder.RefundedAmount += refundAmount; // Add to existing refunded amount for partial refunds
+        subOrder.UpdatedAt = DateTime.UtcNow;
+
+        // Update parent order refunded amount
+        var parentOrder = subOrder.ParentOrder;
+        parentOrder.RefundedAmount += refundAmount;
+        parentOrder.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
+
+        _logger.LogInformation("Sub-order {SubOrderId} refunded with amount {RefundAmount:C}", 
+            subOrderId, refundAmount);
+
+        return (true, null);
+    }
+
+    /// <inheritdoc />
+    public bool IsValidStatusTransition(OrderStatus currentStatus, OrderStatus newStatus)
+    {
+        // Same status is always valid (no-op)
+        if (currentStatus == newStatus)
+        {
+            return true;
+        }
+
+        // Define valid state transitions
+        return (currentStatus, newStatus) switch
+        {
+            // From New
+            (OrderStatus.New, OrderStatus.Paid) => true,
+            (OrderStatus.New, OrderStatus.Cancelled) => true,
+
+            // From Paid
+            (OrderStatus.Paid, OrderStatus.Preparing) => true,
+            (OrderStatus.Paid, OrderStatus.Cancelled) => true,
+            (OrderStatus.Paid, OrderStatus.Refunded) => true,
+
+            // From Preparing
+            (OrderStatus.Preparing, OrderStatus.Shipped) => true,
+            (OrderStatus.Preparing, OrderStatus.Cancelled) => true,
+
+            // From Shipped
+            (OrderStatus.Shipped, OrderStatus.Delivered) => true,
+            (OrderStatus.Shipped, OrderStatus.Refunded) => true,
+
+            // From Delivered
+            (OrderStatus.Delivered, OrderStatus.Refunded) => true,
+
+            // From Cancelled - no transitions allowed
+            (OrderStatus.Cancelled, _) => false,
+
+            // From Refunded - no transitions allowed
+            (OrderStatus.Refunded, _) => false,
+
+            // All other transitions are invalid
+            _ => false
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateParentOrderStatusAsync(int orderId)
+    {
+        var order = await _context.Orders
+            .Include(o => o.SubOrders)
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+
+        if (order == null)
+        {
+            _logger.LogWarning("Order {OrderId} not found for status update", orderId);
+            return;
+        }
+
+        // Don't update if there are no sub-orders
+        if (!order.SubOrders.Any())
+        {
+            return;
+        }
+
+        var subOrderStatuses = order.SubOrders.Select(so => so.Status).ToList();
+
+        // Determine parent order status based on sub-order statuses
+        OrderStatus newStatus;
+
+        if (subOrderStatuses.All(s => s == OrderStatus.Delivered))
+        {
+            // All delivered
+            newStatus = OrderStatus.Delivered;
+        }
+        else if (subOrderStatuses.All(s => s == OrderStatus.Cancelled))
+        {
+            // All cancelled
+            newStatus = OrderStatus.Cancelled;
+        }
+        else if (subOrderStatuses.All(s => s == OrderStatus.Refunded))
+        {
+            // All refunded
+            newStatus = OrderStatus.Refunded;
+        }
+        else if (subOrderStatuses.Any(s => s == OrderStatus.Shipped || s == OrderStatus.Delivered))
+        {
+            // At least one shipped or delivered (ignore cancelled/refunded for overall status)
+            newStatus = OrderStatus.Shipped;
+        }
+        else if (subOrderStatuses.Any(s => s == OrderStatus.Preparing))
+        {
+            // At least one preparing (ignore cancelled/refunded)
+            newStatus = OrderStatus.Preparing;
+        }
+        else if (subOrderStatuses.All(s => s == OrderStatus.Paid))
+        {
+            // All paid
+            newStatus = OrderStatus.Paid;
+        }
+        else if (subOrderStatuses.All(s => s == OrderStatus.New))
+        {
+            // All new
+            newStatus = OrderStatus.New;
+        }
+        else
+        {
+            // Mixed states - prioritize active orders over cancelled/refunded
+            var activeStatuses = subOrderStatuses
+                .Where(s => s != OrderStatus.Cancelled && s != OrderStatus.Refunded)
+                .ToList();
+            
+            if (activeStatuses.Any())
+            {
+                // Use most advanced active status
+                if (activeStatuses.Any(s => s == OrderStatus.Delivered))
+                    newStatus = OrderStatus.Delivered;
+                else if (activeStatuses.Any(s => s == OrderStatus.Shipped))
+                    newStatus = OrderStatus.Shipped;
+                else if (activeStatuses.Any(s => s == OrderStatus.Preparing))
+                    newStatus = OrderStatus.Preparing;
+                else if (activeStatuses.Any(s => s == OrderStatus.Paid))
+                    newStatus = OrderStatus.Paid;
+                else
+                    newStatus = OrderStatus.New;
+            }
+            else
+            {
+                // All are cancelled or refunded
+                if (subOrderStatuses.All(s => s == OrderStatus.Cancelled))
+                    newStatus = OrderStatus.Cancelled;
+                else if (subOrderStatuses.All(s => s == OrderStatus.Refunded))
+                    newStatus = OrderStatus.Refunded;
+                else
+                    newStatus = OrderStatus.Cancelled; // Mixed terminal states, default to cancelled
+            }
+        }
+
+        if (order.Status != newStatus)
+        {
+            order.Status = newStatus;
+            order.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Parent order {OrderId} status updated to {NewStatus}", 
+                orderId, newStatus);
+        }
+    }
+}

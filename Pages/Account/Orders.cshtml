@@ -36,16 +36,22 @@
                                     </p>
                                     <p class="mb-2">
                                         <strong>Status:</strong>
-                                        @if (order.Status == MercatoApp.Models.OrderStatus.Pending)
+                                        @if (order.Status == MercatoApp.Models.OrderStatus.New)
                                         {
                                             <span class="badge bg-warning text-dark">
-                                                <i class="bi bi-hourglass-split"></i> Pending
+                                                <i class="bi bi-hourglass-split"></i> New
                                             </span>
                                         }
-                                        else if (order.Status == MercatoApp.Models.OrderStatus.Processing)
+                                        else if (order.Status == MercatoApp.Models.OrderStatus.Paid)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Paid
+                                            </span>
+                                        }
+                                        else if (order.Status == MercatoApp.Models.OrderStatus.Preparing)
                                         {
                                             <span class="badge bg-info">
-                                                <i class="bi bi-box-seam"></i> Processing
+                                                <i class="bi bi-box-seam"></i> Preparing
                                             </span>
                                         }
                                         else if (order.Status == MercatoApp.Models.OrderStatus.Shipped)
