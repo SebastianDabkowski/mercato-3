@@ -385,9 +385,9 @@ public class OrderService : IOrderService
     /// <inheritdoc />
     public async Task<List<Store>> GetUserOrderSellersAsync(int userId)
     {
-        // Get unique seller IDs from user's orders efficiently
+        // Get unique seller IDs from user's orders efficiently using explicit join
         var sellerIds = await _context.SellerSubOrders
-            .Where(so => so.ParentOrder.UserId == userId)
+            .Where(so => _context.Orders.Any(o => o.Id == so.ParentOrderId && o.UserId == userId))
             .Select(so => so.StoreId)
             .Distinct()
             .ToListAsync();
