@@ -109,7 +109,42 @@ public class ReturnComplaintTestScenario
                 Console.WriteLine();
             }
 
-            // Step 6: List all requests for the buyer
+            // Step 6: Add sample messages to the return request
+            Console.WriteLine("Adding sample messages to return request...");
+            
+            var initialMessage = new ReturnRequestMessage
+            {
+                ReturnRequestId = returnRequest.Id,
+                SenderId = buyerId.Value,
+                Content = "I'm requesting a return for this item as it arrived damaged.",
+                IsFromSeller = false,
+                SentAt = DateTime.UtcNow,
+                IsRead = true,
+                ReadAt = DateTime.UtcNow.AddMinutes(5)
+            };
+            context.ReturnRequestMessages.Add(initialMessage);
+            
+            // Simulate seller response
+            var sellerUser = await context.Users.FirstOrDefaultAsync(u => u.UserType == UserType.Seller);
+            if (sellerUser != null)
+            {
+                var sellerResponse = new ReturnRequestMessage
+                {
+                    ReturnRequestId = returnRequest.Id,
+                    SenderId = sellerUser.Id,
+                    Content = "We're sorry to hear about the damage. Please send us photos of the damaged item and we'll process your return.",
+                    IsFromSeller = true,
+                    SentAt = DateTime.UtcNow.AddHours(1),
+                    IsRead = false
+                };
+                context.ReturnRequestMessages.Add(sellerResponse);
+            }
+            
+            await context.SaveChangesAsync();
+            Console.WriteLine($"✓ Added messages to return request");
+            Console.WriteLine();
+
+            // Step 7: List all requests for the buyer
             Console.WriteLine("Listing all requests for buyer...");
             var requests = await returnRequestService.GetReturnRequestsByBuyerAsync(buyerId.Value);
             Console.WriteLine($"Found {requests.Count} request(s) for buyer ID {buyerId.Value}");

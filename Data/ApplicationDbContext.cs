@@ -1027,6 +1027,22 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<RefundTransaction>(entity =>
+        {
+            // Index on return request ID for finding refunds associated with a return request
+            entity.HasIndex(e => e.ReturnRequestId);
+
+            // Configure relationship with ReturnRequest
+            entity.HasOne(e => e.ReturnRequest)
+                .WithOne(r => r.Refund)
+                .HasForeignKey<RefundTransaction>(e => e.ReturnRequestId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.RefundAmount)
+                .HasPrecision(18, 2);
+        });
+
         modelBuilder.Entity<EscrowTransaction>(entity =>
         {
             // Index on payment transaction ID for finding all escrows from a payment
