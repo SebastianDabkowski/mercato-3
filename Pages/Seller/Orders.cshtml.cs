@@ -28,6 +28,26 @@ public class OrdersModel : PageModel
 
     public List<SellerSubOrder> SubOrders { get; set; } = new();
     public Store? CurrentStore { get; set; }
+    public int TotalCount { get; set; }
+    public int CurrentPage { get; set; }
+    public int PageSize { get; set; } = 10;
+    public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+
+    // Filter properties
+    [BindProperty(SupportsGet = true)]
+    public List<OrderStatus>? SelectedStatuses { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime? FromDate { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime? ToDate { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? BuyerEmail { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -47,8 +67,20 @@ public class OrdersModel : PageModel
             return RedirectToPage("/Index");
         }
 
-        // Get all sub-orders for this store
-        SubOrders = await _orderService.GetSubOrdersByStoreIdAsync(CurrentStore.Id);
+        CurrentPage = PageNumber;
+
+        // Get filtered and paginated sub-orders
+        var (subOrders, totalCount) = await _orderService.GetSubOrdersFilteredAsync(
+            CurrentStore.Id,
+            SelectedStatuses,
+            FromDate,
+            ToDate,
+            BuyerEmail,
+            CurrentPage,
+            PageSize);
+
+        SubOrders = subOrders;
+        TotalCount = totalCount;
 
         return Page();
     }

@@ -638,4 +638,78 @@ public class OrderService : IOrderService
             .Include(so => so.ShippingMethod)
             .FirstOrDefaultAsync(so => so.Id == subOrderId);
     }
+
+    /// <inheritdoc />
+    public async Task<(List<SellerSubOrder> SubOrders, int TotalCount)> GetSubOrdersFilteredAsync(
+        int storeId,
+        List<OrderStatus>? statuses = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? buyerEmail = null,
+        int page = 1,
+        int pageSize = 10)
+    {
+        // Validate pagination parameters
+        if (page < 1)
+        {
+            page = 1;
+        }
+        if (pageSize < 1 || pageSize > 100)
+        {
+            pageSize = 10; // Default to safe value
+        }
+
+        // Build the base query
+        var query = _context.SellerSubOrders
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.DeliveryAddress)
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.User)
+            .Include(so => so.Store)
+            .Include(so => so.Items)
+                .ThenInclude(i => i.Product)
+            .Include(so => so.Items)
+                .ThenInclude(i => i.ProductVariant)
+            .Include(so => so.ShippingMethod)
+            .Where(so => so.StoreId == storeId);
+
+        // Apply status filter
+        if (statuses != null && statuses.Any())
+        {
+            query = query.Where(so => statuses.Contains(so.Status));
+        }
+
+        // Apply date range filter
+        if (fromDate.HasValue)
+        {
+            query = query.Where(so => so.CreatedAt >= fromDate.Value);
+        }
+        if (toDate.HasValue)
+        {
+            // Include the entire day for toDate
+            var endOfDay = toDate.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(so => so.CreatedAt <= endOfDay);
+        }
+
+        // Apply buyer email filter (partial match, case-insensitive)
+        if (!string.IsNullOrWhiteSpace(buyerEmail))
+        {
+            var emailLower = buyerEmail.ToLower();
+            query = query.Where(so => 
+                (so.ParentOrder.User != null && so.ParentOrder.User.Email.ToLower().Contains(emailLower)) ||
+                (so.ParentOrder.GuestEmail != null && so.ParentOrder.GuestEmail.ToLower().Contains(emailLower)));
+        }
+
+        // Get total count before pagination
+        var totalCount = await query.CountAsync();
+
+        // Apply sorting and pagination
+        var subOrders = await query
+            .OrderByDescending(so => so.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (subOrders, totalCount);
+    }
 }
