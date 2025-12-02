@@ -1,0 +1,305 @@
+@page
+@model MercatoApp.Pages.Admin.Settlements.DetailsModel
+@{
+    ViewData["Title"] = "Settlement Details";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-page="./Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Settlements
+            </a>
+        </div>
+        <div>
+            @if (Model.Settlement.Status == MercatoApp.Models.SettlementStatus.Draft)
+            {
+                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#regenerateModal">
+                    <i class="bi bi-arrow-repeat"></i> Regenerate
+                </button>
+                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#addAdjustmentModal">
+                    <i class="bi bi-plus-circle"></i> Add Adjustment
+                </button>
+                <form method="post" asp-page-handler="Finalize" style="display: inline;">
+                    <input type="hidden" name="settlementId" value="@Model.Settlement.Id" />
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to finalize this settlement? This action cannot be undone.');">
+                        <i class="bi bi-check-circle"></i> Finalize
+                    </button>
+                </form>
+            }
+            <a asp-page="./Export" asp-route-id="@Model.Settlement.Id" class="btn btn-primary">
+                <i class="bi bi-download"></i> Export CSV
+            </a>
+        </div>
+    </div>
+
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model.SuccessMessage != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Settlement Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Settlement Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-5">Settlement Number:</dt>
+                        <dd class="col-sm-7"><code>@Model.Settlement.SettlementNumber</code></dd>
+
+                        <dt class="col-sm-5">Store:</dt>
+                        <dd class="col-sm-7">@Model.Settlement.Store.StoreName</dd>
+
+                        <dt class="col-sm-5">Period:</dt>
+                        <dd class="col-sm-7">
+                            @Model.Settlement.PeriodStartDate.ToString("yyyy-MM-dd") to @Model.Settlement.PeriodEndDate.ToString("yyyy-MM-dd")
+                        </dd>
+
+                        <dt class="col-sm-5">Generated:</dt>
+                        <dd class="col-sm-7">@Model.Settlement.GeneratedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</dd>
+
+                        <dt class="col-sm-5">Status:</dt>
+                        <dd class="col-sm-7">
+                            @if (Model.Settlement.Status == MercatoApp.Models.SettlementStatus.Draft)
+                            {
+                                <span class="badge bg-warning">Draft</span>
+                            }
+                            else if (Model.Settlement.Status == MercatoApp.Models.SettlementStatus.Finalized)
+                            {
+                                <span class="badge bg-success">Finalized</span>
+                                <small class="text-muted d-block">@Model.Settlement.FinalizedAt?.ToString("yyyy-MM-dd HH:mm:ss") UTC</small>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Superseded</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-5">Version:</dt>
+                        <dd class="col-sm-7">
+                            v@Model.Settlement.Version
+                            @if (Model.Settlement.PreviousSettlement != null)
+                            {
+                                <small class="text-muted">
+                                    (supersedes <a asp-page="./Details" asp-route-id="@Model.Settlement.PreviousSettlementId">v@Model.Settlement.PreviousSettlement.Version</a>)
+                                </small>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-5">Gross Sales:</dt>
+                        <dd class="col-sm-7">@Model.Settlement.GrossSales.ToString("C")</dd>
+
+                        <dt class="col-sm-5">Refunds:</dt>
+                        <dd class="col-sm-7 text-danger">-@Model.Settlement.Refunds.ToString("C")</dd>
+
+                        <dt class="col-sm-5">Commission:</dt>
+                        <dd class="col-sm-7 text-danger">-@Model.Settlement.Commission.ToString("C")</dd>
+
+                        <dt class="col-sm-5">Adjustments:</dt>
+                        <dd class="col-sm-7 @(Model.Settlement.Adjustments >= 0 ? "text-success" : "text-danger")">
+                            @(Model.Settlement.Adjustments >= 0 ? "+" : "")@Model.Settlement.Adjustments.ToString("C")
+                        </dd>
+
+                        <dt class="col-sm-5"><strong>Net Amount:</strong></dt>
+                        <dd class="col-sm-7"><strong>@Model.Settlement.NetAmount.ToString("C")</strong></dd>
+
+                        <dt class="col-sm-5">Total Payouts:</dt>
+                        <dd class="col-sm-7">@Model.Settlement.TotalPayouts.ToString("C")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Settlement.Notes))
+            {
+                <hr />
+                <p><strong>Notes:</strong> @Model.Settlement.Notes</p>
+            }
+        </div>
+    </div>
+
+    <!-- Adjustments -->
+    @if (Model.Settlement.SettlementAdjustments.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Adjustments</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                                <th>Prior Period</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var adj in Model.Settlement.SettlementAdjustments.OrderBy(a => a.CreatedAt))
+                            {
+                                <tr>
+                                    <td>@adj.Type</td>
+                                    <td class="@(adj.Amount >= 0 ? "text-success" : "text-danger")">
+                                        @(adj.Amount >= 0 ? "+" : "")@adj.Amount.ToString("C")
+                                    </td>
+                                    <td>
+                                        @adj.Description
+                                        @if (adj.IsPriorPeriodAdjustment && adj.RelatedSettlement != null)
+                                        {
+                                            <br />
+                                            <small class="text-muted">
+                                                Related to: <a asp-page="./Details" asp-route-id="@adj.RelatedSettlementId">@adj.RelatedSettlement.SettlementNumber</a>
+                                            </small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (adj.IsPriorPeriodAdjustment)
+                                        {
+                                            <span class="badge bg-warning">Prior Period</span>
+                                        }
+                                    </td>
+                                    <td>@adj.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Order Items -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Order Details (@Model.Settlement.Items.Count orders)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Order Number</th>
+                            <th>Order Date</th>
+                            <th>Gross Amount</th>
+                            <th>Refund Amount</th>
+                            <th>Commission</th>
+                            <th>Net Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Settlement.Items.OrderByDescending(i => i.OrderDate))
+                        {
+                            <tr>
+                                <td><code>@item.OrderNumber</code></td>
+                                <td>@item.OrderDate.ToString("yyyy-MM-dd")</td>
+                                <td>@item.GrossAmount.ToString("C")</td>
+                                <td class="@(item.RefundAmount > 0 ? "text-danger" : "")">
+                                    @(item.RefundAmount > 0 ? "-" : "")@item.RefundAmount.ToString("C")
+                                </td>
+                                <td class="text-danger">-@item.CommissionAmount.ToString("C")</td>
+                                <td><strong>@item.NetAmount.ToString("C")</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-secondary">
+                            <td colspan="2"><strong>Total</strong></td>
+                            <td><strong>@Model.Settlement.Items.Sum(i => i.GrossAmount).ToString("C")</strong></td>
+                            <td class="text-danger"><strong>-@Model.Settlement.Items.Sum(i => i.RefundAmount).ToString("C")</strong></td>
+                            <td class="text-danger"><strong>-@Model.Settlement.Items.Sum(i => i.CommissionAmount).ToString("C")</strong></td>
+                            <td><strong>@Model.Settlement.Items.Sum(i => i.NetAmount).ToString("C")</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Regenerate Modal -->
+<div class="modal fade" id="regenerateModal" tabindex="-1" aria-labelledby="regenerateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Regenerate">
+                <input type="hidden" name="settlementId" value="@Model.Settlement.Id" />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="regenerateModalLabel">Regenerate Settlement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to regenerate this settlement?</p>
+                    <p>This will:</p>
+                    <ul>
+                        <li>Mark the current settlement as superseded</li>
+                        <li>Create a new version with updated data</li>
+                        <li>Keep an audit history of all versions</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Regenerate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Adjustment Modal -->
+<div class="modal fade" id="addAdjustmentModal" tabindex="-1" aria-labelledby="addAdjustmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="AddAdjustment">
+                <input type="hidden" name="settlementId" value="@Model.Settlement.Id" />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAdjustmentModalLabel">Add Adjustment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="adjustmentType" class="form-label">Type</label>
+                        <select name="adjustmentType" id="adjustmentType" class="form-select" required>
+                            <option value="@((int)MercatoApp.Models.SettlementAdjustmentType.PriorPeriodAdjustment)">Prior Period Adjustment</option>
+                            <option value="@((int)MercatoApp.Models.SettlementAdjustmentType.Credit)">Credit</option>
+                            <option value="@((int)MercatoApp.Models.SettlementAdjustmentType.Debit)">Debit</option>
+                            <option value="@((int)MercatoApp.Models.SettlementAdjustmentType.Fee)">Fee</option>
+                            <option value="@((int)MercatoApp.Models.SettlementAdjustmentType.RefundAdjustment)">Refund Adjustment</option>
+                            <option value="@((int)MercatoApp.Models.SettlementAdjustmentType.Other)">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <input type="number" name="amount" id="amount" class="form-control" step="0.01" required />
+                        <small class="form-text text-muted">Use positive for credits, negative for debits</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea name="description" id="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Adjustment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

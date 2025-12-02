@@ -207,6 +207,26 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<Payout> Payouts { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the settlements table.
+    /// </summary>
+    public DbSet<Settlement> Settlements { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the settlement items table.
+    /// </summary>
+    public DbSet<SettlementItem> SettlementItems { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the settlement adjustments table.
+    /// </summary>
+    public DbSet<SettlementAdjustment> SettlementAdjustments { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the settlement configuration table.
+    /// </summary>
+    public DbSet<SettlementConfig> SettlementConfigs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
