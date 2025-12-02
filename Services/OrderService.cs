@@ -14,6 +14,7 @@ public class OrderService : IOrderService
     private readonly IShippingMethodService _shippingMethodService;
     private readonly IAddressService _addressService;
     private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
@@ -22,6 +23,7 @@ public class OrderService : IOrderService
         IShippingMethodService shippingMethodService,
         IAddressService addressService,
         IEmailService emailService,
+        INotificationService notificationService,
         ILogger<OrderService> logger)
     {
         _context = context;
@@ -29,6 +31,7 @@ public class OrderService : IOrderService
         _shippingMethodService = shippingMethodService;
         _addressService = addressService;
         _emailService = emailService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -290,6 +293,33 @@ public class OrderService : IOrderService
                 foreach (var subOrder in subOrdersWithDetails)
                 {
                     await _emailService.SendNewOrderNotificationToSellerAsync(subOrder, order);
+                    
+                    // Create notification for seller
+                    var store = await _context.Stores.FindAsync(subOrder.StoreId);
+                    if (store != null)
+                    {
+                        await _notificationService.CreateNotificationAsync(
+                            store.UserId,
+                            NotificationType.OrderPlaced,
+                            "New Order Received",
+                            $"You have received a new order #{subOrder.SubOrderNumber} with {subOrder.Items.Count} item(s).",
+                            $"/Seller/Orders/Details/{subOrder.Id}",
+                            subOrder.Id,
+                            "SellerSubOrder");
+                    }
+                }
+                
+                // Create notification for buyer if they have an account
+                if (userId.HasValue)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        userId.Value,
+                        NotificationType.OrderPlaced,
+                        "Order Confirmed",
+                        $"Your order #{orderNumber} has been confirmed and is being processed.",
+                        $"/Account/Orders/Details/{order.Id}",
+                        order.Id,
+                        "Order");
                 }
             }
             catch (Exception ex)

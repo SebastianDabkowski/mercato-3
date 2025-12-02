@@ -13,17 +13,20 @@ public class OrderStatusService : IOrderStatusService
     private readonly ApplicationDbContext _context;
     private readonly IEscrowService _escrowService;
     private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<OrderStatusService> _logger;
 
     public OrderStatusService(
         ApplicationDbContext context,
         IEscrowService escrowService,
         IEmailService emailService,
+        INotificationService notificationService,
         ILogger<OrderStatusService> logger)
     {
         _context = context;
         _escrowService = escrowService;
         _emailService = emailService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -155,6 +158,20 @@ public class OrderStatusService : IOrderStatusService
         try
         {
             await _emailService.SendShippingStatusUpdateEmailAsync(subOrder, subOrder.ParentOrder);
+            
+            // Create notification for buyer
+            if (subOrder.ParentOrder.UserId.HasValue)
+            {
+                await _notificationService.CreateNotificationAsync(
+                    subOrder.ParentOrder.UserId.Value,
+                    NotificationType.OrderShipped,
+                    "Order Shipped",
+                    $"Your order #{subOrder.SubOrderNumber} has been shipped" + 
+                    (trackingNumber != null ? $" with tracking number {trackingNumber}" : "") + ".",
+                    $"/Account/Orders/Details/{subOrder.ParentOrderId}",
+                    subOrder.Id,
+                    "SellerSubOrder");
+            }
         }
         catch (Exception ex)
         {
@@ -212,6 +229,19 @@ public class OrderStatusService : IOrderStatusService
         try
         {
             await _emailService.SendShippingStatusUpdateEmailAsync(subOrder, subOrder.ParentOrder);
+            
+            // Create notification for buyer
+            if (subOrder.ParentOrder.UserId.HasValue)
+            {
+                await _notificationService.CreateNotificationAsync(
+                    subOrder.ParentOrder.UserId.Value,
+                    NotificationType.OrderDelivered,
+                    "Order Delivered",
+                    $"Your order #{subOrder.SubOrderNumber} has been delivered.",
+                    $"/Account/Orders/Details/{subOrder.ParentOrderId}",
+                    subOrder.Id,
+                    "SellerSubOrder");
+            }
         }
         catch (Exception ex)
         {

@@ -14,6 +14,7 @@ public class ReturnRequestService : IReturnRequestService
     private readonly IRefundService _refundService;
     private readonly ISLAService _slaService;
     private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
     private readonly int _returnWindowDays;
 
     // Default return window in days (configurable)
@@ -25,6 +26,7 @@ public class ReturnRequestService : IReturnRequestService
         IRefundService refundService,
         ISLAService slaService,
         IEmailService emailService,
+        INotificationService notificationService,
         IConfiguration configuration)
     {
         _context = context;
@@ -32,6 +34,7 @@ public class ReturnRequestService : IReturnRequestService
         _refundService = refundService;
         _slaService = slaService;
         _emailService = emailService;
+        _notificationService = notificationService;
         _returnWindowDays = configuration.GetValue<int?>("ReturnPolicy:ReturnWindowDays") ?? DefaultReturnWindowDays;
     }
 
@@ -227,6 +230,30 @@ public class ReturnRequestService : IReturnRequestService
             if (returnRequestWithDetails != null)
             {
                 await _emailService.SendReturnRequestNotificationToSellerAsync(returnRequestWithDetails);
+                
+                // Create notification for seller
+                var store = await _context.Stores.FindAsync(returnRequestWithDetails.SubOrder.StoreId);
+                if (store != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        store.UserId,
+                        NotificationType.ReturnRequest,
+                        "New Return Request",
+                        $"Return request #{returnRequestWithDetails.ReturnNumber} has been created for order #{returnRequestWithDetails.SubOrder.SubOrderNumber}.",
+                        $"/Seller/Returns/Details/{returnRequestWithDetails.Id}",
+                        returnRequestWithDetails.Id,
+                        "ReturnRequest");
+                }
+                
+                // Create notification for buyer
+                await _notificationService.CreateNotificationAsync(
+                    buyerId,
+                    NotificationType.ReturnRequest,
+                    "Return Request Submitted",
+                    $"Your return request #{returnNumber} has been submitted and is being reviewed.",
+                    $"/Account/ReturnRequests/Details/{returnRequest.Id}",
+                    returnRequest.Id,
+                    "ReturnRequest");
             }
         }
         catch (Exception ex)

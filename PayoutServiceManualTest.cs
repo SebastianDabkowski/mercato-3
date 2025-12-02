@@ -44,7 +44,11 @@ public static class PayoutServiceManualTest
         var emailLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<EmailService>();
         var emailService = new EmailService(context, emailLogger);
         
-        var payoutService = new PayoutService(context, payoutLogger, payoutSettingsService, emailService, configuration);
+        // Create a mock notification service for testing
+        var notificationLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<NotificationService>();
+        var notificationService = new NotificationService(context, notificationLogger);
+        
+        var payoutService = new PayoutService(context, payoutLogger, payoutSettingsService, emailService, notificationService, configuration);
 
         // Setup test data
         await SetupTestDataAsync(context, payoutSettingsService);
