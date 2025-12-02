@@ -56,6 +56,11 @@ public enum EmailType
     SellerPayout,
 
     /// <summary>
+    /// Product moderation decision notification sent to seller.
+    /// </summary>
+    SellerProductModeration,
+
+    /// <summary>
     /// Other email types.
     /// </summary>
     Other
@@ -134,6 +139,11 @@ public class EmailLog
     public int? PayoutId { get; set; }
 
     /// <summary>
+    /// Product ID (if email relates to a product).
+    /// </summary>
+    public int? ProductId { get; set; }
+
+    /// <summary>
     /// Subject line of the email.
     /// </summary>
     public required string Subject { get; set; }
@@ -203,4 +213,9 @@ public class EmailLog
     /// Navigation property to the payout.
     /// </summary>
     public Payout? Payout { get; set; }
+
+    /// <summary>
+    /// Navigation property to the product.
+    /// </summary>
+    public Product? Product { get; set; }
 }

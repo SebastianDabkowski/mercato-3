@@ -95,6 +95,15 @@ public interface IEmailService
     /// <param name="payout">The payout that was processed.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task SendPayoutNotificationToSellerAsync(Payout payout);
+
+    /// <summary>
+    /// Sends a product moderation notification email to the seller.
+    /// </summary>
+    /// <param name="product">The product that was moderated.</param>
+    /// <param name="newStatus">The new moderation status.</param>
+    /// <param name="reason">The reason for the moderation decision.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SendProductModerationNotificationToSellerAsync(Product product, ProductModerationStatus newStatus, string? reason);
 }
 
 /// <summary>
@@ -338,6 +347,7 @@ public class EmailService : IEmailService
         int? sellerSubOrderId = null,
         int? returnRequestId = null,
         int? payoutId = null,
+        int? productId = null,
         string? errorMessage = null,
         string? providerMessageId = null)
     {
@@ -353,6 +363,7 @@ public class EmailService : IEmailService
                 SellerSubOrderId = sellerSubOrderId,
                 ReturnRequestId = returnRequestId,
                 PayoutId = payoutId,
+                ProductId = productId,
                 Subject = subject,
                 Status = status,
                 ErrorMessage = errorMessage,
@@ -506,5 +517,49 @@ public class EmailService : IEmailService
             EmailStatus.Sent,
             userId: store.UserId,
             payoutId: payout.Id);
+    }
+
+    /// <inheritdoc />
+    public async Task SendProductModerationNotificationToSellerAsync(Product product, ProductModerationStatus newStatus, string? reason)
+    {
+        // Get seller email from store owner
+        var sellerEmail = product.Store.ContactEmail ?? product.Store.User?.Email;
+
+        if (string.IsNullOrEmpty(sellerEmail))
+        {
+            _logger.LogWarning(
+                "Cannot send product moderation notification for product {ProductId}: No email address found for store {StoreId}",
+                product.Id,
+                product.StoreId);
+            return;
+        }
+
+        var subject = newStatus == ProductModerationStatus.Approved
+            ? $"Product Approved: {product.Title}"
+            : $"Product Rejected: {product.Title}";
+
+        var statusMessage = newStatus == ProductModerationStatus.Approved
+            ? "has been approved"
+            : "has been rejected";
+
+        // In production, this would send an actual email with moderation details
+        // For now, just log it
+        _logger.LogInformation(
+            "Product moderation notification would be sent to {Email} for product {ProductId}. " +
+            "Title: {Title}, Store: {StoreName}, Status: {Status}, Reason: {Reason}",
+            sellerEmail,
+            product.Id,
+            product.Title,
+            product.Store.StoreName,
+            statusMessage,
+            reason ?? "No reason provided");
+
+        await LogEmailAsync(
+            EmailType.SellerProductModeration,
+            sellerEmail,
+            subject,
+            EmailStatus.Sent,
+            userId: product.Store.UserId,
+            productId: product.Id);
     }
 }

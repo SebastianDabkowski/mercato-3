@@ -344,6 +344,12 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<AdminAuditLog> AdminAuditLogs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the product moderation logs table.
+    /// Stores audit trail of product moderation actions.
+    /// </summary>
+    public DbSet<ProductModerationLog> ProductModerationLogs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -529,6 +535,12 @@ public class ApplicationDbContext : DbContext
 
             // Index on Condition for filtering products by condition
             entity.HasIndex(e => e.Condition);
+
+            // Index on ModerationStatus for filtering products by moderation status
+            entity.HasIndex(e => e.ModerationStatus);
+
+            // Composite index for admin moderation queries
+            entity.HasIndex(e => new { e.ModerationStatus, e.CreatedAt });
 
             // Composite unique index on StoreId and SKU (SKU must be unique within a store)
             // Note: In-memory database doesn't support filtered indexes
@@ -1644,6 +1656,33 @@ public class ApplicationDbContext : DbContext
             // Configure decimal precision
             entity.Property(e => e.Value)
                 .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<ProductModerationLog>(entity =>
+        {
+            // Index on product ID for finding all moderation actions for a product
+            entity.HasIndex(e => e.ProductId);
+
+            // Composite index for ordering moderation history by date
+            entity.HasIndex(e => new { e.ProductId, e.CreatedAt });
+
+            // Index on action type for filtering by action
+            entity.HasIndex(e => e.Action);
+
+            // Index on moderated by user for admin activity tracking
+            entity.HasIndex(e => e.ModeratedByUserId);
+
+            // Configure relationship with Product
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with ModeratedByUser (optional)
+            entity.HasOne(e => e.ModeratedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ModeratedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
