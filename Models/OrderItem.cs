@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MercatoApp.Validation;
 
 namespace MercatoApp.Models;
 
@@ -6,6 +7,7 @@ namespace MercatoApp.Models;
 /// Represents an item in an order.
 /// Captures the product details at the time of order.
 /// </summary>
+[ValidateOrderItemQuantities]
 public class OrderItem
 {
     /// <summary>
@@ -99,4 +101,30 @@ public class OrderItem
     /// Gets or sets the tax amount for this item.
     /// </summary>
     public decimal TaxAmount { get; set; } = 0;
+
+    /// <summary>
+    /// Gets or sets the fulfillment status of this item.
+    /// Enables partial fulfillment tracking within a sub-order.
+    /// </summary>
+    public OrderItemStatus Status { get; set; } = OrderItemStatus.New;
+
+    /// <summary>
+    /// Gets or sets the quantity that has been shipped.
+    /// For partial fulfillment, this can be less than Quantity.
+    /// </summary>
+    [Range(0, 999)]
+    public int QuantityShipped { get; set; } = 0;
+
+    /// <summary>
+    /// Gets or sets the quantity that has been cancelled.
+    /// For partial cancellation, this can be less than Quantity.
+    /// </summary>
+    [Range(0, 999)]
+    public int QuantityCancelled { get; set; } = 0;
+
+    /// <summary>
+    /// Gets or sets the amount that has been refunded for this item.
+    /// Used when items are partially or fully cancelled.
+    /// </summary>
+    public decimal RefundedAmount { get; set; } = 0;
 }

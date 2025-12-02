@@ -1,0 +1,26 @@
+@model MercatoApp.Models.OrderItemStatus
+
+@if (Model == MercatoApp.Models.OrderItemStatus.New)
+{
+    <span class="badge bg-warning text-dark">
+        <i class="bi bi-hourglass-split"></i> New
+    </span>
+}
+else if (Model == MercatoApp.Models.OrderItemStatus.Preparing)
+{
+    <span class="badge bg-info">
+        <i class="bi bi-box-seam"></i> Preparing
+    </span>
+}
+else if (Model == MercatoApp.Models.OrderItemStatus.Shipped)
+{
+    <span class="badge bg-success">
+        <i class="bi bi-truck"></i> Shipped
+    </span>
+}
+else if (Model == MercatoApp.Models.OrderItemStatus.Cancelled)
+{
+    <span class="badge bg-secondary">
+        <i class="bi bi-x-circle"></i> Cancelled
+    </span>
+}
