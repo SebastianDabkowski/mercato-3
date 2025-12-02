@@ -573,6 +573,51 @@ public static class TestDataSeeder
 
         context.PromoCodes.AddRange(promoCodes);
         await context.SaveChangesAsync();
+
+        // Seed shipping providers
+        var shippingProviders = new[]
+        {
+            new ShippingProvider
+            {
+                ProviderId = "mock_standard",
+                Name = "Mock Standard Shipping",
+                Description = "Simulated standard shipping provider for development and testing",
+                IsActive = true,
+                SupportsAutomation = true,
+                SupportsWebhooks = false,
+                DisplayOrder = 1,
+                CreatedAt = DateTime.UtcNow
+            },
+            new ShippingProvider
+            {
+                ProviderId = "mock_express",
+                Name = "Mock Express Shipping",
+                Description = "Simulated express shipping provider for development and testing",
+                IsActive = true,
+                SupportsAutomation = true,
+                SupportsWebhooks = false,
+                DisplayOrder = 2,
+                CreatedAt = DateTime.UtcNow
+            }
+        };
+
+        context.ShippingProviders.AddRange(shippingProviders);
+        await context.SaveChangesAsync();
+
+        // Configure mock_standard provider for the test store
+        var providerConfig = new ShippingProviderConfig
+        {
+            StoreId = store.Id,
+            ShippingProviderId = shippingProviders[0].Id,
+            IsEnabled = true,
+            AccountNumber = "TEST-ACCOUNT-001",
+            AutoCreateShipments = true,
+            AutoSendTrackingUpdates = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        context.ShippingProviderConfigs.Add(providerConfig);
+        await context.SaveChangesAsync();
     }
 
     private static string HashPassword(string password)

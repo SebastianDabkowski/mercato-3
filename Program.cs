@@ -88,6 +88,18 @@ builder.Services.AddScoped<IOrderItemFulfillmentService, OrderItemFulfillmentSer
 builder.Services.AddScoped<IOrderExportService, OrderExportService>();
 builder.Services.AddScoped<IReturnRequestService, ReturnRequestService>();
 builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();
+builder.Services.AddScoped<IShippingProviderIntegrationService, ShippingProviderIntegrationService>();
+
+// Register shipping provider services as singleton collection
+builder.Services.AddSingleton<IShippingProviderService>(sp => 
+    new MockShippingProviderService(
+        sp.GetRequiredService<ILogger<MockShippingProviderService>>(),
+        "mock_standard"));
+builder.Services.AddSingleton<IShippingProviderService>(sp => 
+    new MockShippingProviderService(
+        sp.GetRequiredService<ILogger<MockShippingProviderService>>(),
+        "mock_express"));
+
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPaymentProviderService, MockPaymentProviderService>();
 builder.Services.AddScoped<IRefundService, RefundService>();
