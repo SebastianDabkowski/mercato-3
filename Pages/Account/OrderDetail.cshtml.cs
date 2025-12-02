@@ -109,6 +109,30 @@ public class OrderDetailModel : PageModel
             return RedirectToPage("/Account/Login");
         }
 
+        // Validate request type
+        if (!Enum.IsDefined(typeof(ReturnRequestType), requestType))
+        {
+            _logger.LogWarning("Invalid request type: {RequestType}", requestType);
+            TempData["ErrorMessage"] = "Invalid request type. Please select either Return or Complaint.";
+            return RedirectToPage(new { orderId });
+        }
+
+        // Validate reason
+        if (!Enum.IsDefined(typeof(ReturnReason), reason))
+        {
+            _logger.LogWarning("Invalid return reason: {Reason}", reason);
+            TempData["ErrorMessage"] = "Invalid reason. Please select a valid reason from the list.";
+            return RedirectToPage(new { orderId });
+        }
+
+        // Validate description length if provided
+        if (!string.IsNullOrEmpty(description) && description.Length > 1000)
+        {
+            _logger.LogWarning("Description too long: {Length} characters", description.Length);
+            TempData["ErrorMessage"] = "Description must not exceed 1000 characters.";
+            return RedirectToPage(new { orderId });
+        }
+
         try
         {
             // Create the return request
