@@ -161,6 +161,18 @@
                 </div>
             </div>
 
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Payout History</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-2">View your payout history and reconcile finances:</p>
+                    <a asp-page="Payouts" class="btn btn-outline-primary">
+                        View Payout History →
+                    </a>
+                </div>
+            </div>
+
             @if (Model.IsUserManagementEnabled)
             {
                 <div class="card mt-4">
