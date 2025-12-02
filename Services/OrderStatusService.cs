@@ -59,7 +59,7 @@ public class OrderStatusService : IOrderStatusService
     }
 
     /// <inheritdoc />
-    public async Task<(bool Success, string? ErrorMessage)> UpdateSubOrderToPreparingAsync(int subOrderId)
+    public async Task<(bool Success, string? ErrorMessage)> UpdateSubOrderToPreparingAsync(int subOrderId, int? userId = null)
     {
         var subOrder = await _context.SellerSubOrders
             .Include(so => so.ParentOrder)
@@ -80,13 +80,13 @@ public class OrderStatusService : IOrderStatusService
         subOrder.Status = OrderStatus.Preparing;
         subOrder.UpdatedAt = DateTime.UtcNow;
 
-        // Log status change
-        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Preparing);
+        // Log status change with user ID
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Preparing, userId: userId);
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
 
-        _logger.LogInformation("Sub-order {SubOrderId} status updated to Preparing", subOrderId);
+        _logger.LogInformation("Sub-order {SubOrderId} status updated to Preparing by user {UserId}", subOrderId, userId);
 
         return (true, null);
     }
@@ -96,7 +96,8 @@ public class OrderStatusService : IOrderStatusService
         int subOrderId,
         string? trackingNumber = null,
         string? carrierName = null,
-        string? trackingUrl = null)
+        string? trackingUrl = null,
+        int? userId = null)
     {
         var subOrder = await _context.SellerSubOrders
             .Include(so => so.ParentOrder)
@@ -120,22 +121,22 @@ public class OrderStatusService : IOrderStatusService
         subOrder.TrackingUrl = trackingUrl;
         subOrder.UpdatedAt = DateTime.UtcNow;
 
-        // Log status change with tracking info
+        // Log status change with tracking info and user ID
         var notes = trackingNumber != null 
             ? $"Tracking: {trackingNumber}" + (carrierName != null ? $" via {carrierName}" : "") 
             : null;
-        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Shipped, notes);
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Shipped, notes, userId);
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
 
-        _logger.LogInformation("Sub-order {SubOrderId} status updated to Shipped", subOrderId);
+        _logger.LogInformation("Sub-order {SubOrderId} status updated to Shipped by user {UserId}", subOrderId, userId);
 
         return (true, null);
     }
 
     /// <inheritdoc />
-    public async Task<(bool Success, string? ErrorMessage)> UpdateSubOrderToDeliveredAsync(int subOrderId)
+    public async Task<(bool Success, string? ErrorMessage)> UpdateSubOrderToDeliveredAsync(int subOrderId, int? userId = null)
     {
         var subOrder = await _context.SellerSubOrders
             .Include(so => so.ParentOrder)
@@ -156,19 +157,19 @@ public class OrderStatusService : IOrderStatusService
         subOrder.Status = OrderStatus.Delivered;
         subOrder.UpdatedAt = DateTime.UtcNow;
 
-        // Log status change
-        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Delivered);
+        // Log status change with user ID
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Delivered, userId: userId);
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
 
-        _logger.LogInformation("Sub-order {SubOrderId} status updated to Delivered", subOrderId);
+        _logger.LogInformation("Sub-order {SubOrderId} status updated to Delivered by user {UserId}", subOrderId, userId);
 
         return (true, null);
     }
 
     /// <inheritdoc />
-    public async Task<(bool Success, string? ErrorMessage)> CancelSubOrderAsync(int subOrderId)
+    public async Task<(bool Success, string? ErrorMessage)> CancelSubOrderAsync(int subOrderId, int? userId = null)
     {
         var subOrder = await _context.SellerSubOrders
             .Include(so => so.ParentOrder)
@@ -189,13 +190,13 @@ public class OrderStatusService : IOrderStatusService
         subOrder.Status = OrderStatus.Cancelled;
         subOrder.UpdatedAt = DateTime.UtcNow;
 
-        // Log status change
-        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Cancelled);
+        // Log status change with user ID
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Cancelled, userId: userId);
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
 
-        _logger.LogInformation("Sub-order {SubOrderId} cancelled", subOrderId);
+        _logger.LogInformation("Sub-order {SubOrderId} cancelled by user {UserId}", subOrderId, userId);
 
         return (true, null);
     }
@@ -290,6 +291,46 @@ public class OrderStatusService : IOrderStatusService
             // All other transitions are invalid
             _ => false
         };
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage)> UpdateTrackingInformationAsync(
+        int subOrderId,
+        string? trackingNumber = null,
+        string? carrierName = null,
+        string? trackingUrl = null,
+        int? userId = null)
+    {
+        var subOrder = await _context.SellerSubOrders
+            .FirstOrDefaultAsync(so => so.Id == subOrderId);
+
+        if (subOrder == null)
+        {
+            return (false, "Sub-order not found.");
+        }
+
+        // Can only update tracking info for shipped or delivered orders
+        if (subOrder.Status != OrderStatus.Shipped && subOrder.Status != OrderStatus.Delivered)
+        {
+            return (false, $"Cannot update tracking information for order in {subOrder.Status} status. Order must be shipped or delivered.");
+        }
+
+        subOrder.TrackingNumber = trackingNumber;
+        subOrder.CarrierName = carrierName;
+        subOrder.TrackingUrl = trackingUrl;
+        subOrder.UpdatedAt = DateTime.UtcNow;
+
+        // Log the tracking information update (no status change)
+        var notes = "Tracking information updated: " + 
+            (trackingNumber != null ? $"Tracking: {trackingNumber}" : "") + 
+            (carrierName != null ? $" via {carrierName}" : "");
+        await LogStatusChangeAsync(subOrderId, subOrder.Status, subOrder.Status, notes.Trim(), userId);
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Sub-order {SubOrderId} tracking information updated by user {UserId}", subOrderId, userId);
+
+        return (true, null);
     }
 
     /// <inheritdoc />
@@ -402,11 +443,13 @@ public class OrderStatusService : IOrderStatusService
     /// <param name="previousStatus">The previous status (null for initial status).</param>
     /// <param name="newStatus">The new status.</param>
     /// <param name="notes">Optional notes about the status change.</param>
+    /// <param name="userId">The user ID making the change (optional, for audit trail).</param>
     private async Task LogStatusChangeAsync(
         int subOrderId, 
         OrderStatus? previousStatus, 
         OrderStatus newStatus, 
-        string? notes = null)
+        string? notes = null,
+        int? userId = null)
     {
         var history = new OrderStatusHistory
         {
@@ -414,6 +457,7 @@ public class OrderStatusService : IOrderStatusService
             PreviousStatus = previousStatus,
             NewStatus = newStatus,
             Notes = notes,
+            ChangedByUserId = userId,
             ChangedAt = DateTime.UtcNow
         };
 
