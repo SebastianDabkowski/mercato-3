@@ -161,7 +161,7 @@ public class ProductModel : PageModel
 
     public async Task<IActionResult> OnPostAskQuestionAsync(int id)
     {
-        if (!User.Identity?.IsAuthenticated == true)
+        if (User.Identity?.IsAuthenticated != true)
         {
             return RedirectToPage("/Account/Login", new { returnUrl = $"/Product/{id}" });
         }

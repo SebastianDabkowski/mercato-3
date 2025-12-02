@@ -107,6 +107,7 @@ public class ProductQuestionService : IProductQuestionService
                     storeOwner,
                     NotificationType.ProductQuestion,
                     $"New question about {product.Title}",
+                    $"A buyer asked: {question.Trim().Substring(0, Math.Min(100, question.Trim().Length))}...",
                     $"/Seller/ProductQuestions?productId={productId}"
                 );
             }
@@ -177,6 +178,7 @@ public class ProductQuestionService : IProductQuestionService
                 question.BuyerId,
                 NotificationType.ProductQuestionReply,
                 $"Your question about {question.Product.Title} was answered",
+                $"Seller replied: {reply.Trim().Substring(0, Math.Min(100, reply.Trim().Length))}...",
                 $"/Product/{question.ProductId}#question-{questionId}"
             );
         }

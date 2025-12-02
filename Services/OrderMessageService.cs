@@ -112,6 +112,7 @@ public class OrderMessageService : IOrderMessageService
                     order.UserId.Value,
                     NotificationType.OrderMessage,
                     $"New message about order {order.OrderNumber}",
+                    $"Seller: {content.Trim().Substring(0, Math.Min(100, content.Trim().Length))}...",
                     $"/Account/OrderDetail/{orderId}"
                 );
             }
@@ -139,6 +140,7 @@ public class OrderMessageService : IOrderMessageService
                             storeOwner,
                             NotificationType.OrderMessage,
                             $"New message about order {order.OrderNumber}",
+                            $"Buyer: {content.Trim().Substring(0, Math.Min(100, content.Trim().Length))}...",
                             $"/Seller/OrderDetail/{orderId}"
                         );
                     }
