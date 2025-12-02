@@ -13,6 +13,7 @@ public class AddressModel : PageModel
     private readonly IOrderService _orderService;
     private readonly ICartService _cartService;
     private readonly IGuestCartService _guestCartService;
+    private readonly IAnalyticsEventService _analyticsService;
     private readonly ILogger<AddressModel> _logger;
 
     public AddressModel(
@@ -20,12 +21,14 @@ public class AddressModel : PageModel
         IOrderService orderService,
         ICartService cartService,
         IGuestCartService guestCartService,
+        IAnalyticsEventService analyticsService,
         ILogger<AddressModel> logger)
     {
         _addressService = addressService;
         _orderService = orderService;
         _cartService = cartService;
         _guestCartService = guestCartService;
+        _analyticsService = analyticsService;
         _logger = logger;
     }
 
@@ -148,6 +151,10 @@ public class AddressModel : PageModel
 
             // Store the selected address in session and proceed to shipping
             HttpContext.Session.SetInt32("CheckoutAddressId", SelectedAddressId.Value);
+            
+            // Track checkout start event (fire-and-forget)
+            _ = TrackCheckoutStartEventAsync(userId, sessionId);
+            
             return RedirectToPage("/Checkout/Shipping");
         }
         else if (action == "addNew")
@@ -188,6 +195,10 @@ public class AddressModel : PageModel
 
                 // Store the address in session and proceed to shipping
                 HttpContext.Session.SetInt32("CheckoutAddressId", createdAddress.Id);
+                
+                // Track checkout start event (fire-and-forget)
+                _ = TrackCheckoutStartEventAsync(userId, sessionId);
+                
                 return RedirectToPage("/Checkout/Shipping");
             }
             catch (InvalidOperationException ex)
@@ -214,5 +225,36 @@ public class AddressModel : PageModel
 
         var guestCartId = _guestCartService.GetOrCreateGuestCartId();
         return (null, guestCartId);
+    }
+
+    private async Task TrackCheckoutStartEventAsync(int? userId, string? sessionId)
+    {
+        try
+        {
+            // Get cart to calculate value
+            Cart? cart = null;
+            if (userId.HasValue)
+            {
+                cart = await _cartService.GetOrCreateCartAsync(userId, null);
+            }
+            else if (!string.IsNullOrEmpty(sessionId))
+            {
+                cart = await _cartService.GetOrCreateCartAsync(null, sessionId);
+            }
+
+            var cartValue = cart?.Items.Sum(i => i.PriceAtAdd * i.Quantity) ?? 0;
+
+            await _analyticsService.TrackEventAsync(new AnalyticsEventData
+            {
+                EventType = AnalyticsEventType.CheckoutStart,
+                UserId = userId,
+                SessionId = sessionId,
+                Value = cartValue
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error tracking checkout start event");
+        }
     }
 }

@@ -15,6 +15,7 @@ public class OrderService : IOrderService
     private readonly IAddressService _addressService;
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
+    private readonly IAnalyticsEventService _analyticsService;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
@@ -24,6 +25,7 @@ public class OrderService : IOrderService
         IAddressService addressService,
         IEmailService emailService,
         INotificationService notificationService,
+        IAnalyticsEventService analyticsService,
         ILogger<OrderService> logger)
     {
         _context = context;
@@ -32,6 +34,7 @@ public class OrderService : IOrderService
         _addressService = addressService;
         _emailService = emailService;
         _notificationService = notificationService;
+        _analyticsService = analyticsService;
         _logger = logger;
     }
 
@@ -344,6 +347,9 @@ public class OrderService : IOrderService
                 _logger.LogError(ex, "Failed to send seller notifications for order {OrderNumber}", orderNumber);
             }
 
+            // Track order completion event (fire-and-forget)
+            _ = TrackOrderCompletionEventAsync(userId, sessionId, order);
+
             return order;
         }
         catch
@@ -359,6 +365,25 @@ public class OrderService : IOrderService
         {
             // Dispose transaction if it was created
             transaction?.Dispose();
+        }
+    }
+
+    private async Task TrackOrderCompletionEventAsync(int? userId, string? sessionId, Order order)
+    {
+        try
+        {
+            await _analyticsService.TrackEventAsync(new AnalyticsEventData
+            {
+                EventType = AnalyticsEventType.OrderComplete,
+                UserId = userId,
+                SessionId = sessionId,
+                OrderId = order.Id,
+                Value = order.TotalAmount
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error tracking order completion event");
         }
     }
 

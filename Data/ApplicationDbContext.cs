@@ -332,6 +332,12 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<PushSubscription> PushSubscriptions { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the analytics events table.
+    /// Stores user behavior events for Phase 2 advanced analytics and reporting.
+    /// </summary>
+    public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1562,6 +1568,76 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AnalyticsEvent>(entity =>
+        {
+            // Index on event type for filtering by type
+            entity.HasIndex(e => e.EventType);
+
+            // Index on timestamp for time-range queries
+            entity.HasIndex(e => e.CreatedAt);
+
+            // Composite index for user-based analytics queries
+            entity.HasIndex(e => new { e.UserId, e.EventType, e.CreatedAt });
+
+            // Composite index for session-based analytics (anonymous users)
+            entity.HasIndex(e => new { e.SessionId, e.EventType, e.CreatedAt });
+
+            // Composite index for event type and timestamp (most common query pattern)
+            entity.HasIndex(e => new { e.EventType, e.CreatedAt });
+
+            // Index on product ID for product-specific analytics
+            entity.HasIndex(e => e.ProductId);
+
+            // Index on store ID for seller analytics
+            entity.HasIndex(e => e.StoreId);
+
+            // Index on category ID for category analytics
+            entity.HasIndex(e => e.CategoryId);
+
+            // Index on order ID for conversion tracking
+            entity.HasIndex(e => e.OrderId);
+
+            // Configure relationship with User (optional)
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with Product (optional)
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with ProductVariant (optional)
+            entity.HasOne(e => e.ProductVariant)
+                .WithMany()
+                .HasForeignKey(e => e.ProductVariantId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with Category (optional)
+            entity.HasOne(e => e.Category)
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with Store (optional)
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with Order (optional)
+            entity.HasOne(e => e.Order)
+                .WithMany()
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure decimal precision
+            entity.Property(e => e.Value)
+                .HasPrecision(18, 2);
         });
     }
 }

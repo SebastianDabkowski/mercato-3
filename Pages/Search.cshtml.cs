@@ -9,15 +9,18 @@ public class SearchModel : PageModel
 {
     private readonly IProductService _productService;
     private readonly ICategoryService _categoryService;
+    private readonly IAnalyticsEventService _analyticsService;
     private readonly ILogger<SearchModel> _logger;
 
     public SearchModel(
         IProductService productService,
         ICategoryService categoryService,
+        IAnalyticsEventService analyticsService,
         ILogger<SearchModel> logger)
     {
         _productService = productService;
         _categoryService = categoryService;
+        _analyticsService = analyticsService;
         _logger = logger;
     }
 
@@ -182,7 +185,44 @@ public class SearchModel : PageModel
             .Take(PageSize)
             .ToList();
 
+        // Track search event (fire-and-forget)
+        _ = TrackSearchEventAsync(Query);
+
         return Page();
+    }
+
+    private async Task TrackSearchEventAsync(string query)
+    {
+        try
+        {
+            int? userId = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = User.FindFirst("UserId")?.Value;
+                if (int.TryParse(userIdClaim, out var parsedUserId))
+                {
+                    userId = parsedUserId;
+                }
+            }
+
+            var sessionId = HttpContext.Session.Id;
+
+            await _analyticsService.TrackEventAsync(new AnalyticsEventData
+            {
+                EventType = AnalyticsEventType.Search,
+                UserId = userId,
+                SessionId = sessionId,
+                SearchQuery = query,
+                UserAgent = Request.Headers.UserAgent.ToString(),
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Referrer = Request.Headers.Referer.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            // Log but don't throw - analytics should never break the main flow
+            _logger.LogError(ex, "Error tracking search event");
+        }
     }
 
     private static List<CategoryTreeItem> FlattenCategoryTree(List<CategoryTreeItem> tree)

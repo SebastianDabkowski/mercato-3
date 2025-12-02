@@ -104,6 +104,7 @@ builder.Services.AddScoped<ISellerDashboardService, SellerDashboardService>();
 builder.Services.AddScoped<IAdminReportService, AdminReportService>();
 builder.Services.AddScoped<ISellerRevenueReportService, SellerRevenueReportService>();
 builder.Services.AddScoped<IUserAnalyticsService, UserAnalyticsService>();
+builder.Services.AddScoped<IAnalyticsEventService, AnalyticsEventService>();
 
 // Register shipping provider services as singleton collection
 builder.Services.AddSingleton<IShippingProviderService>(sp => 
