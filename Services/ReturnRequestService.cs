@@ -11,6 +11,7 @@ public class ReturnRequestService : IReturnRequestService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ReturnRequestService> _logger;
+    private readonly IRefundService _refundService;
     private readonly int _returnWindowDays;
 
     // Default return window in days (configurable)
@@ -19,10 +20,12 @@ public class ReturnRequestService : IReturnRequestService
     public ReturnRequestService(
         ApplicationDbContext context,
         ILogger<ReturnRequestService> logger,
+        IRefundService refundService,
         IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
+        _refundService = refundService;
         _returnWindowDays = configuration.GetValue<int?>("ReturnPolicy:ReturnWindowDays") ?? DefaultReturnWindowDays;
     }
 
@@ -528,5 +531,152 @@ public class ReturnRequestService : IReturnRequestService
             .CountAsync();
 
         return unreadCount;
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string? ErrorMessage, ReturnRequest? ReturnRequest)> ResolveReturnCaseAsync(
+        int returnRequestId,
+        int storeId,
+        ResolutionType resolutionType,
+        string resolutionNotes,
+        decimal? resolutionAmount,
+        int initiatedByUserId)
+    {
+        // Validate resolution notes
+        if (string.IsNullOrWhiteSpace(resolutionNotes))
+        {
+            return (false, "Resolution notes are required.", null);
+        }
+
+        if (resolutionNotes.Length > 2000)
+        {
+            return (false, "Resolution notes cannot exceed 2000 characters.", null);
+        }
+
+        // Get the return request with related data
+        var returnRequest = await _context.ReturnRequests
+            .Include(rr => rr.SubOrder)
+                .ThenInclude(so => so.ParentOrder)
+            .Include(rr => rr.Refund)
+            .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
+
+        if (returnRequest == null)
+        {
+            return (false, "Return request not found.", null);
+        }
+
+        // Verify the store owns this return request
+        if (returnRequest.SubOrder.StoreId != storeId)
+        {
+            _logger.LogWarning("Store {StoreId} attempted to resolve return request {ReturnRequestId} belonging to store {ActualStoreId}",
+                storeId, returnRequestId, returnRequest.SubOrder.StoreId);
+            return (false, "You are not authorized to resolve this return request.", null);
+        }
+
+        // Check if resolution can be changed
+        var (canChange, errorMessage) = await CanChangeResolutionAsync(returnRequestId);
+        if (!canChange)
+        {
+            return (false, errorMessage, null);
+        }
+
+        // Validate resolution amount for partial refunds
+        if (resolutionType == ResolutionType.PartialRefund)
+        {
+            if (!resolutionAmount.HasValue || resolutionAmount.Value <= 0)
+            {
+                return (false, "Resolution amount is required for partial refunds and must be greater than zero.", null);
+            }
+
+            if (resolutionAmount.Value > returnRequest.RefundAmount)
+            {
+                return (false, $"Partial refund amount cannot exceed the maximum refundable amount of {returnRequest.RefundAmount:C}.", null);
+            }
+        }
+
+        // Update return request with resolution
+        returnRequest.ResolutionType = resolutionType;
+        returnRequest.ResolutionNotes = resolutionNotes;
+        returnRequest.ResolutionAmount = resolutionAmount;
+        returnRequest.Status = ReturnStatus.Resolved;
+        returnRequest.ResolvedAt = DateTime.UtcNow;
+        returnRequest.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Return request {ReturnRequestId} resolved with {ResolutionType} by store {StoreId}",
+            returnRequestId, resolutionType, storeId);
+
+        // Process refund if applicable
+        RefundTransaction? refund = null;
+        if (resolutionType == ResolutionType.FullRefund || resolutionType == ResolutionType.PartialRefund)
+        {
+            try
+            {
+                decimal amountToRefund = resolutionType == ResolutionType.FullRefund
+                    ? returnRequest.RefundAmount
+                    : resolutionAmount!.Value;
+
+                // Create refund linked to this return request
+                refund = await _refundService.ProcessPartialRefundAsync(
+                    orderId: returnRequest.SubOrder.ParentOrderId,
+                    sellerSubOrderId: returnRequest.SubOrderId,
+                    refundAmount: amountToRefund,
+                    reason: $"Return case {returnRequest.ReturnNumber} resolution: {resolutionType}",
+                    initiatedByUserId: initiatedByUserId,
+                    notes: resolutionNotes,
+                    returnRequestId: returnRequestId);
+
+                _logger.LogInformation(
+                    "Refund {RefundNumber} created for return request {ReturnRequestId} with amount {Amount}",
+                    refund.RefundNumber, returnRequestId, amountToRefund);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create refund for return request {ReturnRequestId}", returnRequestId);
+                return (false, "Case resolved, but refund initiation failed. Please contact support.", returnRequest);
+            }
+        }
+
+        // Reload to include the refund relationship
+        if (refund != null)
+        {
+            returnRequest = await GetReturnRequestByIdAsync(returnRequestId);
+        }
+
+        return (true, null, returnRequest);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool CanChange, string? ErrorMessage)> CanChangeResolutionAsync(int returnRequestId)
+    {
+        var returnRequest = await _context.ReturnRequests
+            .Include(rr => rr.Refund)
+            .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
+
+        if (returnRequest == null)
+        {
+            return (false, "Return request not found.");
+        }
+
+        // Cannot change if status is Completed or Rejected
+        if (returnRequest.Status == ReturnStatus.Completed)
+        {
+            return (false, "Cannot change resolution for completed cases.");
+        }
+
+        if (returnRequest.Status == ReturnStatus.Rejected)
+        {
+            return (false, "Cannot change resolution for rejected cases.");
+        }
+
+        // Cannot change if refund has already been processed (status is Completed)
+        if (returnRequest.Refund != null && returnRequest.Refund.Status == RefundStatus.Completed)
+        {
+            return (false, "Cannot change resolution after refund has been completed.");
+        }
+
+        return (true, null);
     }
 }

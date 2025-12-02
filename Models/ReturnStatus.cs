@@ -23,5 +23,10 @@ public enum ReturnStatus
     /// <summary>
     /// Return has been completed (items received and refund processed).
     /// </summary>
-    Completed
+    Completed,
+
+    /// <summary>
+    /// Return case has been resolved with a final decision.
+    /// </summary>
+    Resolved
 }

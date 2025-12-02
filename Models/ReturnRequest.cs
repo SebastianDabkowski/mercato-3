@@ -103,6 +103,28 @@ public class ReturnRequest
     public bool IsFullReturn { get; set; }
 
     /// <summary>
+    /// Gets or sets the type of resolution for this case.
+    /// </summary>
+    public ResolutionType ResolutionType { get; set; } = ResolutionType.None;
+
+    /// <summary>
+    /// Gets or sets the resolution notes provided by the seller.
+    /// </summary>
+    [MaxLength(2000)]
+    public string? ResolutionNotes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the resolution amount (for partial refunds).
+    /// Null for non-refund resolutions or when using the calculated RefundAmount.
+    /// </summary>
+    public decimal? ResolutionAmount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when the case was resolved.
+    /// </summary>
+    public DateTime? ResolvedAt { get; set; }
+
+    /// <summary>
     /// Gets or sets the items being returned (navigation property).
     /// Empty if IsFullReturn is true (all items in sub-order are being returned).
     /// </summary>

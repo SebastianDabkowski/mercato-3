@@ -1,0 +1,26 @@
+@model MercatoApp.Models.RefundStatus
+@{
+    var badgeClass = Model switch
+    {
+        MercatoApp.Models.RefundStatus.Requested => "bg-warning text-dark",
+        MercatoApp.Models.RefundStatus.Processing => "bg-info",
+        MercatoApp.Models.RefundStatus.Completed => "bg-success",
+        MercatoApp.Models.RefundStatus.Failed => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    var iconClass = Model switch
+    {
+        MercatoApp.Models.RefundStatus.Requested => "bi-hourglass-split",
+        MercatoApp.Models.RefundStatus.Processing => "bi-arrow-repeat",
+        MercatoApp.Models.RefundStatus.Completed => "bi-check-circle",
+        MercatoApp.Models.RefundStatus.Failed => "bi-x-circle",
+        _ => "bi-question-circle"
+    };
+
+    var statusText = Model.ToString();
+}
+
+<span class="badge @badgeClass">
+    <i class="bi @iconClass"></i> @statusText
+</span>

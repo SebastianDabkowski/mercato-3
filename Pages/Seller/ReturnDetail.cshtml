@@ -268,9 +268,55 @@
 
             <!-- Sidebar -->
             <div class="col-lg-4">
-                <!-- Actions Card -->
-                @if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Requested)
+                <!-- Resolution Display (if already resolved) -->
+                @if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Resolved)
                 {
+                    <div class="card mb-4 border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-check-circle"></i> Case Resolved
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2">
+                                <strong>Resolution:</strong><br />
+                                @Model.ReturnRequest.ResolutionType.ToString()
+                            </p>
+                            @if (Model.ReturnRequest.ResolutionAmount.HasValue)
+                            {
+                                <p class="mb-2">
+                                    <strong>Refund Amount:</strong><br />
+                                    @Model.ReturnRequest.ResolutionAmount.Value.ToString("C")
+                                </p>
+                            }
+                            @if (Model.ReturnRequest.ResolvedAt.HasValue)
+                            {
+                                <p class="mb-2">
+                                    <strong>Resolved On:</strong><br />
+                                    @Model.ReturnRequest.ResolvedAt.Value.ToString("MMM dd, yyyy HH:mm")
+                                </p>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.ReturnRequest.ResolutionNotes))
+                            {
+                                <p class="mb-0">
+                                    <strong>Resolution Notes:</strong><br />
+                                    @Model.ReturnRequest.ResolutionNotes
+                                </p>
+                            }
+                            @if (Model.ReturnRequest.Refund != null)
+                            {
+                                <hr />
+                                <p class="mb-0">
+                                    <strong>Refund Status:</strong><br />
+                                    @await Html.PartialAsync("_RefundStatusBadge", Model.ReturnRequest.Refund.Status)
+                                </p>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Requested)
+                {
+                    <!-- Actions Card for Requested status -->
                     <div class="card mb-4 border-warning">
                         <div class="card-header bg-warning text-white">
                             <h5 class="mb-0">
@@ -280,14 +326,42 @@
                         <div class="card-body">
                             <p class="mb-3">This case is pending your review. Please choose an action:</p>
                             
-                            <!-- Approve Button -->
-                            <button type="button" class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#approveModal">
-                                <i class="bi bi-check-circle"></i> Approve Return
+                            <!-- Resolve Case Button (Primary Action) -->
+                            <button type="button" class="btn btn-primary w-100 mb-2" data-bs-toggle="modal" data-bs-target="#resolveModal">
+                                <i class="bi bi-check-square"></i> Resolve Case
                             </button>
 
-                            <!-- Reject Button -->
-                            <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
-                                <i class="bi bi-x-circle"></i> Reject Return
+                            <!-- Legacy Actions -->
+                            <div class="border-top pt-2 mt-2">
+                                <p class="text-muted small mb-2">Or use quick actions:</p>
+                                <!-- Approve Button -->
+                                <button type="button" class="btn btn-success btn-sm w-100 mb-2" data-bs-toggle="modal" data-bs-target="#approveModal">
+                                    <i class="bi bi-check-circle"></i> Approve Return
+                                </button>
+
+                                <!-- Reject Button -->
+                                <button type="button" class="btn btn-danger btn-sm w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                    <i class="bi bi-x-circle"></i> Reject Return
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Approved)
+                {
+                    <!-- Actions Card for Approved status -->
+                    <div class="card mb-4 border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-info-circle"></i> Approved - Awaiting Items
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">You have approved this return. Waiting for the buyer to ship the items back.</p>
+                            
+                            <!-- Resolve Case Button -->
+                            <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#resolveModal">
+                                <i class="bi bi-check-square"></i> Resolve Case
                             </button>
                         </div>
                     </div>
@@ -353,6 +427,14 @@
                                     <i class="bi bi-x-circle-fill text-danger"></i>
                                     <strong>Rejected</strong><br />
                                     <small class="text-muted">@Model.ReturnRequest.RejectedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                                </li>
+                            }
+                            @if (Model.ReturnRequest.ResolvedAt.HasValue)
+                            {
+                                <li class="mb-3">
+                                    <i class="bi bi-check-square-fill text-success"></i>
+                                    <strong>Resolved</strong><br />
+                                    <small class="text-muted">@Model.ReturnRequest.ResolvedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
                                 </li>
                             }
                             @if (Model.ReturnRequest.CompletedAt.HasValue)
@@ -434,6 +516,99 @@
                 </div>
             </div>
         </div>
+
+        <!-- Resolve Case Modal -->
+        <div class="modal fade" id="resolveModal" tabindex="-1" aria-labelledby="resolveModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="post" asp-page-handler="Resolve" id="resolveForm">
+                        <input type="hidden" name="returnRequestId" value="@Model.ReturnRequest.Id" />
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="resolveModalLabel">
+                                <i class="bi bi-check-square"></i> Resolve Case
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-4">Choose how to resolve this @(Model.ReturnRequest.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "complaint" : "return") case. Your decision will be final and the buyer will be notified.</p>
+                            
+                            <!-- Resolution Type Selection -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Resolution Type <span class="text-danger">*</span></label>
+                                <div class="list-group">
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-2" type="radio" name="resolutionType" value="@((int)MercatoApp.Models.ResolutionType.FullRefund)" required>
+                                        <strong>Full Refund</strong> - Refund the entire amount (@Model.ReturnRequest.RefundAmount.ToString("C"))
+                                        <p class="mb-0 text-muted small">Money will be returned to buyer, and a refund transaction will be initiated.</p>
+                                    </label>
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-2" type="radio" name="resolutionType" value="@((int)MercatoApp.Models.ResolutionType.PartialRefund)" required>
+                                        <strong>Partial Refund</strong> - Refund a portion of the amount
+                                        <p class="mb-0 text-muted small">Specify the exact amount to refund below.</p>
+                                    </label>
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-2" type="radio" name="resolutionType" value="@((int)MercatoApp.Models.ResolutionType.Replacement)" required>
+                                        <strong>Replacement</strong> - Send a replacement item
+                                        <p class="mb-0 text-muted small">No refund. You will send a replacement item.</p>
+                                    </label>
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-2" type="radio" name="resolutionType" value="@((int)MercatoApp.Models.ResolutionType.Repair)" required>
+                                        <strong>Repair</strong> - Repair the item
+                                        <p class="mb-0 text-muted small">No refund. Item will be repaired and returned to buyer.</p>
+                                    </label>
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-2" type="radio" name="resolutionType" value="@((int)MercatoApp.Models.ResolutionType.NoRefund)" required>
+                                        <strong>No Refund</strong> - Reject the request
+                                        <p class="mb-0 text-muted small">Case will be closed without compensation.</p>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Partial Refund Amount (shown only when partial refund selected) -->
+                            <div class="mb-3 d-none" id="partialRefundAmountDiv">
+                                <label for="resolutionAmount" class="form-label fw-bold">
+                                    Refund Amount <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="resolutionAmount" 
+                                           name="resolutionAmount" 
+                                           step="0.01" 
+                                           min="0.01" 
+                                           max="@Model.ReturnRequest.RefundAmount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" 
+                                           placeholder="0.00">
+                                </div>
+                                <small class="text-muted">Maximum refundable: @Model.ReturnRequest.RefundAmount.ToString("C")</small>
+                            </div>
+
+                            <!-- Resolution Notes -->
+                            <div class="mb-3">
+                                <label for="resolutionNotes" class="form-label fw-bold">
+                                    Resolution Notes <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" 
+                                          id="resolutionNotes" 
+                                          name="resolutionNotes" 
+                                          rows="4" 
+                                          maxlength="2000" 
+                                          required 
+                                          aria-describedby="resolutionNotesHelp" 
+                                          placeholder="Explain your decision and any next steps for the buyer"></textarea>
+                                <small id="resolutionNotesHelp" class="text-muted">Required. Provide a clear explanation of your decision. Max 2000 characters</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-square"></i> Resolve Case
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     }
 </div>
 
@@ -452,4 +627,29 @@
             top: 2px;
         }
     </style>
+    
+    <script>
+        // Show/hide partial refund amount field based on resolution type selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const resolutionTypeInputs = document.querySelectorAll('input[name="resolutionType"]');
+            const partialRefundAmountDiv = document.getElementById('partialRefundAmountDiv');
+            const resolutionAmountInput = document.getElementById('resolutionAmount');
+            
+            resolutionTypeInputs.forEach(function(input) {
+                input.addEventListener('change', function() {
+                    const selectedValue = parseInt(this.value);
+                    const partialRefundValue = @((int)MercatoApp.Models.ResolutionType.PartialRefund);
+                    
+                    if (selectedValue === partialRefundValue) {
+                        partialRefundAmountDiv.classList.remove('d-none');
+                        resolutionAmountInput.setAttribute('required', 'required');
+                    } else {
+                        partialRefundAmountDiv.classList.add('d-none');
+                        resolutionAmountInput.removeAttribute('required');
+                        resolutionAmountInput.value = '';
+                    }
+                });
+            });
+        });
+    </script>
 }

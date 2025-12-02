@@ -176,7 +176,8 @@ public class RefundService : IRefundService
         decimal refundAmount,
         string reason,
         int initiatedByUserId,
-        string? notes = null)
+        string? notes = null,
+        int? returnRequestId = null)
     {
         // Validate partial refund eligibility
         var (isValid, errorMessage) = await ValidatePartialRefundEligibilityAsync(sellerSubOrderId, refundAmount);
@@ -227,6 +228,7 @@ public class RefundService : IRefundService
             OrderId = orderId,
             PaymentTransactionId = paymentTransaction.Id,
             SellerSubOrderId = sellerSubOrderId,
+            ReturnRequestId = returnRequestId,
             RefundType = RefundType.Partial,
             RefundAmount = refundAmount,
             CurrencyCode = paymentTransaction.CurrencyCode,
