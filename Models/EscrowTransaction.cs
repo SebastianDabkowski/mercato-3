@@ -90,6 +90,16 @@ public class EscrowTransaction
     public decimal RefundedAmount { get; set; } = 0;
 
     /// <summary>
+    /// Gets or sets the payout ID this escrow is included in.
+    /// </summary>
+    public int? PayoutId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the payout (navigation property).
+    /// </summary>
+    public Payout? Payout { get; set; }
+
+    /// <summary>
     /// Gets or sets notes about the escrow transaction (for audit purposes).
     /// </summary>
     [MaxLength(1000)]

@@ -197,6 +197,16 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<CommissionTransaction> CommissionTransactions { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the payout schedules table.
+    /// </summary>
+    public DbSet<PayoutSchedule> PayoutSchedules { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the payouts table.
+    /// </summary>
+    public DbSet<Payout> Payouts { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -947,6 +957,9 @@ public class ApplicationDbContext : DbContext
             // Composite index for finding eligible payouts
             entity.HasIndex(e => new { e.Status, e.EligibleForPayoutAt });
 
+            // Index on payout ID for finding all escrows in a payout
+            entity.HasIndex(e => e.PayoutId);
+
             // Configure relationship with PaymentTransaction
             entity.HasOne(e => e.PaymentTransaction)
                 .WithMany()
@@ -964,6 +977,12 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.StoreId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with Payout (optional)
+            entity.HasOne(e => e.Payout)
+                .WithMany(p => p.EscrowTransactions)
+                .HasForeignKey(e => e.PayoutId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Configure decimal precision
             entity.Property(e => e.GrossAmount)
@@ -1025,6 +1044,68 @@ public class ApplicationDbContext : DbContext
                 .HasPrecision(18, 2);
 
             entity.Property(e => e.CommissionAmount)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<PayoutSchedule>(entity =>
+        {
+            // Unique index on store ID - one schedule per store
+            entity.HasIndex(e => e.StoreId).IsUnique();
+
+            // Index for finding schedules due for processing
+            entity.HasIndex(e => new { e.IsEnabled, e.NextPayoutDate });
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure decimal precision
+            entity.Property(e => e.MinimumPayoutThreshold)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<Payout>(entity =>
+        {
+            // Unique index on payout number
+            entity.HasIndex(e => e.PayoutNumber).IsUnique();
+
+            // Index on store ID for finding all payouts for a seller
+            entity.HasIndex(e => e.StoreId);
+
+            // Index on status for filtering payouts
+            entity.HasIndex(e => e.Status);
+
+            // Composite index for finding scheduled payouts
+            entity.HasIndex(e => new { e.Status, e.ScheduledDate });
+
+            // Composite index for finding failed payouts eligible for retry
+            entity.HasIndex(e => new { e.Status, e.NextRetryDate });
+
+            // Composite index for store's payout history
+            entity.HasIndex(e => new { e.StoreId, e.CreatedAt });
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with PayoutMethod (optional)
+            entity.HasOne(e => e.PayoutMethod)
+                .WithMany()
+                .HasForeignKey(e => e.PayoutMethodId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with PayoutSchedule (optional)
+            entity.HasOne(e => e.PayoutSchedule)
+                .WithMany()
+                .HasForeignKey(e => e.PayoutScheduleId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure decimal precision
+            entity.Property(e => e.Amount)
                 .HasPrecision(18, 2);
         });
     }
