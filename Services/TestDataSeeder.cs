@@ -36,6 +36,7 @@ public static class TestDataSeeder
             LastName = "Seller",
             UserType = UserType.Seller,
             Status = AccountStatus.Active,
+            KycStatus = KycStatus.Approved,
             AcceptedTerms = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -144,6 +145,7 @@ public static class TestDataSeeder
             LastName = "Seller",
             UserType = UserType.Seller,
             Status = AccountStatus.Active,
+            KycStatus = KycStatus.Approved,
             AcceptedTerms = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -289,6 +291,224 @@ public static class TestDataSeeder
         };
 
         context.ShippingRules.AddRange(shippingRules);
+        await context.SaveChangesAsync();
+
+        // Create shipping methods
+        var shippingMethod1 = new ShippingMethod
+        {
+            StoreId = store.Id,
+            Name = "Standard Shipping",
+            EstimatedDelivery = "3-5 business days",
+            BaseCost = 5.99m,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        var shippingMethod2 = new ShippingMethod
+        {
+            StoreId = store2.Id,
+            Name = "Express Shipping",
+            EstimatedDelivery = "1-2 business days",
+            BaseCost = 12.99m,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.ShippingMethods.AddRange(shippingMethod1, shippingMethod2);
+        await context.SaveChangesAsync();
+
+        // Create a test delivery address
+        var deliveryAddress = new Address
+        {
+            UserId = buyerUser.Id,
+            FullName = "Test Buyer",
+            PhoneNumber = "+1-555-123-4567",
+            AddressLine1 = "123 Main Street",
+            AddressLine2 = "Apt 4B",
+            City = "San Francisco",
+            StateProvince = "CA",
+            PostalCode = "94102",
+            CountryCode = "US",
+            DeliveryInstructions = "Please leave package at the front door. Ring doorbell if signature required.",
+            IsDefault = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Addresses.Add(deliveryAddress);
+        await context.SaveChangesAsync();
+
+        // Create a test payment method
+        var paymentMethod = new PaymentMethod
+        {
+            Name = "Credit Card",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.PaymentMethods.Add(paymentMethod);
+        await context.SaveChangesAsync();
+
+        // Create a test order with sub-orders
+        var order = new Order
+        {
+            OrderNumber = "ORD-20241202-00001",
+            UserId = buyerUser.Id,
+            DeliveryAddressId = deliveryAddress.Id,
+            Status = OrderStatus.Paid,
+            Subtotal = 234.98m,
+            ShippingCost = 18.98m,
+            TaxAmount = 23.50m,
+            TotalAmount = 277.46m,
+            PaymentMethodId = paymentMethod.Id,
+            PaymentStatus = PaymentStatus.Completed,
+            OrderedAt = DateTime.UtcNow.AddDays(-2),
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+
+        // Create seller sub-orders
+        var subOrder1 = new SellerSubOrder
+        {
+            ParentOrderId = order.Id,
+            StoreId = store.Id,
+            SubOrderNumber = "ORD-20241202-00001-1",
+            Status = OrderStatus.Preparing,
+            Subtotal = 189.98m,
+            ShippingCost = 5.99m,
+            TotalAmount = 195.97m,
+            ShippingMethodId = shippingMethod1.Id,
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            UpdatedAt = DateTime.UtcNow.AddHours(-1)
+        };
+
+        var subOrder2 = new SellerSubOrder
+        {
+            ParentOrderId = order.Id,
+            StoreId = store2.Id,
+            SubOrderNumber = "ORD-20241202-00001-2",
+            Status = OrderStatus.Shipped,
+            TrackingNumber = "1Z999AA10123456784",
+            CarrierName = "UPS",
+            TrackingUrl = "https://www.ups.com/track?tracknum=1Z999AA10123456784",
+            Subtotal = 45.00m,
+            ShippingCost = 12.99m,
+            TotalAmount = 57.99m,
+            ShippingMethodId = shippingMethod2.Id,
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            UpdatedAt = DateTime.UtcNow.AddHours(-3)
+        };
+
+        context.SellerSubOrders.AddRange(subOrder1, subOrder2);
+        await context.SaveChangesAsync();
+
+        // Create order items
+        var orderItems = new[]
+        {
+            new OrderItem
+            {
+                OrderId = order.Id,
+                SellerSubOrderId = subOrder1.Id,
+                StoreId = store.Id,
+                ProductId = products[0].Id,
+                ProductTitle = "Wireless Bluetooth Headphones",
+                VariantDescription = null,
+                Quantity = 2,
+                UnitPrice = 79.99m,
+                Subtotal = 159.98m,
+                TaxAmount = 16.00m
+            },
+            new OrderItem
+            {
+                OrderId = order.Id,
+                SellerSubOrderId = subOrder1.Id,
+                StoreId = store.Id,
+                ProductId = products[2].Id,
+                ProductTitle = "Portable Bluetooth Speaker",
+                VariantDescription = "Color: Black",
+                Quantity = 1,
+                UnitPrice = 30.00m,
+                Subtotal = 30.00m,
+                TaxAmount = 3.00m
+            },
+            new OrderItem
+            {
+                OrderId = order.Id,
+                SellerSubOrderId = subOrder2.Id,
+                StoreId = store2.Id,
+                ProductId = products2[0].Id,
+                ProductTitle = "Leather Wallet",
+                VariantDescription = null,
+                Quantity = 1,
+                UnitPrice = 45.00m,
+                Subtotal = 45.00m,
+                TaxAmount = 4.50m
+            }
+        };
+
+        context.OrderItems.AddRange(orderItems);
+        await context.SaveChangesAsync();
+
+        // Create status history for sub-orders
+        var statusHistories = new[]
+        {
+            // SubOrder1 history
+            new OrderStatusHistory
+            {
+                SellerSubOrderId = subOrder1.Id,
+                PreviousStatus = null,
+                NewStatus = OrderStatus.New,
+                Notes = "Order created",
+                ChangedAt = DateTime.UtcNow.AddDays(-2)
+            },
+            new OrderStatusHistory
+            {
+                SellerSubOrderId = subOrder1.Id,
+                PreviousStatus = OrderStatus.New,
+                NewStatus = OrderStatus.Paid,
+                Notes = "Payment completed",
+                ChangedAt = DateTime.UtcNow.AddDays(-2).AddMinutes(5)
+            },
+            new OrderStatusHistory
+            {
+                SellerSubOrderId = subOrder1.Id,
+                PreviousStatus = OrderStatus.Paid,
+                NewStatus = OrderStatus.Preparing,
+                Notes = null,
+                ChangedAt = DateTime.UtcNow.AddHours(-1)
+            },
+            // SubOrder2 history
+            new OrderStatusHistory
+            {
+                SellerSubOrderId = subOrder2.Id,
+                PreviousStatus = null,
+                NewStatus = OrderStatus.New,
+                Notes = "Order created",
+                ChangedAt = DateTime.UtcNow.AddDays(-2)
+            },
+            new OrderStatusHistory
+            {
+                SellerSubOrderId = subOrder2.Id,
+                PreviousStatus = OrderStatus.New,
+                NewStatus = OrderStatus.Paid,
+                Notes = "Payment completed",
+                ChangedAt = DateTime.UtcNow.AddDays(-2).AddMinutes(5)
+            },
+            new OrderStatusHistory
+            {
+                SellerSubOrderId = subOrder2.Id,
+                PreviousStatus = OrderStatus.Paid,
+                NewStatus = OrderStatus.Preparing,
+                Notes = null,
+                ChangedAt = DateTime.UtcNow.AddDays(-1)
+            },
+            new OrderStatusHistory
+            {
+                SellerSubOrderId = subOrder2.Id,
+                PreviousStatus = OrderStatus.Preparing,
+                NewStatus = OrderStatus.Shipped,
+                Notes = "Tracking: 1Z999AA10123456784 via UPS",
+                ChangedAt = DateTime.UtcNow.AddHours(-3)
+            }
+        };
+
+        context.OrderStatusHistories.AddRange(statusHistories);
         await context.SaveChangesAsync();
 
         // Seed test promo codes

@@ -135,6 +135,7 @@
                                         <th>Product</th>
                                         <th>Quantity</th>
                                         <th>Unit Price</th>
+                                        <th class="text-end">Tax</th>
                                         <th class="text-end">Subtotal</th>
                                     </tr>
                                 </thead>
@@ -151,21 +152,22 @@
                                             </td>
                                             <td>@item.Quantity</td>
                                             <td>@item.UnitPrice.ToString("C")</td>
+                                            <td class="text-end">@item.TaxAmount.ToString("C")</td>
                                             <td class="text-end">@item.Subtotal.ToString("C")</td>
                                         </tr>
                                     }
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="3" class="text-end"><strong>Items Subtotal:</strong></td>
+                                        <td colspan="4" class="text-end"><strong>Items Subtotal:</strong></td>
                                         <td class="text-end">@Model.SubOrder.Subtotal.ToString("C")</td>
                                     </tr>
                                     <tr>
-                                        <td colspan="3" class="text-end"><strong>Shipping:</strong></td>
+                                        <td colspan="4" class="text-end"><strong>Shipping:</strong></td>
                                         <td class="text-end">@Model.SubOrder.ShippingCost.ToString("C")</td>
                                     </tr>
                                     <tr class="table-primary">
-                                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                        <td colspan="4" class="text-end"><strong>Total:</strong></td>
                                         <td class="text-end"><strong>@Model.SubOrder.TotalAmount.ToString("C")</strong></td>
                                     </tr>
                                 </tfoot>
@@ -229,10 +231,68 @@
                                 <br />
                                 <i class="bi bi-telephone"></i> @Model.SubOrder.ParentOrder.DeliveryAddress.PhoneNumber
                             </address>
+                            
+                            @if (!string.IsNullOrEmpty(Model.SubOrder.ParentOrder.DeliveryAddress.DeliveryInstructions))
+                            {
+                                <hr class="my-3" />
+                                <h6 class="mb-2"><i class="bi bi-info-circle"></i> Delivery Instructions</h6>
+                                <p class="text-muted mb-0">@Model.SubOrder.ParentOrder.DeliveryAddress.DeliveryInstructions</p>
+                            }
                         }
                         else
                         {
                             <p class="text-muted mb-0">No delivery address</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> Activity Log
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.SubOrder.StatusHistory != null && Model.SubOrder.StatusHistory.Any())
+                        {
+                            <div class="timeline">
+                                @foreach (var history in Model.SubOrder.StatusHistory)
+                                {
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                @if (history.PreviousStatus.HasValue)
+                                                {
+                                                    <strong>@history.PreviousStatus.Value</strong>
+                                                    <i class="bi bi-arrow-right mx-2"></i>
+                                                    <strong>@history.NewStatus</strong>
+                                                }
+                                                else
+                                                {
+                                                    <strong>Order created - @history.NewStatus</strong>
+                                                }
+                                                @if (!string.IsNullOrEmpty(history.Notes))
+                                                {
+                                                    <br /><small class="text-muted">@history.Notes</small>
+                                                }
+                                            </div>
+                                            <small class="text-muted text-nowrap ms-2">
+                                                @history.ChangedAt.ToString("MMM dd, yyyy")
+                                                <br />
+                                                @history.ChangedAt.ToString("h:mm tt")
+                                            </small>
+                                        </div>
+                                        @if (history != Model.SubOrder.StatusHistory.Last())
+                                        {
+                                            <hr class="my-2" />
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No activity recorded yet.</p>
                         }
                     </div>
                 </div>

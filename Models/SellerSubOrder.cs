@@ -112,4 +112,10 @@ public class SellerSubOrder
     /// Items are linked via SellerSubOrderId foreign key.
     /// </summary>
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
+
+    /// <summary>
+    /// Gets or sets the status history for this sub-order (navigation property).
+    /// Tracks all status changes for auditing and support purposes.
+    /// </summary>
+    public ICollection<OrderStatusHistory> StatusHistory { get; set; } = new List<OrderStatusHistory>();
 }

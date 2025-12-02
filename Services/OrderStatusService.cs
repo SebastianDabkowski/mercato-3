@@ -39,11 +39,15 @@ public class OrderStatusService : IOrderStatusService
         order.PaymentStatus = PaymentStatus.Completed;
         order.UpdatedAt = DateTime.UtcNow;
 
-        // Update all sub-orders to Paid
+        // Update all sub-orders to Paid and log status changes
         foreach (var subOrder in order.SubOrders)
         {
+            var previousStatus = subOrder.Status;
             subOrder.Status = OrderStatus.Paid;
             subOrder.UpdatedAt = DateTime.UtcNow;
+            
+            // Log status change for each sub-order
+            await LogStatusChangeAsync(subOrder.Id, previousStatus, OrderStatus.Paid, "Payment completed");
         }
 
         await _context.SaveChangesAsync();
@@ -72,8 +76,12 @@ public class OrderStatusService : IOrderStatusService
             return (false, $"Cannot change status from {subOrder.Status} to Preparing. Order must be in Paid status.");
         }
 
+        var previousStatus = subOrder.Status;
         subOrder.Status = OrderStatus.Preparing;
         subOrder.UpdatedAt = DateTime.UtcNow;
+
+        // Log status change
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Preparing);
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
@@ -105,11 +113,18 @@ public class OrderStatusService : IOrderStatusService
             return (false, $"Cannot change status from {subOrder.Status} to Shipped. Order must be in Preparing status.");
         }
 
+        var previousStatus = subOrder.Status;
         subOrder.Status = OrderStatus.Shipped;
         subOrder.TrackingNumber = trackingNumber;
         subOrder.CarrierName = carrierName;
         subOrder.TrackingUrl = trackingUrl;
         subOrder.UpdatedAt = DateTime.UtcNow;
+
+        // Log status change with tracking info
+        var notes = trackingNumber != null 
+            ? $"Tracking: {trackingNumber}" + (carrierName != null ? $" via {carrierName}" : "") 
+            : null;
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Shipped, notes);
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
@@ -137,8 +152,12 @@ public class OrderStatusService : IOrderStatusService
             return (false, $"Cannot change status from {subOrder.Status} to Delivered. Order must be in Shipped status.");
         }
 
+        var previousStatus = subOrder.Status;
         subOrder.Status = OrderStatus.Delivered;
         subOrder.UpdatedAt = DateTime.UtcNow;
+
+        // Log status change
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Delivered);
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
@@ -166,8 +185,12 @@ public class OrderStatusService : IOrderStatusService
             return (false, $"Cannot cancel order in {subOrder.Status} status. Order can only be cancelled before shipment.");
         }
 
+        var previousStatus = subOrder.Status;
         subOrder.Status = OrderStatus.Cancelled;
         subOrder.UpdatedAt = DateTime.UtcNow;
+
+        // Log status change
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Cancelled);
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
@@ -203,6 +226,7 @@ public class OrderStatusService : IOrderStatusService
             return (false, $"Cannot refund order in {subOrder.Status} status.");
         }
 
+        var previousStatus = subOrder.Status;
         subOrder.Status = OrderStatus.Refunded;
         subOrder.RefundedAmount += refundAmount; // Add to existing refunded amount for partial refunds
         subOrder.UpdatedAt = DateTime.UtcNow;
@@ -211,6 +235,10 @@ public class OrderStatusService : IOrderStatusService
         var parentOrder = subOrder.ParentOrder;
         parentOrder.RefundedAmount += refundAmount;
         parentOrder.UpdatedAt = DateTime.UtcNow;
+
+        // Log status change with refund amount
+        await LogStatusChangeAsync(subOrderId, previousStatus, OrderStatus.Refunded, 
+            $"Refund amount: {refundAmount:C}");
 
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
@@ -365,5 +393,30 @@ public class OrderStatusService : IOrderStatusService
             _logger.LogInformation("Parent order {OrderId} status updated to {NewStatus}", 
                 orderId, newStatus);
         }
+    }
+
+    /// <summary>
+    /// Logs a status change for a seller sub-order.
+    /// </summary>
+    /// <param name="subOrderId">The sub-order ID.</param>
+    /// <param name="previousStatus">The previous status (null for initial status).</param>
+    /// <param name="newStatus">The new status.</param>
+    /// <param name="notes">Optional notes about the status change.</param>
+    private async Task LogStatusChangeAsync(
+        int subOrderId, 
+        OrderStatus? previousStatus, 
+        OrderStatus newStatus, 
+        string? notes = null)
+    {
+        var history = new OrderStatusHistory
+        {
+            SellerSubOrderId = subOrderId,
+            PreviousStatus = previousStatus,
+            NewStatus = newStatus,
+            Notes = notes,
+            ChangedAt = DateTime.UtcNow
+        };
+
+        _context.OrderStatusHistories.Add(history);
     }
 }
