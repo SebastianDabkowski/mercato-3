@@ -87,7 +87,7 @@ public class MockPaymentProviderService : IPaymentProviderService
 
                     // In a real implementation, this would send the BLIK code to the payment provider
                     // For mock, we'll simulate success/failure based on code pattern
-                    var providerTransactionId = $"BLIK-{Guid.NewGuid():N}".Substring(0, 24);
+                    var providerTransactionId = $"BLIK-{Guid.NewGuid().ToString("N")[..20]}";
                     
                     return new PaymentInitiationResult
                     {
@@ -99,7 +99,7 @@ public class MockPaymentProviderService : IPaymentProviderService
 
             case "card":
                 // Card payments require redirect to payment page
-                var cardTransactionId = $"CARD-{Guid.NewGuid():N}".Substring(0, 24);
+                var cardTransactionId = $"CARD-{Guid.NewGuid().ToString("N")[..20]}";
                 return new PaymentInitiationResult
                 {
                     RequiresAction = true,
@@ -109,7 +109,7 @@ public class MockPaymentProviderService : IPaymentProviderService
 
             case "bank_transfer":
                 // Bank transfer requires redirect to select bank
-                var bankTransactionId = $"BANK-{Guid.NewGuid():N}".Substring(0, 24);
+                var bankTransactionId = $"BANK-{Guid.NewGuid().ToString("N")[..20]}";
                 return new PaymentInitiationResult
                 {
                     RequiresAction = true,

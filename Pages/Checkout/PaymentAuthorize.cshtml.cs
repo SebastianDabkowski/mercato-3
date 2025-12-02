@@ -48,6 +48,19 @@ public class PaymentAuthorizeModel : PageModel
         return Page();
     }
 
+    public async Task<IActionResult> OnPostSubmitBlikCodeAsync(int transactionId, string blikCode)
+    {
+        // Validate BLIK code
+        if (string.IsNullOrWhiteSpace(blikCode) || blikCode.Length != 6 || !blikCode.All(char.IsDigit))
+        {
+            TempData["ErrorMessage"] = "Invalid BLIK code. Please enter a 6-digit code.";
+            return RedirectToPage(new { transactionId, requiresBlik = true });
+        }
+
+        // Redirect to the same page with the BLIK code in the query (for display only)
+        return RedirectToPage(new { transactionId, requiresBlik = true, blikCode });
+    }
+
     public async Task<IActionResult> OnPostAsync(int transactionId, string action)
     {
         if (action == "approve")
