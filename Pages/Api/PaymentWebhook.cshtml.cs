@@ -1,7 +1,6 @@
 using MercatoApp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Text.Json;
 
 namespace MercatoApp.Pages.Api;
 
@@ -56,8 +55,20 @@ public class PaymentWebhookModel : PageModel
     {
         try
         {
-            // Read the request body for additional data
-            var body = await new StreamReader(Request.Body).ReadToEndAsync();
+            // Read the request body for additional data (limit to prevent abuse)
+            string body = "";
+            const int maxBodySize = 10240; // 10KB limit
+            using (var reader = new StreamReader(Request.Body))
+            {
+                var buffer = new char[maxBodySize];
+                var charsRead = await reader.ReadAsync(buffer, 0, maxBodySize);
+                body = new string(buffer, 0, charsRead);
+                
+                if (charsRead == maxBodySize)
+                {
+                    _logger.LogWarning("Webhook body may be truncated (exceeded {MaxSize} bytes)", maxBodySize);
+                }
+            }
             _logger.LogInformation("Received payment webhook from provider {ProviderId}: {Body}", 
                 providerId ?? "unknown", body);
 
@@ -101,7 +112,7 @@ public class PaymentWebhookModel : PageModel
             callbackData["status"] = status;
             callbackData["providerId"] = effectiveProviderId;
 
-            // Verify callback with provider (optional - for added security)
+            // Verify callback with provider (for security - prevent fraudulent status updates)
             if (!string.IsNullOrWhiteSpace(providerTransactionId))
             {
                 try
@@ -109,14 +120,18 @@ public class PaymentWebhookModel : PageModel
                     var verification = await _paymentProviderService.VerifyPaymentCallbackAsync(
                         providerTransactionId, callbackData);
                     
-                    // Use verification result if available
-                    if (!verification.Success && internalStatus == Models.PaymentStatus.Completed)
+                    // If verification fails, reject any status that would grant payment/authorization
+                    if (!verification.Success)
                     {
-                        _logger.LogWarning("Payment verification failed for transaction {TransactionId}, " +
-                            "provider transaction {ProviderTransactionId}", 
-                            transactionId, providerTransactionId);
-                        internalStatus = Models.PaymentStatus.Failed;
-                        errorMessage = verification.ErrorMessage ?? "Payment verification failed";
+                        if (internalStatus == Models.PaymentStatus.Completed || 
+                            internalStatus == Models.PaymentStatus.Authorized)
+                        {
+                            _logger.LogWarning("Payment verification failed for transaction {TransactionId}, " +
+                                "provider transaction {ProviderTransactionId}. Rejecting {Status} status update.", 
+                                transactionId, providerTransactionId, internalStatus);
+                            internalStatus = Models.PaymentStatus.Failed;
+                            errorMessage = "Payment verification failed - security check";
+                        }
                     }
                 }
                 catch (Exception ex)

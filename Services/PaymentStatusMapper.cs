@@ -37,6 +37,7 @@ public static class PaymentStatusMapper
 
     /// <summary>
     /// Maps Stripe payment status to internal status.
+    /// See: https://stripe.com/docs/payments/payment-intents/status
     /// </summary>
     private static Models.PaymentStatus MapStripeStatus(string status)
     {
@@ -47,6 +48,7 @@ public static class PaymentStatusMapper
             "requires_payment_method" => Models.PaymentStatus.Pending,
             "requires_confirmation" => Models.PaymentStatus.Pending,
             "requires_action" => Models.PaymentStatus.Pending,
+            // requires_capture: Payment authorized but not yet captured (two-step payment)
             "requires_capture" => Models.PaymentStatus.Authorized,
             "canceled" => Models.PaymentStatus.Cancelled,
             "failed" => Models.PaymentStatus.Failed,
@@ -128,6 +130,7 @@ public static class PaymentStatusMapper
 
     /// <summary>
     /// Maps cash on delivery payment status to internal status.
+    /// Note: COD payments are typically authorized on order placement and completed on delivery.
     /// </summary>
     private static Models.PaymentStatus MapCashOnDeliveryStatus(string status)
     {
@@ -139,7 +142,8 @@ public static class PaymentStatusMapper
             "failed" or "not_collected" => Models.PaymentStatus.Failed,
             "cancelled" or "canceled" => Models.PaymentStatus.Cancelled,
             "refunded" => Models.PaymentStatus.Refunded,
-            _ => Models.PaymentStatus.Authorized // COD is typically authorized immediately
+            // Default to Authorized for COD as order is confirmed and awaiting delivery
+            _ => Models.PaymentStatus.Authorized
         };
     }
 
