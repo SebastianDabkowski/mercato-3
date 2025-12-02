@@ -78,6 +78,7 @@ builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
+builder.Services.AddScoped<IOrderItemFulfillmentService, OrderItemFulfillmentService>();
 builder.Services.AddScoped<IOrderExportService, OrderExportService>();
 builder.Services.AddScoped<IReturnRequestService, ReturnRequestService>();
 builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();

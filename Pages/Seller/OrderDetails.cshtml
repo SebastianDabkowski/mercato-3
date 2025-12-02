@@ -133,7 +133,10 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Product</th>
-                                        <th>Quantity</th>
+                                        <th>Status</th>
+                                        <th class="text-center">Qty</th>
+                                        <th class="text-center">Shipped</th>
+                                        <th class="text-center">Cancelled</th>
                                         <th>Unit Price</th>
                                         <th class="text-end">Tax</th>
                                         <th class="text-end">Subtotal</th>
@@ -142,6 +145,7 @@
                                 <tbody>
                                     @foreach (var item in Model.SubOrder.Items)
                                     {
+                                        var hasPartialFulfillment = item.QuantityShipped > 0 || item.QuantityCancelled > 0;
                                         <tr>
                                             <td>
                                                 <strong>@item.ProductTitle</strong>
@@ -149,8 +153,60 @@
                                                 {
                                                     <br/><small class="text-muted">@item.VariantDescription</small>
                                                 }
+                                                @if (item.RefundedAmount > 0)
+                                                {
+                                                    <br/><small class="text-danger">Refunded: @item.RefundedAmount.ToString("C")</small>
+                                                }
                                             </td>
-                                            <td>@item.Quantity</td>
+                                            <td>
+                                                @if (item.Status == MercatoApp.Models.OrderItemStatus.New)
+                                                {
+                                                    <span class="badge bg-warning text-dark" title="Item is new">
+                                                        <i class="bi bi-hourglass-split"></i> New
+                                                    </span>
+                                                }
+                                                else if (item.Status == MercatoApp.Models.OrderItemStatus.Preparing)
+                                                {
+                                                    <span class="badge bg-info" title="Item is being prepared">
+                                                        <i class="bi bi-box-seam"></i> Preparing
+                                                    </span>
+                                                }
+                                                else if (item.Status == MercatoApp.Models.OrderItemStatus.Shipped)
+                                                {
+                                                    <span class="badge bg-success" title="Item has been shipped">
+                                                        <i class="bi bi-truck"></i> Shipped
+                                                    </span>
+                                                }
+                                                else if (item.Status == MercatoApp.Models.OrderItemStatus.Cancelled)
+                                                {
+                                                    <span class="badge bg-secondary" title="Item has been cancelled">
+                                                        <i class="bi bi-x-circle"></i> Cancelled
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                <strong>@item.Quantity</strong>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (item.QuantityShipped > 0)
+                                                {
+                                                    <span class="badge bg-success">@item.QuantityShipped</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (item.QuantityCancelled > 0)
+                                                {
+                                                    <span class="badge bg-secondary">@item.QuantityCancelled</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
                                             <td>@item.UnitPrice.ToString("C")</td>
                                             <td class="text-end">@item.TaxAmount.ToString("C")</td>
                                             <td class="text-end">@item.Subtotal.ToString("C")</td>
@@ -159,15 +215,22 @@
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="4" class="text-end"><strong>Items Subtotal:</strong></td>
+                                        <td colspan="7" class="text-end"><strong>Items Subtotal:</strong></td>
                                         <td class="text-end">@Model.SubOrder.Subtotal.ToString("C")</td>
                                     </tr>
                                     <tr>
-                                        <td colspan="4" class="text-end"><strong>Shipping:</strong></td>
+                                        <td colspan="7" class="text-end"><strong>Shipping:</strong></td>
                                         <td class="text-end">@Model.SubOrder.ShippingCost.ToString("C")</td>
                                     </tr>
+                                    @if (Model.SubOrder.RefundedAmount > 0)
+                                    {
+                                        <tr class="text-danger">
+                                            <td colspan="7" class="text-end"><strong>Refunded:</strong></td>
+                                            <td class="text-end">-@Model.SubOrder.RefundedAmount.ToString("C")</td>
+                                        </tr>
+                                    }
                                     <tr class="table-primary">
-                                        <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                        <td colspan="7" class="text-end"><strong>Total:</strong></td>
                                         <td class="text-end"><strong>@Model.SubOrder.TotalAmount.ToString("C")</strong></td>
                                     </tr>
                                 </tfoot>
@@ -408,6 +471,14 @@
                         }
 
                         <div class="d-grid gap-2">
+                            @if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Paid || Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Preparing)
+                            {
+                                <!-- Partial Fulfillment Option (Phase 2) -->
+                                <a asp-page="/Seller/PartialFulfillment" asp-route-subOrderId="@Model.SubOrder.Id" class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-boxes"></i> Partial Fulfillment
+                                </a>
+                            }
+
                             @if (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Paid)
                             {
                                 <form method="post" asp-page-handler="UpdateStatus" asp-route-subOrderId="@Model.SubOrder.Id" asp-route-action="preparing">

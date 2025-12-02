@@ -1,0 +1,286 @@
+@page
+@model MercatoApp.Pages.Seller.PartialFulfillmentModel
+@{
+    ViewData["Title"] = "Partial Fulfillment - Seller Panel";
+}
+
+<div class="container-fluid my-4">
+    @if (Model.SubOrder != null)
+    {
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a asp-page="/Seller/Orders">Orders</a></li>
+                        <li class="breadcrumb-item"><a asp-page="/Seller/OrderDetails" asp-route-subOrderId="@Model.SubOrder.Id">@Model.SubOrder.SubOrderNumber</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Partial Fulfillment</li>
+                    </ol>
+                </nav>
+                <h1 class="mb-3">
+                    <i class="bi bi-boxes"></i> Partial Fulfillment
+                </h1>
+                <p class="lead text-muted">
+                    Ship or cancel individual items within this sub-order.
+                </p>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Html.Raw(TempData["SuccessMessage"])
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @Html.Raw(TempData["ErrorMessage"])
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Sub-Order #@Model.SubOrder.SubOrderNumber</h5>
+                            <partial name="_OrderStatusBadge" model="Model.SubOrder.Status" />
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Partial Fulfillment:</strong> You can ship or cancel individual items or quantities. 
+                            Items marked as shipped will be sent to the customer. Cancelled items will trigger a refund.
+                        </div>
+
+                        @if (Model.Items.Any())
+                        {
+                            <form method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="subOrderId" value="@Model.SubOrder.Id" />
+
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Status</th>
+                                                <th class="text-center">Ordered</th>
+                                                <th class="text-center">Shipped</th>
+                                                <th class="text-center">Cancelled</th>
+                                                <th class="text-center">Available</th>
+                                                <th class="text-end">Unit Price</th>
+                                                <th class="text-center">Ship Qty</th>
+                                                <th class="text-center">Cancel Qty</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in Model.Items)
+                                            {
+                                                var availableQty = item.Quantity - item.QuantityShipped - item.QuantityCancelled;
+                                                var canTakeAction = availableQty > 0 && 
+                                                    (Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Paid || 
+                                                     Model.SubOrder.Status == MercatoApp.Models.OrderStatus.Preparing);
+
+                                                <tr>
+                                                    <td>
+                                                        <strong>@item.ProductTitle</strong>
+                                                        @if (!string.IsNullOrEmpty(item.VariantDescription))
+                                                        {
+                                                            <br/><small class="text-muted">@item.VariantDescription</small>
+                                                        }
+                                                        @if (item.RefundedAmount > 0)
+                                                        {
+                                                            <br/><small class="text-danger">Refunded: @item.RefundedAmount.ToString("C")</small>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        @if (item.Status == MercatoApp.Models.OrderItemStatus.New)
+                                                        {
+                                                            <span class="badge bg-warning text-dark">
+                                                                <i class="bi bi-hourglass-split"></i> New
+                                                            </span>
+                                                        }
+                                                        else if (item.Status == MercatoApp.Models.OrderItemStatus.Preparing)
+                                                        {
+                                                            <span class="badge bg-info">
+                                                                <i class="bi bi-box-seam"></i> Preparing
+                                                            </span>
+                                                        }
+                                                        else if (item.Status == MercatoApp.Models.OrderItemStatus.Shipped)
+                                                        {
+                                                            <span class="badge bg-success">
+                                                                <i class="bi bi-truck"></i> Shipped
+                                                            </span>
+                                                        }
+                                                        else if (item.Status == MercatoApp.Models.OrderItemStatus.Cancelled)
+                                                        {
+                                                            <span class="badge bg-secondary">
+                                                                <i class="bi bi-x-circle"></i> Cancelled
+                                                            </span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <strong>@item.Quantity</strong>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (item.QuantityShipped > 0)
+                                                        {
+                                                            <span class="badge bg-success">@item.QuantityShipped</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">-</span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (item.QuantityCancelled > 0)
+                                                        {
+                                                            <span class="badge bg-secondary">@item.QuantityCancelled</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">-</span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (availableQty > 0)
+                                                        {
+                                                            <strong class="text-primary">@availableQty</strong>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">0</span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-end">
+                                                        @item.UnitPrice.ToString("C")
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (canTakeAction)
+                                                        {
+                                                            <input type="number" 
+                                                                   class="form-control form-control-sm text-center" 
+                                                                   name="ItemQuantitiesToShip[@item.Id]" 
+                                                                   min="0" 
+                                                                   max="@availableQty" 
+                                                                   value="0"
+                                                                   style="width: 80px;"
+                                                                   aria-label="Quantity to ship for @item.ProductTitle" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">-</span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (canTakeAction)
+                                                        {
+                                                            <input type="number" 
+                                                                   class="form-control form-control-sm text-center" 
+                                                                   name="ItemQuantitiesToCancel[@item.Id]" 
+                                                                   min="0" 
+                                                                   max="@availableQty" 
+                                                                   value="0"
+                                                                   style="width: 80px;"
+                                                                   aria-label="Quantity to cancel for @item.ProductTitle" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">-</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="d-flex justify-content-between mt-4">
+                                    <a asp-page="/Seller/OrderDetails" asp-route-subOrderId="@Model.SubOrder.Id" class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-left"></i> Back to Order Details
+                                    </a>
+                                    <div>
+                                        <button type="submit" asp-page-handler="ShipItems" class="btn btn-success me-2">
+                                            <i class="bi bi-truck"></i> Ship Selected Items
+                                        </button>
+                                        <button type="submit" asp-page-handler="CancelItems" class="btn btn-danger" 
+                                                onclick="return confirm('Are you sure you want to cancel the selected items? This will trigger a refund.');">
+                                            <i class="bi bi-x-circle"></i> Cancel Selected Items
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> No items found for this sub-order.
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Information Panel -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> How Partial Fulfillment Works
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Shipping Items:</h6>
+                        <ul>
+                            <li>Enter the quantity you want to ship for each item</li>
+                            <li>You can ship all or part of the available quantity</li>
+                            <li>Shipped items will update the sub-order status</li>
+                            <li>Remaining items will stay in their current status</li>
+                        </ul>
+
+                        <h6 class="mt-3">Cancelling Items:</h6>
+                        <ul>
+                            <li>Enter the quantity you want to cancel for each item</li>
+                            <li>Cancelled items will trigger an automatic refund calculation</li>
+                            <li>The refund amount includes the item price and proportional tax</li>
+                            <li>You cannot cancel items that have already been shipped</li>
+                        </ul>
+
+                        <h6 class="mt-3">Item Status:</h6>
+                        <ul>
+                            <li><span class="badge bg-warning text-dark">New</span> - Item awaiting processing</li>
+                            <li><span class="badge bg-info">Preparing</span> - Item being prepared for shipment</li>
+                            <li><span class="badge bg-success">Shipped</span> - Item has been shipped to customer</li>
+                            <li><span class="badge bg-secondary">Cancelled</span> - Item has been cancelled</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Prevent double-click on form submissions
+        document.addEventListener('DOMContentLoaded', function() {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    const submitButton = e.submitter;
+                    if (submitButton) {
+                        // Disable the button to prevent double-clicks
+                        submitButton.disabled = true;
+                        // Re-enable after 3 seconds as a fallback
+                        setTimeout(() => {
+                            submitButton.disabled = false;
+                        }, 3000);
+                    }
+                });
+            });
+        });
+    </script>
+}
