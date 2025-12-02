@@ -73,8 +73,10 @@ public class EscrowService : IEscrowService
             var grossAmount = subOrder.TotalAmount;
 
             // Determine the category ID for commission calculation
-            // Use the category from the first item in the sub-order (most common case)
-            // In a real-world scenario, you might want to calculate commission per item
+            // LIMITATION: Uses the category from the first item in the sub-order.
+            // If a sub-order contains items from multiple categories with different commission rates,
+            // only the first item's category commission will be applied to the entire sub-order.
+            // Future enhancement: Consider calculating commission per item and aggregating.
             int? categoryId = subOrder.Items.FirstOrDefault()?.Product?.CategoryId;
 
             // Calculate commission using the new commission service
@@ -106,24 +108,32 @@ public class EscrowService : IEscrowService
         // Save all escrow transactions in a single batch
         await _context.SaveChangesAsync();
 
-        // Record commission transactions for audit trail (now that we have escrow IDs)
+        // Batch record commission transactions for audit trail
+        var commissionTransactions = new List<CommissionTransaction>();
         foreach (var (escrow, categoryId, percentage, fixedAmount, source) in commissionDetails)
         {
-            await _commissionService.RecordCommissionTransactionAsync(
-                escrow.Id,
-                escrow.StoreId,
-                categoryId,
-                CommissionTransactionType.Initial,
-                escrow.GrossAmount,
-                escrow.CommissionAmount,
-                percentage,
-                fixedAmount,
-                source,
-                $"Initial commission for sub-order {escrow.SellerSubOrderId}");
+            commissionTransactions.Add(new CommissionTransaction
+            {
+                EscrowTransactionId = escrow.Id,
+                StoreId = escrow.StoreId,
+                CategoryId = categoryId,
+                TransactionType = CommissionTransactionType.Initial,
+                GrossAmount = escrow.GrossAmount,
+                CommissionPercentage = percentage,
+                FixedCommissionAmount = fixedAmount,
+                CommissionAmount = escrow.CommissionAmount,
+                CommissionSource = source,
+                Notes = $"Initial commission for sub-order {escrow.SellerSubOrderId}",
+                CreatedAt = DateTime.UtcNow
+            });
         }
 
-        _logger.LogInformation("Created {Count} escrow allocations for payment transaction {PaymentTransactionId}",
-            escrowTransactions.Count, paymentTransactionId);
+        // Save all commission transactions in a single batch
+        _context.CommissionTransactions.AddRange(commissionTransactions);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Created {Count} escrow allocations with {CommissionCount} commission transactions for payment transaction {PaymentTransactionId}",
+            escrowTransactions.Count, commissionTransactions.Count, paymentTransactionId);
 
         return escrowTransactions;
     }

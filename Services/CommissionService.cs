@@ -122,6 +122,21 @@ public class CommissionService : ICommissionService
         string source,
         string? notes = null)
     {
+        // Validate transaction type
+        if (transactionType != CommissionTransactionType.Initial && 
+            transactionType != CommissionTransactionType.RefundAdjustment)
+        {
+            throw new ArgumentException($"Invalid transaction type: {transactionType}. Must be one of: {CommissionTransactionType.Initial}, {CommissionTransactionType.RefundAdjustment}", nameof(transactionType));
+        }
+
+        // Validate commission source
+        if (source != CommissionSource.Global && 
+            source != CommissionSource.Seller && 
+            source != CommissionSource.Category)
+        {
+            throw new ArgumentException($"Invalid commission source: {source}. Must be one of: {CommissionSource.Global}, {CommissionSource.Seller}, {CommissionSource.Category}", nameof(source));
+        }
+
         var commissionTransaction = new CommissionTransaction
         {
             EscrowTransactionId = escrowTransactionId,
@@ -220,10 +235,11 @@ public class CommissionService : ICommissionService
             return 0;
         }
 
-        // Guard against division by zero
+        // Guard against division by zero or negative amounts
         if (originalCommission.GrossAmount <= 0)
         {
-            _logger.LogWarning("Original gross amount is zero or negative for escrow {EscrowTransactionId}, cannot calculate refund ratio", escrowTransactionId);
+            _logger.LogWarning("Original gross amount is zero or negative ({GrossAmount}) for escrow {EscrowTransactionId}, cannot calculate refund ratio", 
+                originalCommission.GrossAmount, escrowTransactionId);
             return 0;
         }
 
