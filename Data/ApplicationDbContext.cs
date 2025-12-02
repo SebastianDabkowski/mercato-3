@@ -192,6 +192,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ReturnRequestItem> ReturnRequestItems { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the commission transactions table.
+    /// </summary>
+    public DbSet<CommissionTransaction> CommissionTransactions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -256,6 +261,13 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure decimal precision for commission overrides
+            entity.Property(e => e.CommissionPercentageOverride)
+                .HasPrecision(5, 2);
+
+            entity.Property(e => e.FixedCommissionAmountOverride)
+                .HasPrecision(18, 2);
         });
 
         modelBuilder.Entity<SellerOnboardingDraft>(entity =>
@@ -410,6 +422,13 @@ public class ApplicationDbContext : DbContext
                 .WithMany(e => e.ChildCategories)
                 .HasForeignKey(e => e.ParentCategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision for commission overrides
+            entity.Property(e => e.CommissionPercentageOverride)
+                .HasPrecision(5, 2);
+
+            entity.Property(e => e.FixedCommissionAmountOverride)
+                .HasPrecision(18, 2);
         });
 
         modelBuilder.Entity<ProductImage>(entity =>
@@ -957,6 +976,55 @@ public class ApplicationDbContext : DbContext
                 .HasPrecision(18, 2);
 
             entity.Property(e => e.RefundedAmount)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<CommissionTransaction>(entity =>
+        {
+            // Index on escrow transaction ID for finding all commission transactions for an escrow
+            entity.HasIndex(e => e.EscrowTransactionId);
+
+            // Index on store ID for finding all commission transactions for a seller
+            entity.HasIndex(e => e.StoreId);
+
+            // Index on category ID for category-based reporting
+            entity.HasIndex(e => e.CategoryId);
+
+            // Index on transaction type for filtering by type
+            entity.HasIndex(e => e.TransactionType);
+
+            // Composite index for date-based queries
+            entity.HasIndex(e => new { e.StoreId, e.CreatedAt });
+
+            // Configure relationship with EscrowTransaction
+            entity.HasOne(e => e.EscrowTransaction)
+                .WithMany()
+                .HasForeignKey(e => e.EscrowTransactionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with Category (optional)
+            entity.HasOne(e => e.Category)
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure decimal precision
+            entity.Property(e => e.GrossAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.CommissionPercentage)
+                .HasPrecision(5, 2);
+
+            entity.Property(e => e.FixedCommissionAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.CommissionAmount)
                 .HasPrecision(18, 2);
         });
     }

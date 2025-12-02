@@ -10,6 +10,7 @@ namespace MercatoApp.Services;
 public class EscrowService : IEscrowService
 {
     private readonly ApplicationDbContext _context;
+    private readonly ICommissionService _commissionService;
     private readonly ILogger<EscrowService> _logger;
 
     /// <summary>
@@ -29,9 +30,11 @@ public class EscrowService : IEscrowService
 
     public EscrowService(
         ApplicationDbContext context,
+        ICommissionService commissionService,
         ILogger<EscrowService> logger)
     {
         _context = context;
+        _commissionService = commissionService;
         _logger = logger;
     }
 
@@ -41,6 +44,8 @@ public class EscrowService : IEscrowService
         var paymentTransaction = await _context.PaymentTransactions
             .Include(pt => pt.Order)
                 .ThenInclude(o => o.SubOrders)
+                    .ThenInclude(so => so.Items)
+                        .ThenInclude(oi => oi.Product)
             .FirstOrDefaultAsync(pt => pt.Id == paymentTransactionId);
 
         if (paymentTransaction == null)
@@ -48,9 +53,9 @@ public class EscrowService : IEscrowService
             throw new InvalidOperationException("Payment transaction not found.");
         }
 
-        if (paymentTransaction.Status != PaymentStatus.Completed)
+        if (paymentTransaction.Status != PaymentStatus.Completed && paymentTransaction.Status != PaymentStatus.Authorized)
         {
-            throw new InvalidOperationException("Payment must be completed before creating escrow allocations.");
+            throw new InvalidOperationException("Payment must be completed or authorized before creating escrow allocations.");
         }
 
         // Check if escrow allocations already exist (idempotency)
@@ -70,7 +75,16 @@ public class EscrowService : IEscrowService
         foreach (var subOrder in paymentTransaction.Order.SubOrders)
         {
             var grossAmount = subOrder.TotalAmount;
-            var commissionAmount = await CalculateCommissionAsync(grossAmount);
+
+            // Determine the category ID for commission calculation
+            // Use the category from the first item in the sub-order (most common case)
+            // In a real-world scenario, you might want to calculate commission per item
+            int? categoryId = subOrder.Items.FirstOrDefault()?.Product?.CategoryId;
+
+            // Calculate commission using the new commission service
+            var (commissionAmount, percentage, fixedAmount, source, appliedCategoryId) = 
+                await _commissionService.CalculateCommissionAsync(grossAmount, subOrder.StoreId, categoryId);
+
             var netAmount = grossAmount - commissionAmount;
 
             var escrowTransaction = new EscrowTransaction
@@ -88,9 +102,23 @@ public class EscrowService : IEscrowService
 
             _context.EscrowTransactions.Add(escrowTransaction);
             escrowTransactions.Add(escrowTransaction);
-        }
 
-        await _context.SaveChangesAsync();
+            // Save to get the escrow transaction ID
+            await _context.SaveChangesAsync();
+
+            // Record commission transaction for audit trail
+            await _commissionService.RecordCommissionTransactionAsync(
+                escrowTransaction.Id,
+                subOrder.StoreId,
+                appliedCategoryId,
+                CommissionTransactionType.Initial,
+                grossAmount,
+                commissionAmount,
+                percentage,
+                fixedAmount,
+                source,
+                $"Initial commission for sub-order {subOrder.SubOrderNumber}");
+        }
 
         _logger.LogInformation("Created {Count} escrow allocations for payment transaction {PaymentTransactionId}",
             escrowTransactions.Count, paymentTransactionId);
@@ -174,7 +202,16 @@ public class EscrowService : IEscrowService
             throw new ArgumentException($"Refund amount ({refundAmount}) exceeds available escrow amount ({availableAmount}).", nameof(refundAmount));
         }
 
+        // Recalculate commission for the refund
+        var commissionAdjustment = await _commissionService.RecalculateCommissionForRefundAsync(
+            escrowTransactionId,
+            refundAmount,
+            escrowTransaction.CommissionAmount);
+
+        // Update escrow transaction
         escrowTransaction.RefundedAmount += refundAmount;
+        escrowTransaction.CommissionAmount += commissionAdjustment; // Adjustment is negative for refunds
+        escrowTransaction.NetAmount = escrowTransaction.GrossAmount - escrowTransaction.RefundedAmount - escrowTransaction.CommissionAmount;
         escrowTransaction.UpdatedAt = DateTime.UtcNow;
         
         // Determine new status based on refund amount (use tolerance for decimal comparison)
@@ -198,8 +235,8 @@ public class EscrowService : IEscrowService
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Returned {RefundAmount} from escrow transaction {EscrowTransactionId} to buyer (total refunded: {TotalRefunded})",
-            refundAmount, escrowTransactionId, escrowTransaction.RefundedAmount);
+        _logger.LogInformation("Returned {RefundAmount} from escrow transaction {EscrowTransactionId} to buyer (total refunded: {TotalRefunded}, commission adjusted: {CommissionAdjustment})",
+            refundAmount, escrowTransactionId, escrowTransaction.RefundedAmount, commissionAdjustment);
 
         return true;
     }

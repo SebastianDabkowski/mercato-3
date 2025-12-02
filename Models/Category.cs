@@ -49,6 +49,20 @@ public class Category
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets the custom commission percentage override for this category.
+    /// If null, uses the global or seller-specific commission configuration.
+    /// </summary>
+    [Range(0, 100)]
+    public decimal? CommissionPercentageOverride { get; set; }
+
+    /// <summary>
+    /// Gets or sets the custom fixed commission amount override for this category.
+    /// If null, uses the global or seller-specific commission configuration.
+    /// </summary>
+    [Range(0, 999999.99)]
+    public decimal? FixedCommissionAmountOverride { get; set; }
+
+    /// <summary>
     /// Gets or sets the date and time when the category was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
