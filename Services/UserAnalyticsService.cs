@@ -69,22 +69,25 @@ public class UserAnalyticsService : IUserAnalyticsService
                 .CountAsync();
 
             // Total active users = unique users who either logged in OR placed an order
-            // (Some users might have placed orders without logging in separately, e.g., session was already active)
-            var activeUserIds = await _context.LoginEvents
+            var loginUserIds = await _context.LoginEvents
                 .Where(le => le.IsSuccessful 
                     && le.CreatedAt >= start 
                     && le.CreatedAt <= end
                     && le.UserId.HasValue)
                 .Select(le => le.UserId!.Value)
-                .Union(
-                    _context.Orders
-                        .Where(o => o.OrderedAt >= start 
-                            && o.OrderedAt <= end
-                            && o.UserId.HasValue)
-                        .Select(o => o.UserId!.Value)
-                )
                 .Distinct()
-                .CountAsync();
+                .ToListAsync();
+
+            var orderUserIds = await _context.Orders
+                .Where(o => o.OrderedAt >= start 
+                    && o.OrderedAt <= end
+                    && o.UserId.HasValue)
+                .Select(o => o.UserId!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            // Union the two lists and count unique values
+            var activeUserIds = loginUserIds.Union(orderUserIds).Distinct().Count();
 
             var metrics = new UserAnalyticsMetrics
             {
@@ -137,7 +140,7 @@ public class UserAnalyticsService : IUserAnalyticsService
 
             // Create a complete date range with zero counts for missing days
             var result = new List<DailyRegistrationData>();
-            for (var date = start; date <= end.Date; date = date.AddDays(1))
+            for (var date = start; date <= endDate; date = date.AddDays(1))
             {
                 var buyerCount = registrations
                     .Where(r => r.Date == date && r.UserType == UserType.Buyer)
@@ -201,7 +204,7 @@ public class UserAnalyticsService : IUserAnalyticsService
 
             // Create a complete date range with zero counts for missing days
             var result = new List<DailyActivityData>();
-            for (var date = start; date <= end.Date; date = date.AddDays(1))
+            for (var date = start; date <= endDate; date = date.AddDays(1))
             {
                 var loginCount = loginsByDate
                     .Where(l => l.Date == date)

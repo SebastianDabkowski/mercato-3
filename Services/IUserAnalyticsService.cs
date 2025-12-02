@@ -18,7 +18,7 @@ public class UserAnalyticsMetrics
 
     /// <summary>
     /// Gets or sets the total number of active users in the period.
-    /// Active users are defined as users who logged in at least once during the period.
+    /// Active users are defined as users who logged in or placed an order at least once during the period.
     /// </summary>
     public int TotalActiveUsers { get; set; }
 
