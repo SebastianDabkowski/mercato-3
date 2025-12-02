@@ -385,6 +385,8 @@ public class MockShippingProviderService : IShippingProviderService
     /// <summary>
     /// Generates a mock PDF shipping label.
     /// In production, this would be replaced with actual PDF generation from the carrier.
+    /// NOTE: This is a minimal valid PDF for testing purposes only.
+    /// Real implementations should use a PDF library or receive pre-generated labels from the carrier API.
     /// </summary>
     private byte[] GenerateMockPdfLabel(
         string trackingNumber,
@@ -393,9 +395,51 @@ public class MockShippingProviderService : IShippingProviderService
         Address shipFromAddress,
         Address shipToAddress)
     {
-        // Create a simple text-based mock PDF
-        // In production, this would use a PDF library or receive actual label data from the carrier API
-        var pdfContent = $@"%PDF-1.4
+        // Create a minimal but valid PDF structure
+        // This approach creates a simple text-based PDF that most readers can parse
+        var content = $@"BT
+/F1 18 Tf
+50 750 Td
+({carrierService}) Tj
+/F1 12 Tf
+50 720 Td
+(Shipment ID: {providerShipmentId}) Tj
+0 -20 Td
+(Date: {DateTime.UtcNow:yyyy-MM-dd}) Tj
+0 -40 Td
+/F1 14 Tf
+(FROM:) Tj
+0 -20 Td
+/F1 12 Tf
+({shipFromAddress.FullName}) Tj
+0 -18 Td
+({shipFromAddress.AddressLine1}) Tj
+0 -18 Td
+({shipFromAddress.City}, {shipFromAddress.StateProvince} {shipFromAddress.PostalCode}) Tj
+0 -18 Td
+({shipFromAddress.CountryCode}) Tj
+0 -40 Td
+/F1 14 Tf
+(TO:) Tj
+0 -20 Td
+/F1 12 Tf
+({shipToAddress.FullName}) Tj
+0 -18 Td
+({shipToAddress.AddressLine1}) Tj
+0 -18 Td
+({shipToAddress.City}, {shipToAddress.StateProvince} {shipToAddress.PostalCode}) Tj
+0 -18 Td
+({shipToAddress.CountryCode}) Tj
+0 -40 Td
+/F1 24 Tf
+(Tracking:) Tj
+0 -30 Td
+({trackingNumber}) Tj
+ET";
+
+        var contentLength = System.Text.Encoding.ASCII.GetByteCount(content);
+
+        var pdfStructure = $@"%PDF-1.4
 1 0 obj
 <<
 /Type /Catalog
@@ -418,11 +462,6 @@ endobj
 /F1 <<
 /Type /Font
 /Subtype /Type1
-/BaseFont /Helvetica
->>
-/F2 <<
-/Type /Font
-/Subtype /Type1
 /BaseFont /Helvetica-Bold
 >>
 >>
@@ -433,48 +472,10 @@ endobj
 endobj
 4 0 obj
 <<
-/Length 950
+/Length {contentLength}
 >>
 stream
-BT
-/F2 18 Tf
-50 750 Td
-({carrierService}) Tj
-/F1 12 Tf
-50 720 Td
-(Shipment ID: {providerShipmentId}) Tj
-0 -20 Td
-(Date: {DateTime.UtcNow:yyyy-MM-dd}) Tj
-0 -40 Td
-/F2 14 Tf
-(FROM:) Tj
-0 -20 Td
-/F1 12 Tf
-({shipFromAddress.FullName}) Tj
-0 -18 Td
-({shipFromAddress.AddressLine1}) Tj
-0 -18 Td
-({shipFromAddress.City}, {shipFromAddress.StateProvince} {shipFromAddress.PostalCode}) Tj
-0 -18 Td
-({shipFromAddress.CountryCode}) Tj
-0 -40 Td
-/F2 14 Tf
-(TO:) Tj
-0 -20 Td
-/F1 12 Tf
-({shipToAddress.FullName}) Tj
-0 -18 Td
-({shipToAddress.AddressLine1}) Tj
-0 -18 Td
-({shipToAddress.City}, {shipToAddress.StateProvince} {shipToAddress.PostalCode}) Tj
-0 -18 Td
-({shipToAddress.CountryCode}) Tj
-0 -40 Td
-/F2 24 Tf
-(Tracking Number:) Tj
-0 -30 Td
-({trackingNumber}) Tj
-ET
+{content}
 endstream
 endobj
 xref
@@ -483,17 +484,17 @@ xref
 0000000009 00000 n
 0000000058 00000 n
 0000000115 00000 n
-0000000366 00000 n
+0000000315 00000 n
 trailer
 <<
 /Size 5
 /Root 1 0 R
 >>
 startxref
-1366
-%%EOF
-";
+{400 + contentLength}
+%%EOF";
 
-        return System.Text.Encoding.UTF8.GetBytes(pdfContent);
+        // Convert to bytes using ASCII encoding (PDF structure uses ASCII)
+        return System.Text.Encoding.ASCII.GetBytes(pdfStructure);
     }
 }

@@ -254,7 +254,8 @@ public class OrderDetailsModel : PageModel
             subOrderId, userId);
 
         // Return the label as a file download
-        var fileName = $"shipping-label-{shipment.TrackingNumber}.{labelData.Format.ToLowerInvariant()}";
+        var format = string.IsNullOrEmpty(labelData.Format) ? "pdf" : labelData.Format.ToLowerInvariant();
+        var fileName = $"shipping-label-{shipment.TrackingNumber}.{format}";
         return File(labelData.Data, labelData.ContentType, fileName);
     }
 

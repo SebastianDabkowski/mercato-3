@@ -14,6 +14,9 @@ public class ShippingProviderIntegrationService : IShippingProviderIntegrationSe
     private readonly ILogger<ShippingProviderIntegrationService> _logger;
     private readonly IOrderStatusService _orderStatusService;
     private readonly IEmailService _emailService;
+    // Note: _labelService is available for future use (e.g., cleanup operations, label management)
+    // Currently labels are stored directly in shipment records, but this service provides
+    // additional label management capabilities if needed.
     private readonly IShippingLabelService _labelService;
     private readonly Dictionary<string, IShippingProviderService> _providers;
 
