@@ -229,18 +229,21 @@ public class ExternalLoginModel : PageModel
         // Merge guest cart into user cart after social login
         // Cart merge is important but not critical to authentication - if it fails, we log the error
         // but don't block the login. The user can still add items to cart after successful login.
-        try
+        if (loginResult.User != null)
         {
-            var guestCartId = _guestCartService.GetGuestCartIdIfExists();
-            if (!string.IsNullOrEmpty(guestCartId))
+            try
             {
-                await _cartService.MergeCartsAsync(loginResult.User!.Id, guestCartId);
-                _guestCartService.ClearGuestCartId();
+                var guestCartId = _guestCartService.GetGuestCartIdIfExists();
+                if (!string.IsNullOrEmpty(guestCartId))
+                {
+                    await _cartService.MergeCartsAsync(loginResult.User.Id, guestCartId);
+                    _guestCartService.ClearGuestCartId();
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to merge guest cart during social login for user {UserId}", loginResult.User!.Id);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to merge guest cart during social login for user {UserId}", loginResult.User.Id);
+            }
         }
 
         _logger.LogInformation(

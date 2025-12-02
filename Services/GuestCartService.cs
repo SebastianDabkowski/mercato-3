@@ -41,11 +41,7 @@ public class GuestCartService : IGuestCartService
     /// <inheritdoc />
     public string GetOrCreateGuestCartId()
     {
-        var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null)
-        {
-            throw new InvalidOperationException("HttpContext is not available.");
-        }
+        var httpContext = GetHttpContext();
 
         // Try to get existing guest cart ID from cookie
         var guestCartId = httpContext.Request.Cookies[GuestCartCookieName];
@@ -75,24 +71,24 @@ public class GuestCartService : IGuestCartService
     /// <inheritdoc />
     public string? GetGuestCartIdIfExists()
     {
-        var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null)
-        {
-            throw new InvalidOperationException("HttpContext is not available.");
-        }
-
+        var httpContext = GetHttpContext();
         return httpContext.Request.Cookies[GuestCartCookieName];
     }
 
     /// <inheritdoc />
     public void ClearGuestCartId()
     {
+        var httpContext = GetHttpContext();
+        httpContext.Response.Cookies.Delete(GuestCartCookieName);
+    }
+
+    private HttpContext GetHttpContext()
+    {
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext == null)
         {
             throw new InvalidOperationException("HttpContext is not available.");
         }
-
-        httpContext.Response.Cookies.Delete(GuestCartCookieName);
+        return httpContext;
     }
 }

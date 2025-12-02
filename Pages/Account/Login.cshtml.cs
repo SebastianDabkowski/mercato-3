@@ -151,18 +151,21 @@ public class LoginModel : PageModel
         // Merge guest cart into user cart after login
         // Cart merge is important but not critical to authentication - if it fails, we log the error
         // but don't block the login. The user can still add items to cart after successful login.
-        try
+        if (result.User != null)
         {
-            var guestCartId = _guestCartService.GetGuestCartIdIfExists();
-            if (!string.IsNullOrEmpty(guestCartId))
+            try
             {
-                await _cartService.MergeCartsAsync(result.User!.Id, guestCartId);
-                _guestCartService.ClearGuestCartId();
+                var guestCartId = _guestCartService.GetGuestCartIdIfExists();
+                if (!string.IsNullOrEmpty(guestCartId))
+                {
+                    await _cartService.MergeCartsAsync(result.User.Id, guestCartId);
+                    _guestCartService.ClearGuestCartId();
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to merge guest cart during login for user {UserId}", result.User!.Id);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to merge guest cart during login for user {UserId}", result.User.Id);
+            }
         }
 
         // Check if seller requires KYC - redirect to KYC page if not approved
