@@ -76,6 +76,21 @@ public class Order
     public decimal TotalAmount { get; set; }
 
     /// <summary>
+    /// Gets or sets the selected payment method ID.
+    /// </summary>
+    public int? PaymentMethodId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the selected payment method (navigation property).
+    /// </summary>
+    public PaymentMethod? PaymentMethod { get; set; }
+
+    /// <summary>
+    /// Gets or sets the payment status for this order.
+    /// </summary>
+    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+
+    /// <summary>
     /// Gets or sets the date and time when the order was placed.
     /// </summary>
     public DateTime OrderedAt { get; set; } = DateTime.UtcNow;
@@ -89,4 +104,14 @@ public class Order
     /// Gets or sets the order items (navigation property).
     /// </summary>
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
+
+    /// <summary>
+    /// Gets or sets the shipping methods selected for each seller (navigation property).
+    /// </summary>
+    public ICollection<OrderShippingMethod> ShippingMethods { get; set; } = new List<OrderShippingMethod>();
+
+    /// <summary>
+    /// Gets or sets the payment transactions for this order (navigation property).
+    /// </summary>
+    public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
 }

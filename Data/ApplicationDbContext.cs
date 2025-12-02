@@ -142,6 +142,26 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<OrderItem> OrderItems { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the shipping methods table.
+    /// </summary>
+    public DbSet<ShippingMethod> ShippingMethods { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the order shipping methods table.
+    /// </summary>
+    public DbSet<OrderShippingMethod> OrderShippingMethods { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the payment methods table.
+    /// </summary>
+    public DbSet<PaymentMethod> PaymentMethods { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the payment transactions table.
+    /// </summary>
+    public DbSet<PaymentTransaction> PaymentTransactions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

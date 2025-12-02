@@ -1,0 +1,65 @@
+@page
+@model MercatoApp.Pages.Checkout.PaymentAuthorizeModel
+@{
+    ViewData["Title"] = "Payment Authorization";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-shield-lock"></i> Secure Payment Gateway
+                    </h4>
+                    <p class="small mb-0 mt-2">This is a simulated payment page for testing</p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Demo Mode:</strong> This is a simulation. No actual payment will be processed.
+                    </div>
+
+                    <h5 class="mb-3">Payment Details</h5>
+                    
+                    <dl class="row mb-4">
+                        <dt class="col-sm-4">Payment Method:</dt>
+                        <dd class="col-sm-8">@Model.PaymentMethodName</dd>
+
+                        <dt class="col-sm-4">Amount:</dt>
+                        <dd class="col-sm-8">
+                            <strong class="text-primary h5">@Model.Amount.ToString("C")</strong>
+                        </dd>
+
+                        <dt class="col-sm-4">Transaction ID:</dt>
+                        <dd class="col-sm-8">
+                            <code>@Model.TransactionId</code>
+                        </dd>
+                    </dl>
+
+                    <hr />
+
+                    <p class="text-muted small mb-4">
+                        <i class="bi bi-lock"></i> Your payment information is protected with industry-standard encryption.
+                    </p>
+
+                    <form method="post">
+                        <input type="hidden" name="transactionId" value="@Model.TransactionId" />
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="approve" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle"></i> Authorize Payment
+                            </button>
+                            <button type="submit" name="action" value="cancel" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center text-muted small">
+                    <i class="bi bi-shield-check"></i> Powered by MercatoApp Payment Gateway
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -146,9 +146,9 @@ public class AddressModel : PageModel
                 return Page();
             }
 
-            // Store the selected address in session and proceed to review
+            // Store the selected address in session and proceed to shipping
             HttpContext.Session.SetInt32("CheckoutAddressId", SelectedAddressId.Value);
-            return RedirectToPage("/Checkout/Review");
+            return RedirectToPage("/Checkout/Shipping");
         }
         else if (action == "addNew")
         {
@@ -186,9 +186,9 @@ public class AddressModel : PageModel
 
                 var createdAddress = await _addressService.CreateAddressAsync(address);
 
-                // Store the address in session and proceed to review
+                // Store the address in session and proceed to shipping
                 HttpContext.Session.SetInt32("CheckoutAddressId", createdAddress.Id);
-                return RedirectToPage("/Checkout/Review");
+                return RedirectToPage("/Checkout/Shipping");
             }
             catch (InvalidOperationException ex)
             {

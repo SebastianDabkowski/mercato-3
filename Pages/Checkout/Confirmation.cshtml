@@ -39,6 +39,58 @@
                             </div>
                         </div>
 
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6>Payment Status</h6>
+                                @if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Completed)
+                                {
+                                    <p class="text-success">
+                                        <i class="bi bi-check-circle-fill"></i> <strong>Payment Confirmed</strong>
+                                    </p>
+                                }
+                                else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Authorized)
+                                {
+                                    <p class="text-info">
+                                        <i class="bi bi-clock-fill"></i> <strong>Payment Authorized</strong>
+                                    </p>
+                                }
+                                else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Pending)
+                                {
+                                    <p class="text-warning">
+                                        <i class="bi bi-hourglass-split"></i> <strong>Payment Pending</strong>
+                                    </p>
+                                }
+                                else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Failed)
+                                {
+                                    <p class="text-danger">
+                                        <i class="bi bi-x-circle-fill"></i> <strong>Payment Failed</strong>
+                                    </p>
+                                }
+                                @if (Model.Order.PaymentMethod != null)
+                                {
+                                    <p class="text-muted small">
+                                        Payment Method: @Model.Order.PaymentMethod.Name
+                                    </p>
+                                }
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Shipping Methods</h6>
+                                @if (Model.Order.ShippingMethods.Any())
+                                {
+                                    foreach (var osm in Model.Order.ShippingMethods)
+                                    {
+                                        <p class="text-muted small mb-1">
+                                            <strong>@osm.Store.StoreName:</strong> @osm.ShippingMethod.Name
+                                            @if (!string.IsNullOrEmpty(osm.ShippingMethod.EstimatedDelivery))
+                                            {
+                                                <br/><span class="text-muted">(@osm.ShippingMethod.EstimatedDelivery)</span>
+                                            }
+                                        </p>
+                                    }
+                                }
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6">
                                 <h6>Delivery Address</h6>

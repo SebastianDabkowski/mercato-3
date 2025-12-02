@@ -11,26 +11,32 @@ public class OrderService : IOrderService
 {
     private readonly ApplicationDbContext _context;
     private readonly ICartService _cartService;
-    private readonly ICartTotalsService _cartTotalsService;
+    private readonly IShippingMethodService _shippingMethodService;
     private readonly IAddressService _addressService;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
         ApplicationDbContext context,
         ICartService cartService,
-        ICartTotalsService cartTotalsService,
+        IShippingMethodService shippingMethodService,
         IAddressService addressService,
         ILogger<OrderService> logger)
     {
         _context = context;
         _cartService = cartService;
-        _cartTotalsService = cartTotalsService;
+        _shippingMethodService = shippingMethodService;
         _addressService = addressService;
         _logger = logger;
     }
 
     /// <inheritdoc />
-    public async Task<Order> CreateOrderFromCartAsync(int? userId, string? sessionId, int addressId, string? guestEmail)
+    public async Task<Order> CreateOrderFromCartAsync(
+        int? userId, 
+        string? sessionId, 
+        int addressId, 
+        Dictionary<int, int> selectedShippingMethods,
+        int paymentMethodId,
+        string? guestEmail)
     {
         // Validate address
         var address = await _addressService.GetAddressByIdAsync(addressId);
@@ -54,7 +60,31 @@ public class OrderService : IOrderService
         }
 
         // Calculate totals
-        var cartTotals = await _cartTotalsService.CalculateCartTotalsAsync(userId, sessionId);
+        decimal itemsSubtotal = 0;
+        decimal totalShipping = 0;
+
+        foreach (var sellerGroup in itemsBySeller)
+        {
+            var store = sellerGroup.Key;
+            var items = sellerGroup.Value;
+
+            // Calculate items subtotal
+            itemsSubtotal += items.Sum(i => i.PriceAtAdd * i.Quantity);
+
+            // Calculate shipping cost for this seller
+            if (selectedShippingMethods.ContainsKey(store.Id))
+            {
+                var shippingMethodId = selectedShippingMethods[store.Id];
+                var shippingCost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethodId, items);
+                totalShipping += shippingCost;
+            }
+            else
+            {
+                throw new InvalidOperationException($"Shipping method not selected for store {store.StoreName}.");
+            }
+        }
+
+        decimal totalAmount = itemsSubtotal + totalShipping;
 
         // Generate order number
         var orderNumber = await GenerateOrderNumberAsync();
@@ -67,10 +97,12 @@ public class OrderService : IOrderService
             GuestEmail = guestEmail,
             DeliveryAddressId = addressId,
             Status = OrderStatus.Pending,
-            Subtotal = cartTotals.ItemsSubtotal,
-            ShippingCost = cartTotals.TotalShipping,
+            Subtotal = itemsSubtotal,
+            ShippingCost = totalShipping,
             TaxAmount = 0, // Tax calculation can be added later
-            TotalAmount = cartTotals.TotalAmount,
+            TotalAmount = totalAmount,
+            PaymentMethodId = paymentMethodId,
+            PaymentStatus = PaymentStatus.Pending,
             OrderedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -83,6 +115,23 @@ public class OrderService : IOrderService
         {
             var store = sellerGroup.Key;
             var items = sellerGroup.Value;
+
+            // Create order shipping method record
+            if (selectedShippingMethods.ContainsKey(store.Id))
+            {
+                var shippingMethodId = selectedShippingMethods[store.Id];
+                var shippingCost = await _shippingMethodService.CalculateShippingCostAsync(shippingMethodId, items);
+                
+                var orderShippingMethod = new OrderShippingMethod
+                {
+                    OrderId = order.Id,
+                    StoreId = store.Id,
+                    ShippingMethodId = shippingMethodId,
+                    ShippingCost = shippingCost
+                };
+
+                _context.OrderShippingMethods.Add(orderShippingMethod);
+            }
 
             foreach (var cartItem in items)
             {
@@ -132,6 +181,13 @@ public class OrderService : IOrderService
                 .ThenInclude(i => i.Product)
             .Include(o => o.Items)
                 .ThenInclude(i => i.ProductVariant)
+            .Include(o => o.PaymentMethod)
+            .Include(o => o.PaymentTransactions)
+                .ThenInclude(t => t.PaymentMethod)
+            .Include(o => o.ShippingMethods)
+                .ThenInclude(sm => sm.ShippingMethod)
+            .Include(o => o.ShippingMethods)
+                .ThenInclude(sm => sm.Store)
             .FirstOrDefaultAsync(o => o.Id == orderId);
     }
 

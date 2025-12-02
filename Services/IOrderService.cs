@@ -13,9 +13,17 @@ public interface IOrderService
     /// <param name="userId">The user ID (null for guest checkout).</param>
     /// <param name="sessionId">The session ID (for guest checkout).</param>
     /// <param name="addressId">The delivery address ID.</param>
+    /// <param name="selectedShippingMethods">Dictionary of store ID to shipping method ID.</param>
+    /// <param name="paymentMethodId">The selected payment method ID.</param>
     /// <param name="guestEmail">The guest email (for guest checkout).</param>
     /// <returns>The created order.</returns>
-    Task<Order> CreateOrderFromCartAsync(int? userId, string? sessionId, int addressId, string? guestEmail);
+    Task<Order> CreateOrderFromCartAsync(
+        int? userId, 
+        string? sessionId, 
+        int addressId, 
+        Dictionary<int, int> selectedShippingMethods,
+        int paymentMethodId,
+        string? guestEmail);
 
     /// <summary>
     /// Gets an order by its ID.

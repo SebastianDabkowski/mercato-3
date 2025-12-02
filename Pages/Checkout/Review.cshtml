@@ -9,6 +9,8 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-page="/Cart">Cart</a></li>
             <li class="breadcrumb-item"><a asp-page="/Checkout/Address">Delivery Address</a></li>
+            <li class="breadcrumb-item"><a asp-page="/Checkout/Shipping">Shipping Method</a></li>
+            <li class="breadcrumb-item"><a asp-page="/Checkout/Payment">Payment Method</a></li>
             <li class="breadcrumb-item active" aria-current="page">Review Order</li>
         </ol>
     </nav>
@@ -49,6 +51,79 @@
                             @Model.DeliveryAddress.CountryCode<br />
                             Phone: @Model.DeliveryAddress.PhoneNumber
                         </address>
+                    }
+                </div>
+            </div>
+
+            <!-- Shipping Methods -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-truck"></i> Shipping Methods
+                    </h5>
+                    <a asp-page="/Checkout/Shipping" class="btn btn-sm btn-outline-primary">Change</a>
+                </div>
+                <div class="card-body">
+                    @foreach (var kvp in Model.SelectedShippingMethodsBySeller)
+                    {
+                        var storeId = kvp.Key;
+                        var shippingMethod = kvp.Value;
+                        var store = Model.ItemsBySeller.Keys.FirstOrDefault(s => s.Id == storeId);
+                        var shippingCost = Model.ShippingCostsBySeller.ContainsKey(storeId) ? Model.ShippingCostsBySeller[storeId] : 0;
+                        
+                        if (store != null)
+                        {
+                            <div class="d-flex justify-content-between align-items-start mb-2 @(kvp.Key != Model.SelectedShippingMethodsBySeller.Keys.Last() ? "border-bottom pb-2" : "")">
+                                <div>
+                                    <strong>@store.StoreName</strong>
+                                    <div class="text-muted small">
+                                        @shippingMethod.Name
+                                        @if (!string.IsNullOrEmpty(shippingMethod.EstimatedDelivery))
+                                        {
+                                            <span> - @shippingMethod.EstimatedDelivery</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    @if (shippingCost == 0)
+                                    {
+                                        <span class="badge bg-success">Free</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@shippingCost.ToString("C")</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-credit-card"></i> Payment Method
+                    </h5>
+                    <a asp-page="/Checkout/Payment" class="btn btn-sm btn-outline-primary">Change</a>
+                </div>
+                <div class="card-body">
+                    @if (Model.SelectedPaymentMethod != null)
+                    {
+                        <div class="d-flex align-items-center">
+                            @if (!string.IsNullOrEmpty(Model.SelectedPaymentMethod.IconClass))
+                            {
+                                <i class="@Model.SelectedPaymentMethod.IconClass fs-4 me-3"></i>
+                            }
+                            <div>
+                                <strong>@Model.SelectedPaymentMethod.Name</strong>
+                                @if (!string.IsNullOrEmpty(Model.SelectedPaymentMethod.Description))
+                                {
+                                    <div class="text-muted small">@Model.SelectedPaymentMethod.Description</div>
+                                }
+                            </div>
+                        </div>
                     }
                 </div>
             </div>
@@ -129,14 +204,14 @@
                                 <h6>Order Summary</h6>
                                 <dl class="row mb-0">
                                     <dt class="col-6">Subtotal:</dt>
-                                    <dd class="col-6 text-end">@Model.CartTotals.ItemsSubtotal.ToString("C")</dd>
+                                    <dd class="col-6 text-end">@Model.ItemsSubtotal.ToString("C")</dd>
 
                                     <dt class="col-6">Shipping:</dt>
-                                    <dd class="col-6 text-end">@Model.CartTotals.TotalShipping.ToString("C")</dd>
+                                    <dd class="col-6 text-end">@Model.TotalShipping.ToString("C")</dd>
 
                                     <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
                                     <dd class="col-6 text-end border-top pt-2 mt-2">
-                                        <strong class="text-primary h5">@Model.CartTotals.TotalAmount.ToString("C")</strong>
+                                        <strong class="text-primary h5">@Model.TotalAmount.ToString("C")</strong>
                                     </dd>
                                 </dl>
                             </div>
@@ -159,14 +234,14 @@
                     <div class="card-body">
                         <dl class="row mb-0">
                             <dt class="col-6">Subtotal:</dt>
-                            <dd class="col-6 text-end">@Model.CartTotals.ItemsSubtotal.ToString("C")</dd>
+                            <dd class="col-6 text-end">@Model.ItemsSubtotal.ToString("C")</dd>
 
                             <dt class="col-6">Shipping:</dt>
-                            <dd class="col-6 text-end">@Model.CartTotals.TotalShipping.ToString("C")</dd>
+                            <dd class="col-6 text-end">@Model.TotalShipping.ToString("C")</dd>
 
                             <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
                             <dd class="col-6 text-end border-top pt-2 mt-2">
-                                <strong class="text-primary h5">@Model.CartTotals.TotalAmount.ToString("C")</strong>
+                                <strong class="text-primary h5">@Model.TotalAmount.ToString("C")</strong>
                             </dd>
                         </dl>
 
