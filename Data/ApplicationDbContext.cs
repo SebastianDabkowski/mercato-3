@@ -302,6 +302,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<SellerRating> SellerRatings { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the email logs table for tracking email notifications.
+    /// </summary>
+    public DbSet<EmailLog> EmailLogs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

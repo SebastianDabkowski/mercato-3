@@ -12,6 +12,7 @@ public class RefundService : IRefundService
     private readonly ApplicationDbContext _context;
     private readonly IPaymentProviderService _paymentProviderService;
     private readonly IEscrowService _escrowService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<RefundService> _logger;
 
     /// <summary>
@@ -23,11 +24,13 @@ public class RefundService : IRefundService
         ApplicationDbContext context,
         IPaymentProviderService paymentProviderService,
         IEscrowService escrowService,
+        IEmailService emailService,
         ILogger<RefundService> logger)
     {
         _context = context;
         _paymentProviderService = paymentProviderService;
         _escrowService = escrowService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -141,6 +144,17 @@ public class RefundService : IRefundService
                 }
 
                 _logger.LogInformation("Full refund {RefundNumber} completed successfully", refundTransaction.RefundNumber);
+
+                // Send refund confirmation email to buyer
+                try
+                {
+                    await _emailService.SendRefundConfirmationEmailAsync(refundTransaction, order);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Failed to send refund confirmation email for {RefundNumber}", refundTransaction.RefundNumber);
+                    // Don't fail the refund if email fails
+                }
             }
             else
             {
@@ -286,6 +300,17 @@ public class RefundService : IRefundService
                 }
 
                 _logger.LogInformation("Partial refund {RefundNumber} completed successfully", refundTransaction.RefundNumber);
+
+                // Send refund confirmation email to buyer
+                try
+                {
+                    await _emailService.SendRefundConfirmationEmailAsync(refundTransaction, order);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Failed to send refund confirmation email for {RefundNumber}", refundTransaction.RefundNumber);
+                    // Don't fail the refund if email fails
+                }
             }
             else
             {
