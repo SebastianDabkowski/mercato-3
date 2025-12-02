@@ -154,11 +154,14 @@
                             <dd class="col-6 text-end">@Model.TotalItems</dd>
 
                             <dt class="col-6">Subtotal:</dt>
-                            <dd class="col-6 text-end">@Model.TotalAmount.ToString("C")</dd>
+                            <dd class="col-6 text-end">@Model.CartTotals.ItemsSubtotal.ToString("C")</dd>
+
+                            <dt class="col-6">Shipping:</dt>
+                            <dd class="col-6 text-end">@Model.CartTotals.TotalShipping.ToString("C")</dd>
 
                             <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
                             <dd class="col-6 text-end border-top pt-2 mt-2">
-                                <strong class="text-primary h5">@Model.TotalAmount.ToString("C")</strong>
+                                <strong class="text-primary h5">@Model.CartTotals.TotalAmount.ToString("C")</strong>
                             </dd>
                         </dl>
 
@@ -168,6 +171,47 @@
                         <p class="text-muted small text-center mt-2 mb-0">Checkout functionality coming soon</p>
                     </div>
                 </div>
+
+                @if (Model.CartTotals.ShippingBreakdown.Any())
+                {
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="bi bi-truck"></i> Shipping Details
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var shipping in Model.CartTotals.ShippingBreakdown)
+                            {
+                                <div class="mb-3 pb-3 @(shipping != Model.CartTotals.ShippingBreakdown.Last() ? "border-bottom" : "")">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>@shipping.Store.StoreName</strong>
+                                            <div class="text-muted small">
+                                                @shipping.ItemCount item@(shipping.ItemCount != 1 ? "s" : "") 
+                                                (@shipping.ItemsSubtotal.ToString("C"))
+                                            </div>
+                                            @if (shipping.IsFreeShipping)
+                                            {
+                                                <span class="badge bg-success mt-1">Free Shipping</span>
+                                            }
+                                        </div>
+                                        <div class="text-end">
+                                            @if (shipping.IsFreeShipping)
+                                            {
+                                                <span class="text-success"><strong>FREE</strong></span>
+                                            }
+                                            else
+                                            {
+                                                <strong>@shipping.ShippingCost.ToString("C")</strong>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
 
                 <div class="card mt-3">
                     <div class="card-body">

@@ -117,6 +117,16 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<CartItem> CartItems { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the shipping rules table.
+    /// </summary>
+    public DbSet<ShippingRule> ShippingRules { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the commission configurations table.
+    /// </summary>
+    public DbSet<CommissionConfig> CommissionConfigs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -532,6 +542,41 @@ public class ApplicationDbContext : DbContext
 
             // Configure PriceAtAdd precision
             entity.Property(e => e.PriceAtAdd)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<ShippingRule>(entity =>
+        {
+            // Index on store ID for fast lookups
+            entity.HasIndex(e => e.StoreId);
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure decimal precision
+            entity.Property(e => e.BaseCost)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.AdditionalItemCost)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.FreeShippingThreshold)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<CommissionConfig>(entity =>
+        {
+            // Index for querying active configuration
+            entity.HasIndex(e => e.IsActive);
+
+            // Configure decimal precision
+            entity.Property(e => e.CommissionPercentage)
+                .HasPrecision(5, 2);
+
+            entity.Property(e => e.FixedCommissionAmount)
                 .HasPrecision(18, 2);
         });
     }

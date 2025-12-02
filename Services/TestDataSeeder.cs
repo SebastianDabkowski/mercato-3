@@ -134,6 +134,132 @@ public static class TestDataSeeder
 
         context.Products.AddRange(products);
         await context.SaveChangesAsync();
+
+        // Create a second test seller user and store
+        var sellerUser2 = new User
+        {
+            Email = "seller2@test.com",
+            PasswordHash = HashPassword("Test123!"),
+            FirstName = "Second",
+            LastName = "Seller",
+            UserType = UserType.Seller,
+            Status = AccountStatus.Active,
+            AcceptedTerms = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(sellerUser2);
+        await context.SaveChangesAsync();
+
+        var store2 = new Store
+        {
+            UserId = sellerUser2.Id,
+            StoreName = "Fashion Boutique",
+            Slug = "fashion-boutique",
+            Category = "Fashion",
+            Description = "Trendy fashion items",
+            Status = StoreStatus.Active,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Stores.Add(store2);
+        await context.SaveChangesAsync();
+
+        // Create products for the second seller
+        var products2 = new[]
+        {
+            new Product
+            {
+                StoreId = store2.Id,
+                Title = "Leather Wallet",
+                Description = "Genuine leather bifold wallet with RFID protection",
+                Price = 45.00m,
+                Stock = 40,
+                Category = "Fashion",
+                Status = ProductStatus.Active,
+                Condition = ProductCondition.New,
+                ImageUrls = "https://via.placeholder.com/300x300?text=Wallet",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            },
+            new Product
+            {
+                StoreId = store2.Id,
+                Title = "Designer Sunglasses",
+                Description = "UV protection polarized sunglasses",
+                Price = 89.99m,
+                Stock = 25,
+                Category = "Fashion",
+                Status = ProductStatus.Active,
+                Condition = ProductCondition.New,
+                ImageUrls = "https://via.placeholder.com/300x300?text=Sunglasses",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }
+        };
+
+        context.Products.AddRange(products2);
+        await context.SaveChangesAsync();
+
+        // Create a test buyer user
+        var buyerUser = new User
+        {
+            Email = "buyer@test.com",
+            PasswordHash = HashPassword("Test123!"),
+            FirstName = "Test",
+            LastName = "Buyer",
+            UserType = UserType.Buyer,
+            Status = AccountStatus.Active,
+            AcceptedTerms = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(buyerUser);
+        await context.SaveChangesAsync();
+
+        // Create a test cart with items from both sellers
+        var cart = new Cart
+        {
+            UserId = buyerUser.Id,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Carts.Add(cart);
+        await context.SaveChangesAsync();
+
+        // Add cart items from first seller
+        var cartItems = new[]
+        {
+            new CartItem
+            {
+                CartId = cart.Id,
+                ProductId = products[0].Id, // Wireless Headphones
+                Quantity = 2,
+                PriceAtAdd = products[0].Price,
+                AddedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            },
+            new CartItem
+            {
+                CartId = cart.Id,
+                ProductId = products[2].Id, // Bluetooth Speaker
+                Quantity = 1,
+                PriceAtAdd = products[2].Price,
+                AddedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            },
+            // Add items from second seller
+            new CartItem
+            {
+                CartId = cart.Id,
+                ProductId = products2[0].Id, // Leather Wallet
+                Quantity = 1,
+                PriceAtAdd = products2[0].Price,
+                AddedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }
+        };
+
+        context.CartItems.AddRange(cartItems);
+        await context.SaveChangesAsync();
     }
 
     private static string HashPassword(string password)
