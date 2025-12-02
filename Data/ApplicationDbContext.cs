@@ -168,6 +168,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<PaymentTransaction> PaymentTransactions { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the escrow transactions table.
+    /// </summary>
+    public DbSet<EscrowTransaction> EscrowTransactions { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the promo codes table.
     /// </summary>
     public DbSet<PromoCode> PromoCodes { get; set; } = null!;
@@ -901,6 +906,55 @@ public class ApplicationDbContext : DbContext
 
             // Configure decimal precision
             entity.Property(e => e.RefundAmount)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<EscrowTransaction>(entity =>
+        {
+            // Index on payment transaction ID for finding all escrows from a payment
+            entity.HasIndex(e => e.PaymentTransactionId);
+
+            // Index on seller sub-order ID for finding escrow by sub-order
+            entity.HasIndex(e => e.SellerSubOrderId).IsUnique();
+
+            // Index on store ID for finding all escrows for a seller
+            entity.HasIndex(e => e.StoreId);
+
+            // Index on status for filtering escrows by status
+            entity.HasIndex(e => e.Status);
+
+            // Composite index for finding eligible payouts
+            entity.HasIndex(e => new { e.Status, e.EligibleForPayoutAt });
+
+            // Configure relationship with PaymentTransaction
+            entity.HasOne(e => e.PaymentTransaction)
+                .WithMany()
+                .HasForeignKey(e => e.PaymentTransactionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with SellerSubOrder
+            entity.HasOne(e => e.SellerSubOrder)
+                .WithMany()
+                .HasForeignKey(e => e.SellerSubOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.GrossAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.CommissionAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.NetAmount)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.RefundedAmount)
                 .HasPrecision(18, 2);
         });
     }
