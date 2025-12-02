@@ -144,6 +144,17 @@
                         }
                         else
                         {
+                            @if (Model.User.RequirePasswordReset)
+                            {
+                                <div class="alert alert-warning mb-3">
+                                    <h6 class="alert-heading">
+                                        <i class="bi bi-shield-exclamation"></i> Password Reset Required
+                                    </h6>
+                                    <p class="mb-0">
+                                        This user must reset their password on next login for security reasons.
+                                    </p>
+                                </div>
+                            }
                             <p class="text-muted mb-3">Manage this user's account status and permissions.</p>
                             <a asp-page="/Admin/Users/Block" asp-route-id="@Model.User.Id" class="btn btn-danger">
                                 <i class="bi bi-ban"></i> Block Account
@@ -360,9 +371,15 @@
                                                     {
                                                         "BlockUser" => "danger",
                                                         "UnblockUser" => "success",
+                                                        "ReactivateUser" => "success",
                                                         _ => "secondary"
                                                     })">
-                                                        @log.Action
+                                                        @(log.Action switch
+                                                        {
+                                                            "UnblockUser" => "Reactivate User",
+                                                            "BlockUser" => "Block User",
+                                                            _ => log.Action
+                                                        })
                                                     </span>
                                                 </td>
                                                 <td>
