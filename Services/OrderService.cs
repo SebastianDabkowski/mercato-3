@@ -329,7 +329,7 @@ public class OrderService : IOrderService
                     if (!productsDict.TryGetValue(cartItem.ProductId, out var product))
                     {
                         result.IsValid = false;
-                        result.GeneralError = $"Product '{cartItem.Product.Title}' is no longer available.";
+                        result.GeneralError = $"Product ID {cartItem.ProductId} is no longer available.";
                         continue;
                     }
 

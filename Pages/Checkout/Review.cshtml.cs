@@ -48,9 +48,6 @@ public class ReviewModel : PageModel
     [BindProperty]
     public string? GuestEmailInput { get; set; }
 
-    public List<string> ValidationErrors { get; set; } = new();
-    public List<string> ValidationWarnings { get; set; } = new();
-
     public async Task<IActionResult> OnGetAsync()
     {
         var (userId, sessionId) = GetUserOrSessionId();
@@ -228,33 +225,7 @@ public class ReviewModel : PageModel
         {
             _logger.LogError(ex, "Error creating order");
             
-            // Parse the error message to display it properly
-            var errorMessage = ex.Message;
-            if (errorMessage.Contains("Stock issues:") || errorMessage.Contains("Price changes:"))
-            {
-                // Split multi-line error messages
-                var lines = errorMessage.Split(new[] { " • " }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var line in lines)
-                {
-                    if (line.Contains("Stock issues:"))
-                    {
-                        ValidationErrors.Add("Some items in your cart are no longer available:");
-                    }
-                    else if (line.Contains("Price changes:"))
-                    {
-                        ValidationErrors.Add("Some prices have changed since you added items to your cart:");
-                    }
-                    else if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        ValidationErrors.Add(line.Trim());
-                    }
-                }
-                
-                // Reload the page with validation errors
-                await OnGetAsync();
-                return Page();
-            }
-            
+            // Display the error message from the validation
             TempData["ErrorMessage"] = ex.Message;
             await OnGetAsync();
             return Page();
