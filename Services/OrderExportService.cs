@@ -323,10 +323,8 @@ public class OrderExportService : IOrderExportService
         string? buyerEmail = null)
     {
         var query = _context.SellerSubOrders
-            .Include(so => so.ParentOrder)
-                .ThenInclude(o => o.User)
-            .Include(so => so.ParentOrder)
-                .ThenInclude(o => o.DeliveryAddress)
+            .Include(so => so.ParentOrder.User)
+            .Include(so => so.ParentOrder.DeliveryAddress)
             .Include(so => so.Items)
             .Include(so => so.ShippingMethod)
             .Where(so => so.StoreId == storeId);
@@ -400,7 +398,7 @@ public class OrderExportService : IOrderExportService
 
     /// <summary>
     /// Gets the items details from a seller sub-order formatted for export.
-    /// Format: "SKU: {sku}, Product: {name}, Variant: {variant}, Qty: {qty}, Price: ${price}"
+    /// Format: "Product: {name}, Variant: {variant}, Qty: {qty}, Price: ${price}"
     /// Multiple items are separated by semicolons.
     /// </summary>
     private static string GetItemsDetails(SellerSubOrder subOrder)
@@ -413,14 +411,20 @@ public class OrderExportService : IOrderExportService
         var itemDescriptions = new List<string>();
         foreach (var item in subOrder.Items)
         {
+            // Sanitize product title and variant to avoid breaking the format
+            var productTitle = SanitizeItemField(item.ProductTitle);
+            var variantDesc = !string.IsNullOrWhiteSpace(item.VariantDescription) 
+                ? SanitizeItemField(item.VariantDescription) 
+                : null;
+
             var parts = new List<string>
             {
-                $"Product: {item.ProductTitle}"
+                $"Product: {productTitle}"
             };
 
-            if (!string.IsNullOrWhiteSpace(item.VariantDescription))
+            if (!string.IsNullOrWhiteSpace(variantDesc))
             {
-                parts.Add($"Variant: {item.VariantDescription}");
+                parts.Add($"Variant: {variantDesc}");
             }
 
             parts.Add($"Qty: {item.Quantity}");
@@ -430,6 +434,32 @@ public class OrderExportService : IOrderExportService
         }
 
         return string.Join("; ", itemDescriptions);
+    }
+
+    /// <summary>
+    /// Sanitizes item field values to prevent breaking CSV format delimiters.
+    /// Removes commas, semicolons, newlines, and excessive whitespace.
+    /// </summary>
+    private static string SanitizeItemField(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        // Replace delimiters and newlines with spaces
+        value = value.Replace(',', ' ')
+                     .Replace(';', ' ')
+                     .Replace('\n', ' ')
+                     .Replace('\r', ' ');
+
+        // Collapse multiple spaces into single space
+        while (value.Contains("  "))
+        {
+            value = value.Replace("  ", " ");
+        }
+
+        return value.Trim();
     }
 
     /// <summary>
