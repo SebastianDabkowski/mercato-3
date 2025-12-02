@@ -1,0 +1,189 @@
+@page
+@model MercatoApp.Pages.Account.ReturnRequestsModel
+@{
+    ViewData["Title"] = "My Returns & Complaints";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <h1 class="mb-4">
+                <i class="bi bi-arrow-return-left"></i> My Returns & Complaints
+            </h1>
+
+            <!-- Success/Error Messages -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (!Model.ReturnRequests.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 
+                    You haven't submitted any return or complaint requests yet. 
+                    <a asp-page="/Account/Orders" class="alert-link">View your orders</a> to initiate a request.
+                </div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <p class="text-muted">
+                        Total requests: <strong>@Model.ReturnRequests.Count</strong>
+                    </p>
+                </div>
+
+                <!-- List of Return Requests -->
+                <div class="list-group">
+                    @foreach (var request in Model.ReturnRequests)
+                    {
+                        var requestTypeLabel = request.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "Complaint" : "Return";
+                        var requestIcon = request.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "exclamation-triangle" : "arrow-return-left";
+                        var cardBorderClass = request.Status == MercatoApp.Models.ReturnStatus.Rejected ? "border-danger" : 
+                                            request.Status == MercatoApp.Models.ReturnStatus.Completed ? "border-success" : 
+                                            request.Status == MercatoApp.Models.ReturnStatus.Approved ? "border-primary" : "";
+
+                        <div class="card mb-3 @cardBorderClass">
+                            <div class="card-header @(request.Status == MercatoApp.Models.ReturnStatus.Rejected ? "bg-light-danger" : "")">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h5 class="mb-1">
+                                            <i class="bi bi-@requestIcon"></i>
+                                            @requestTypeLabel #@request.ReturnNumber
+                                        </h5>
+                                        <small class="text-muted">
+                                            Order: <a asp-page="/Account/OrderDetail" asp-route-orderId="@request.SubOrder.ParentOrder.Id" class="text-decoration-none">
+                                                @request.SubOrder.ParentOrder.OrderNumber
+                                            </a>
+                                            | Sub-Order: @request.SubOrder.SubOrderNumber
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                                        <partial name="_ReturnStatusBadge" model="request.Status" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <p class="mb-2">
+                                            <strong>
+                                                <i class="bi bi-shop"></i> Seller:
+                                            </strong> @request.SubOrder.Store.StoreName
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>
+                                                <i class="bi bi-calendar"></i> Requested:
+                                            </strong> @request.RequestedAt.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Request Type:</strong> @requestTypeLabel
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Reason:</strong> @request.Reason
+                                        </p>
+                                        @if (!string.IsNullOrEmpty(request.Description))
+                                        {
+                                            <p class="mb-2">
+                                                <strong>Description:</strong>
+                                                <br/>
+                                                <span class="text-muted">@request.Description</span>
+                                            </p>
+                                        }
+
+                                        <!-- Items being returned/complained about -->
+                                        @if (request.IsFullReturn)
+                                        {
+                                            <p class="mb-2">
+                                                <span class="badge bg-info">All Items in Sub-Order</span>
+                                            </p>
+                                        }
+                                        else if (request.Items.Any())
+                                        {
+                                            <p class="mb-1"><strong>Items:</strong></p>
+                                            <ul class="list-unstyled ms-3">
+                                                @foreach (var item in request.Items)
+                                                {
+                                                    <li class="mb-1">
+                                                        <i class="bi bi-box"></i>
+                                                        @item.OrderItem.ProductTitle
+                                                        @if (!string.IsNullOrEmpty(item.OrderItem.VariantDescription))
+                                                        {
+                                                            <small class="text-muted">(@item.OrderItem.VariantDescription)</small>
+                                                        }
+                                                        <span class="badge bg-secondary">Qty: @item.Quantity</span>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+
+                                        <!-- Seller response -->
+                                        @if (request.Status == MercatoApp.Models.ReturnStatus.Approved && !string.IsNullOrEmpty(request.SellerNotes))
+                                        {
+                                            <div class="alert alert-success mt-3 mb-0">
+                                                <strong><i class="bi bi-check-circle"></i> Seller Response:</strong><br/>
+                                                @request.SellerNotes
+                                            </div>
+                                        }
+                                        @if (request.Status == MercatoApp.Models.ReturnStatus.Rejected && !string.IsNullOrEmpty(request.SellerNotes))
+                                        {
+                                            <div class="alert alert-danger mt-3 mb-0">
+                                                <strong><i class="bi bi-x-circle"></i> Rejection Reason:</strong><br/>
+                                                @request.SellerNotes
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-md-4 text-md-end">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <p class="mb-2">
+                                                    <strong>Refund Amount:</strong>
+                                                </p>
+                                                <p class="h4 text-primary mb-0">
+                                                    @request.RefundAmount.ToString("C")
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <a asp-page="/Account/OrderDetail" asp-route-orderId="@request.SubOrder.ParentOrder.Id" class="btn btn-outline-primary btn-sm w-100">
+                                                <i class="bi bi-eye"></i> View Order
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (request.Status == MercatoApp.Models.ReturnStatus.Approved)
+                            {
+                                <div class="card-footer bg-light">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i> 
+                                        Approved on @request.ApprovedAt?.ToString("MMM dd, yyyy"). Please follow seller instructions for return shipment.
+                                    </small>
+                                </div>
+                            }
+                            @if (request.Status == MercatoApp.Models.ReturnStatus.Completed)
+                            {
+                                <div class="card-footer bg-success text-white">
+                                    <small>
+                                        <i class="bi bi-check-circle"></i> 
+                                        Completed on @request.CompletedAt?.ToString("MMM dd, yyyy"). Refund has been processed.
+                                    </small>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Back button -->
+            <div class="text-center mt-4">
+                <a asp-page="/Account/Orders" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Orders
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

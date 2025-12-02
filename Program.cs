@@ -219,6 +219,10 @@ if (app.Environment.IsDevelopment())
     var invoiceService = scope.ServiceProvider.GetRequiredService<ICommissionInvoiceService>();
     var commissionService = scope.ServiceProvider.GetRequiredService<ICommissionService>();
     await CommissionInvoiceTestScenario.RunTestAsync(context, invoiceService, commissionService);
+
+    // Run return/complaint request test scenario
+    var returnRequestService = scope.ServiceProvider.GetRequiredService<IReturnRequestService>();
+    await ReturnComplaintTestScenario.RunTestAsync(context, returnRequestService);
 }
 
 // Configure the HTTP request pipeline.

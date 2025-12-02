@@ -89,6 +89,7 @@ public class OrderDetailModel : PageModel
     /// </summary>
     /// <param name="subOrderId">The sub-order ID to return.</param>
     /// <param name="orderId">The parent order ID for redirect.</param>
+    /// <param name="requestType">The type of request (return or complaint).</param>
     /// <param name="reason">The return reason.</param>
     /// <param name="description">Optional description from buyer.</param>
     /// <param name="isFullReturn">Whether to return all items.</param>
@@ -96,6 +97,7 @@ public class OrderDetailModel : PageModel
     public async Task<IActionResult> OnPostInitiateReturnAsync(
         int subOrderId,
         int orderId,
+        ReturnRequestType requestType,
         ReturnReason reason, 
         string? description, 
         bool isFullReturn = true)
@@ -107,17 +109,48 @@ public class OrderDetailModel : PageModel
             return RedirectToPage("/Account/Login");
         }
 
+        // Validate request type - must be one of the defined enum values
+        if (requestType != ReturnRequestType.Return && requestType != ReturnRequestType.Complaint)
+        {
+            _logger.LogWarning("Invalid request type: {RequestType}", requestType);
+            TempData["ErrorMessage"] = "Invalid request type. Please select either Return or Complaint.";
+            return RedirectToPage(new { orderId });
+        }
+
+        // Validate reason - must be one of the defined enum values
+        if (reason != ReturnReason.Damaged && 
+            reason != ReturnReason.WrongItem && 
+            reason != ReturnReason.NotAsDescribed && 
+            reason != ReturnReason.ChangedMind && 
+            reason != ReturnReason.ArrivedLate && 
+            reason != ReturnReason.Other)
+        {
+            _logger.LogWarning("Invalid return reason: {Reason}", reason);
+            TempData["ErrorMessage"] = "Invalid reason. Please select a valid reason from the list.";
+            return RedirectToPage(new { orderId });
+        }
+
+        // Validate description length if provided
+        if (!string.IsNullOrEmpty(description) && description.Length > 1000)
+        {
+            _logger.LogWarning("Description too long: {Length} characters", description.Length);
+            TempData["ErrorMessage"] = "Description must not exceed 1000 characters.";
+            return RedirectToPage(new { orderId });
+        }
+
         try
         {
             // Create the return request
             var returnRequest = await _returnRequestService.CreateReturnRequestAsync(
                 subOrderId,
                 userId,
+                requestType,
                 reason,
                 description,
                 isFullReturn);
 
-            TempData["SuccessMessage"] = $"Return request {returnRequest.ReturnNumber} has been submitted successfully. The seller will review it shortly.";
+            var requestTypeLabel = requestType == ReturnRequestType.Complaint ? "Complaint" : "Return";
+            TempData["SuccessMessage"] = $"{requestTypeLabel} request {returnRequest.ReturnNumber} has been submitted successfully. The seller will review it shortly.";
             
             // Redirect back to order detail to show the return status
             return RedirectToPage(new { orderId });
