@@ -109,16 +109,21 @@ public class OrderDetailModel : PageModel
             return RedirectToPage("/Account/Login");
         }
 
-        // Validate request type
-        if (!Enum.IsDefined(typeof(ReturnRequestType), requestType))
+        // Validate request type - must be one of the defined enum values
+        if (requestType != ReturnRequestType.Return && requestType != ReturnRequestType.Complaint)
         {
             _logger.LogWarning("Invalid request type: {RequestType}", requestType);
             TempData["ErrorMessage"] = "Invalid request type. Please select either Return or Complaint.";
             return RedirectToPage(new { orderId });
         }
 
-        // Validate reason
-        if (!Enum.IsDefined(typeof(ReturnReason), reason))
+        // Validate reason - must be one of the defined enum values
+        if (reason != ReturnReason.Damaged && 
+            reason != ReturnReason.WrongItem && 
+            reason != ReturnReason.NotAsDescribed && 
+            reason != ReturnReason.ChangedMind && 
+            reason != ReturnReason.ArrivedLate && 
+            reason != ReturnReason.Other)
         {
             _logger.LogWarning("Invalid return reason: {Reason}", reason);
             TempData["ErrorMessage"] = "Invalid reason. Please select a valid reason from the list.";
