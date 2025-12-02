@@ -66,20 +66,18 @@ public class OrderItemFulfillmentService : IOrderItemFulfillmentService
         // Update item status based on fulfillment state
         if (item.QuantityShipped == item.Quantity)
         {
-            // All items shipped
+            // All items shipped - mark as fully shipped
             item.Status = OrderItemStatus.Shipped;
         }
         else if (item.QuantityShipped > 0)
         {
-            // Partial shipment - mark as shipped if preparing, otherwise mark as preparing
-            if (item.Status == OrderItemStatus.Preparing)
-            {
-                item.Status = OrderItemStatus.Shipped;
-            }
-            else if (item.Status == OrderItemStatus.New)
+            // Partial shipment - keep in preparing state
+            // Only mark as fully shipped when all quantity is shipped
+            if (item.Status == OrderItemStatus.New)
             {
                 item.Status = OrderItemStatus.Preparing;
             }
+            // If already preparing, stay in preparing until all shipped
         }
 
         await _context.SaveChangesAsync();

@@ -98,30 +98,7 @@
                                                         }
                                                     </td>
                                                     <td>
-                                                        @if (item.Status == MercatoApp.Models.OrderItemStatus.New)
-                                                        {
-                                                            <span class="badge bg-warning text-dark">
-                                                                <i class="bi bi-hourglass-split"></i> New
-                                                            </span>
-                                                        }
-                                                        else if (item.Status == MercatoApp.Models.OrderItemStatus.Preparing)
-                                                        {
-                                                            <span class="badge bg-info">
-                                                                <i class="bi bi-box-seam"></i> Preparing
-                                                            </span>
-                                                        }
-                                                        else if (item.Status == MercatoApp.Models.OrderItemStatus.Shipped)
-                                                        {
-                                                            <span class="badge bg-success">
-                                                                <i class="bi bi-truck"></i> Shipped
-                                                            </span>
-                                                        }
-                                                        else if (item.Status == MercatoApp.Models.OrderItemStatus.Cancelled)
-                                                        {
-                                                            <span class="badge bg-secondary">
-                                                                <i class="bi bi-x-circle"></i> Cancelled
-                                                            </span>
-                                                        }
+                                                        <partial name="_OrderItemStatusBadge" model="item.Status" />
                                                     </td>
                                                     <td class="text-center">
                                                         <strong>@item.Quantity</strong>

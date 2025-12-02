@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MercatoApp.Models;
 
 namespace MercatoApp.Validation;
 
@@ -11,7 +12,7 @@ public class ValidateOrderItemQuantitiesAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
-        if (value is MercatoApp.Models.OrderItem item)
+        if (value is OrderItem item)
         {
             var totalFulfilled = item.QuantityShipped + item.QuantityCancelled;
             
