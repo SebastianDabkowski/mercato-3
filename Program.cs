@@ -87,6 +87,7 @@ builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
 builder.Services.AddScoped<IOrderItemFulfillmentService, OrderItemFulfillmentService>();
 builder.Services.AddScoped<IOrderExportService, OrderExportService>();
 builder.Services.AddScoped<IReturnRequestService, ReturnRequestService>();
+builder.Services.AddScoped<ISLAService, SLAService>();
 builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();
 builder.Services.AddScoped<IShippingLabelService, ShippingLabelService>();
 builder.Services.AddScoped<IShippingProviderIntegrationService, ShippingProviderIntegrationService>();
@@ -110,6 +111,9 @@ builder.Services.AddScoped<IEscrowService, EscrowService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
+
+// Add background services
+builder.Services.AddHostedService<MercatoApp.Helpers.SLAMonitoringService>();
 
 // Configure role-based authorization policies
 builder.Services.AddAuthorization(options =>
@@ -227,6 +231,10 @@ if (app.Environment.IsDevelopment())
     // Run case resolution and refund linkage test scenario
     var refundService = scope.ServiceProvider.GetRequiredService<IRefundService>();
     await CaseResolutionTestScenario.RunTestAsync(context, returnRequestService, refundService);
+
+    // Run SLA tracking test scenario
+    var slaService = scope.ServiceProvider.GetRequiredService<ISLAService>();
+    await SLATrackingTestScenario.RunTestAsync(context, returnRequestService, slaService);
 }
 
 // Configure the HTTP request pipeline.

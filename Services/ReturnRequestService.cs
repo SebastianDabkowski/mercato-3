@@ -12,6 +12,7 @@ public class ReturnRequestService : IReturnRequestService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ReturnRequestService> _logger;
     private readonly IRefundService _refundService;
+    private readonly ISLAService _slaService;
     private readonly int _returnWindowDays;
 
     // Default return window in days (configurable)
@@ -21,11 +22,13 @@ public class ReturnRequestService : IReturnRequestService
         ApplicationDbContext context,
         ILogger<ReturnRequestService> logger,
         IRefundService refundService,
+        ISLAService slaService,
         IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _refundService = refundService;
+        _slaService = slaService;
         _returnWindowDays = configuration.GetValue<int?>("ReturnPolicy:ReturnWindowDays") ?? DefaultReturnWindowDays;
     }
 
@@ -106,12 +109,25 @@ public class ReturnRequestService : IReturnRequestService
         // Get the sub-order with items
         var subOrder = await _context.SellerSubOrders
             .Include(so => so.Items)
+                .ThenInclude(oi => oi.Product)
             .FirstOrDefaultAsync(so => so.Id == subOrderId);
 
         if (subOrder == null)
         {
             throw new InvalidOperationException("Sub-order not found.");
         }
+
+        // Determine category ID for SLA calculation (use first item's category if available)
+        // Note: For mixed-category orders, this uses the first item's category as a simplification.
+        // Future enhancement: Could use a primary category or most common category in the order.
+        int? categoryId = subOrder.Items.FirstOrDefault()?.Product?.CategoryId;
+
+        // Calculate SLA deadlines
+        var requestedAt = DateTime.UtcNow;
+        var (firstResponseDeadline, resolutionDeadline) = await _slaService.CalculateSLADeadlinesAsync(
+            requestedAt,
+            categoryId,
+            requestType);
 
         // Calculate refund amount
         decimal refundAmount;
@@ -160,7 +176,7 @@ public class ReturnRequestService : IReturnRequestService
         }
 
         // Generate return number
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
+        var timestamp = requestedAt.ToString("yyyyMMdd");
         var prefix = requestType == ReturnRequestType.Complaint ? "CMP" : "RTN";
         var returnNumber = $"{prefix}-{timestamp}-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
 
@@ -177,8 +193,12 @@ public class ReturnRequestService : IReturnRequestService
             RefundAmount = refundAmount,
             IsFullReturn = isFullReturn,
             Items = returnItems,
-            RequestedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            RequestedAt = requestedAt,
+            UpdatedAt = requestedAt,
+            FirstResponseDeadline = firstResponseDeadline,
+            ResolutionDeadline = resolutionDeadline,
+            FirstResponseSLABreached = false,
+            ResolutionSLABreached = false
         };
 
         _context.ReturnRequests.Add(returnRequest);
@@ -286,6 +306,12 @@ public class ReturnRequestService : IReturnRequestService
         returnRequest.ApprovedAt = DateTime.UtcNow;
         returnRequest.UpdatedAt = DateTime.UtcNow;
         
+        // Record seller's first response if not already set
+        if (!returnRequest.SellerFirstResponseAt.HasValue)
+        {
+            returnRequest.SellerFirstResponseAt = DateTime.UtcNow;
+        }
+        
         if (!string.IsNullOrWhiteSpace(sellerNotes))
         {
             returnRequest.SellerNotes = sellerNotes;
@@ -338,6 +364,12 @@ public class ReturnRequestService : IReturnRequestService
         returnRequest.RejectedAt = DateTime.UtcNow;
         returnRequest.UpdatedAt = DateTime.UtcNow;
         returnRequest.SellerNotes = sellerNotes;
+        
+        // Record seller's first response if not already set
+        if (!returnRequest.SellerFirstResponseAt.HasValue)
+        {
+            returnRequest.SellerFirstResponseAt = DateTime.UtcNow;
+        }
 
         await _context.SaveChangesAsync();
 
@@ -410,6 +442,12 @@ public class ReturnRequestService : IReturnRequestService
 
         // Update the return request's UpdatedAt timestamp
         returnRequest.UpdatedAt = DateTime.UtcNow;
+        
+        // Record seller's first response if this is from the seller and not already set
+        if (isFromSeller && !returnRequest.SellerFirstResponseAt.HasValue)
+        {
+            returnRequest.SellerFirstResponseAt = DateTime.UtcNow;
+        }
 
         await _context.SaveChangesAsync();
 
