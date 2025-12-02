@@ -914,7 +914,9 @@ public class ApplicationDbContext : DbContext
             // Index on payment transaction ID for finding all escrows from a payment
             entity.HasIndex(e => e.PaymentTransactionId);
 
-            // Index on seller sub-order ID for finding escrow by sub-order
+            // Unique index on seller sub-order ID enforces one-to-one relationship
+            // This ensures each sub-order has exactly one escrow allocation
+            // Design decision: Each sub-order represents a single payment event
             entity.HasIndex(e => e.SellerSubOrderId).IsUnique();
 
             // Index on store ID for finding all escrows for a seller

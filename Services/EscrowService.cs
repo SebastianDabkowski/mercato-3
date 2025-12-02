@@ -12,6 +12,21 @@ public class EscrowService : IEscrowService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<EscrowService> _logger;
 
+    /// <summary>
+    /// Percentage divisor for commission calculations.
+    /// </summary>
+    private const decimal PercentageDivisor = 100m;
+
+    /// <summary>
+    /// Default number of days after delivery before funds are eligible for payout.
+    /// </summary>
+    private const int DefaultPayoutEligibilityDays = 7;
+
+    /// <summary>
+    /// Tolerance for decimal currency comparisons.
+    /// </summary>
+    private const decimal CurrencyTolerance = 0.01m;
+
     public EscrowService(
         ApplicationDbContext context,
         ILogger<EscrowService> logger)
@@ -162,10 +177,11 @@ public class EscrowService : IEscrowService
         escrowTransaction.RefundedAmount += refundAmount;
         escrowTransaction.UpdatedAt = DateTime.UtcNow;
         
-        // Determine new status based on refund amount
-        if (escrowTransaction.RefundedAmount >= escrowTransaction.GrossAmount)
+        // Determine new status based on refund amount (use tolerance for decimal comparison)
+        var remainingAmount = escrowTransaction.GrossAmount - escrowTransaction.RefundedAmount;
+        if (remainingAmount <= CurrencyTolerance)
         {
-            // Full refund
+            // Full refund (or close enough to avoid rounding errors)
             escrowTransaction.Status = EscrowStatus.ReturnedToBuyer;
             escrowTransaction.ReturnedToBuyerAt = DateTime.UtcNow;
         }
@@ -189,7 +205,7 @@ public class EscrowService : IEscrowService
     }
 
     /// <inheritdoc />
-    public async Task<bool> MarkEscrowEligibleForPayoutAsync(int sellerSubOrderId, int daysUntilEligible = 7)
+    public async Task<bool> MarkEscrowEligibleForPayoutAsync(int sellerSubOrderId, int daysUntilEligible = DefaultPayoutEligibilityDays)
     {
         var escrowTransaction = await GetEscrowTransactionBySubOrderAsync(sellerSubOrderId);
 
@@ -272,7 +288,7 @@ public class EscrowService : IEscrowService
         }
 
         // Calculate percentage-based commission
-        var percentageCommission = grossAmount * (commissionConfig.CommissionPercentage / 100);
+        var percentageCommission = grossAmount * (commissionConfig.CommissionPercentage / PercentageDivisor);
 
         // Add fixed commission amount
         var totalCommission = percentageCommission + commissionConfig.FixedCommissionAmount;
