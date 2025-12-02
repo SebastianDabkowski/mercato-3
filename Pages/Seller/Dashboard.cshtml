@@ -1,0 +1,344 @@
+@page
+@model MercatoApp.Pages.Seller.DashboardModel
+@{
+    ViewData["Title"] = "Sales Dashboard - Seller";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-graph-up"></i> Sales Dashboard
+                </h1>
+                @if (Model.CurrentStore != null)
+                {
+                    <span class="badge bg-secondary">@Model.CurrentStore.StoreName</span>
+                }
+            </div>
+
+            <!-- Error Message -->
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-funnel"></i> Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <!-- Date Range Preset -->
+                        <div class="col-md-3">
+                            <label for="DateRange" class="form-label">Date Range</label>
+                            <select name="DateRange" id="DateRange" class="form-select" onchange="toggleCustomDates()">
+                                <option value="today" selected="@(Model.DateRange == "today" ? "selected" : null)">Today</option>
+                                <option value="last7days" selected="@(Model.DateRange == "last7days" ? "selected" : null)">Last 7 Days</option>
+                                <option value="last30days" selected="@(Model.DateRange == "last30days" ? "selected" : null)">Last 30 Days</option>
+                                <option value="last90days" selected="@(Model.DateRange == "last90days" ? "selected" : null)">Last 90 Days</option>
+                                <option value="custom" selected="@(Model.DateRange == "custom" ? "selected" : null)">Custom Range</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Start Date -->
+                        <div class="col-md-2" id="customStartDateContainer" style="display: @(Model.DateRange == "custom" ? "block" : "none")">
+                            <label for="CustomStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="CustomStartDate" name="CustomStartDate" 
+                                   value="@(Model.CustomStartDate?.ToString("yyyy-MM-dd"))" max="@DateTime.UtcNow.ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <!-- Custom End Date -->
+                        <div class="col-md-2" id="customEndDateContainer" style="display: @(Model.DateRange == "custom" ? "block" : "none")">
+                            <label for="CustomEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="CustomEndDate" name="CustomEndDate" 
+                                   value="@(Model.CustomEndDate?.ToString("yyyy-MM-dd"))" max="@DateTime.UtcNow.ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <!-- Granularity -->
+                        <div class="col-md-2">
+                            <label for="Granularity" class="form-label">View By</label>
+                            <select name="Granularity" id="Granularity" class="form-select">
+                                <option value="day" selected="@(Model.Granularity == "day" ? "selected" : null)">Daily</option>
+                                <option value="week" selected="@(Model.Granularity == "week" ? "selected" : null)">Weekly</option>
+                                <option value="month" selected="@(Model.Granularity == "month" ? "selected" : null)">Monthly</option>
+                            </select>
+                        </div>
+
+                        <!-- Product Filter -->
+                        <div class="col-md-3">
+                            <label for="ProductId" class="form-label">Product</label>
+                            <select name="ProductId" id="ProductId" class="form-select">
+                                @foreach (var option in Model.ProductOptions)
+                                {
+                                    <option value="@option.Value" selected="@(option.Value == Model.ProductId?.ToString() ? "selected" : null)">
+                                        @option.Text
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Category Filter -->
+                        <div class="col-md-3">
+                            <label for="CategoryId" class="form-label">Category</label>
+                            <select name="CategoryId" id="CategoryId" class="form-select">
+                                @foreach (var option in Model.CategoryOptions)
+                                {
+                                    <option value="@option.Value" selected="@(option.Value == Model.CategoryId?.ToString() ? "selected" : null)">
+                                        @option.Text
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-arrow-clockwise"></i> Update Dashboard
+                            </button>
+                            <a asp-page="/Seller/Dashboard" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            @if (Model.Metrics != null)
+            {
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle"></i> 
+                    Showing data from <strong>@Model.StartDate.ToString("MMM dd, yyyy")</strong> to <strong>@Model.EndDate.ToString("MMM dd, yyyy")</strong>
+                    <br/>
+                    <small class="text-muted">Last updated: @Model.Metrics.CalculatedAt.ToString("MMM dd, yyyy h:mm tt") UTC</small>
+                </div>
+
+                @if (Model.Metrics.TotalOrders == 0)
+                {
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-circle"></i> 
+                        <strong>No sales data found for the selected period.</strong>
+                        <br/>
+                        Try selecting a different date range or adjusting your filters. If you're new to selling, your first orders will appear here once customers make purchases.
+                    </div>
+                }
+                else
+                {
+                    <!-- KPI Tiles -->
+                    <div class="row g-4 mb-4">
+                        <!-- GMV Tile -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-primary">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-currency-dollar"></i> Total GMV
+                                    </h6>
+                                    <h2 class="card-title mb-3 text-primary">@Model.Metrics.TotalGMV.ToString("C")</h2>
+                                    <p class="card-text text-muted small">Gross Merchandise Value (product sales)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Orders Tile -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-success">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-bag-check"></i> Total Orders
+                                    </h6>
+                                    <h2 class="card-title mb-3 text-success">@Model.Metrics.TotalOrders.ToString("N0")</h2>
+                                    <p class="card-text text-muted small">Number of orders received</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Average Order Value Tile -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-info">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-graph-up-arrow"></i> Avg Order Value
+                                    </h6>
+                                    <h2 class="card-title mb-3 text-info">@Model.Metrics.AverageOrderValue.ToString("C")</h2>
+                                    <p class="card-text text-muted small">Average value per order</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Items Sold Tile -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-warning">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-box-seam"></i> Items Sold
+                                    </h6>
+                                    <h2 class="card-title mb-3 text-warning">@Model.Metrics.TotalItemsSold.ToString("N0")</h2>
+                                    <p class="card-text text-muted small">Total quantity of items sold</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="row g-4 mb-4">
+                        <!-- GMV Chart -->
+                        <div class="col-lg-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-graph-up"></i> Sales (GMV) Over Time
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="gmvChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Orders Chart -->
+                        <div class="col-lg-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-bag"></i> Number of Orders Over Time
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="ordersChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    function toggleCustomDates() {
+        const dateRange = document.getElementById('DateRange').value;
+        const startContainer = document.getElementById('customStartDateContainer');
+        const endContainer = document.getElementById('customEndDateContainer');
+        
+        if (dateRange === 'custom') {
+            startContainer.style.display = 'block';
+            endContainer.style.display = 'block';
+        } else {
+            startContainer.style.display = 'none';
+            endContainer.style.display = 'none';
+        }
+    }
+
+    @if (Model.Metrics != null && Model.Metrics.TotalOrders > 0)
+    {
+        <text>
+        // Prepare chart data
+        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Metrics.TimeSeriesData.Select(d => d.Label)));
+        const gmvData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Metrics.TimeSeriesData.Select(d => d.GMV)));
+        const orderCountData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Metrics.TimeSeriesData.Select(d => d.OrderCount)));
+
+        // GMV Chart
+        const gmvCtx = document.getElementById('gmvChart').getContext('2d');
+        new Chart(gmvCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'GMV ($)',
+                    data: gmvData,
+                    borderColor: 'rgb(13, 110, 253)',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'GMV: $' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toFixed(0);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Orders Chart
+        const ordersCtx = document.getElementById('ordersChart').getContext('2d');
+        new Chart(ordersCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Number of Orders',
+                    data: orderCountData,
+                    backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                    borderColor: 'rgb(25, 135, 84)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        </text>
+    }
+</script>
