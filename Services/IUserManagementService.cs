@@ -52,8 +52,9 @@ public interface IUserManagementService
     /// <param name="userId">The user ID to unblock.</param>
     /// <param name="adminUserId">The admin user ID performing the action.</param>
     /// <param name="notes">Additional notes about the unblocking.</param>
+    /// <param name="requirePasswordReset">Whether to require the user to reset their password on next login.</param>
     /// <returns>True if the user was successfully unblocked, false otherwise.</returns>
-    Task<bool> UnblockUserAsync(int userId, int adminUserId, string? notes);
+    Task<bool> UnblockUserAsync(int userId, int adminUserId, string? notes, bool requirePasswordReset = false);
 
     /// <summary>
     /// Gets the audit log entries for a specific user.

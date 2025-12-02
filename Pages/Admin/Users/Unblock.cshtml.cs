@@ -43,6 +43,13 @@ public class UnblockModel : PageModel
     public string? Notes { get; set; }
 
     /// <summary>
+    /// Gets or sets whether to require password reset on next login.
+    /// </summary>
+    [BindProperty]
+    [Display(Name = "Require password reset on next login")]
+    public bool RequirePasswordReset { get; set; }
+
+    /// <summary>
     /// Handles GET request to display the unblock confirmation page.
     /// </summary>
     /// <param name="id">The user ID to unblock.</param>
@@ -100,7 +107,7 @@ public class UnblockModel : PageModel
             }
 
             // Unblock the user
-            var success = await _userManagementService.UnblockUserAsync(id, adminUserId, Notes);
+            var success = await _userManagementService.UnblockUserAsync(id, adminUserId, Notes, RequirePasswordReset);
 
             if (success)
             {

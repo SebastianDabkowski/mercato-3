@@ -17,6 +17,7 @@ public class LoginResult
     public User? User { get; set; }
     public bool RequiresEmailVerification { get; set; }
     public bool RequiresKyc { get; set; }
+    public bool RequiresPasswordReset { get; set; }
 }
 
 /// <summary>
@@ -147,6 +148,20 @@ public class UserAuthenticationService : IUserAuthenticationService
             {
                 Success = false,
                 ErrorMessage = "Your account has been blocked. Please contact support for more information."
+            };
+        }
+
+        // Check if password reset is required (e.g., after account reactivation)
+        if (user.RequirePasswordReset)
+        {
+            _logger.LogInformation("Login requires password reset for user: {Email}", normalizedEmail);
+            // Clear failed attempts since credentials are valid
+            ClearFailedAttempts(normalizedEmail);
+            return new LoginResult
+            {
+                Success = true,
+                User = user,
+                RequiresPasswordReset = true
             };
         }
 

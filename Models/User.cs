@@ -202,4 +202,10 @@ public class User
     /// </summary>
     [MaxLength(1000)]
     public string? BlockNotes { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the user is required to reset their password on next login.
+    /// This is typically set when an account is reactivated after being blocked for security reasons.
+    /// </summary>
+    public bool RequirePasswordReset { get; set; }
 }
