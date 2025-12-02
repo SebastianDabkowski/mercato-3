@@ -2,6 +2,7 @@ using MercatoApp.Authorization;
 using MercatoApp.Data;
 using MercatoApp.Models;
 using MercatoApp.Services;
+using MercatoApp;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -199,6 +200,11 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await TestDataSeeder.SeedTestDataAsync(context);
+
+    // Run commission invoice test scenario
+    var invoiceService = scope.ServiceProvider.GetRequiredService<ICommissionInvoiceService>();
+    var commissionService = scope.ServiceProvider.GetRequiredService<ICommissionService>();
+    await CommissionInvoiceTestScenario.RunTestAsync(context, invoiceService, commissionService);
 }
 
 // Configure the HTTP request pipeline.
