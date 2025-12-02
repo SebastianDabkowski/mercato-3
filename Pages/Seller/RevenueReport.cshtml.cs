@@ -101,19 +101,7 @@ public class RevenueReportModel : PageModel
             if (!result.Success || result.FileData == null || result.FileName == null || result.ContentType == null)
             {
                 ErrorMessages.AddRange(result.Errors);
-                
-                // Reload report data for the page
-                var (items, summary) = await _revenueReportService.GetRevenueReportAsync(
-                    storeId.Value,
-                    SelectedStatuses,
-                    FromDate,
-                    ToDate);
-                ReportItems = items;
-                Summary = summary;
-                
-                CurrentStore = await _context.Stores
-                    .FirstOrDefaultAsync(s => s.Id == storeId.Value);
-                
+                await ReloadReportDataAsync(storeId.Value);
                 return Page();
             }
 
@@ -126,21 +114,23 @@ public class RevenueReportModel : PageModel
         {
             _logger.LogError(ex, "Error exporting revenue report for store {StoreId}", storeId);
             ErrorMessages.Add($"An error occurred while exporting: {ex.Message}");
-            
-            // Reload report data for the page
-            var (items, summary) = await _revenueReportService.GetRevenueReportAsync(
-                storeId.Value,
-                SelectedStatuses,
-                FromDate,
-                ToDate);
-            ReportItems = items;
-            Summary = summary;
-            
-            CurrentStore = await _context.Stores
-                .FirstOrDefaultAsync(s => s.Id == storeId.Value);
-            
+            await ReloadReportDataAsync(storeId.Value);
             return Page();
         }
+    }
+
+    private async Task ReloadReportDataAsync(int storeId)
+    {
+        var (items, summary) = await _revenueReportService.GetRevenueReportAsync(
+            storeId,
+            SelectedStatuses,
+            FromDate,
+            ToDate);
+        ReportItems = items;
+        Summary = summary;
+        
+        CurrentStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.Id == storeId);
     }
 
     private async Task<int?> GetCurrentStoreIdAsync()

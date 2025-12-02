@@ -138,9 +138,8 @@ public class SellerRevenueReportService : ISellerRevenueReportService
                 result.FileName = $"revenue_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}_utc.csv";
                 result.ContentType = "text/csv";
                 result.Success = true;
-                result.Errors.Add("No orders found for the selected period. Generated empty file with headers.");
                 
-                _logger.LogInformation("Generated empty revenue report CSV for store {StoreId}", storeId);
+                _logger.LogInformation("Generated empty revenue report CSV for store {StoreId} - no orders found for selected period", storeId);
                 return result;
             }
 
@@ -266,7 +265,21 @@ public class SellerRevenueReportService : ISellerRevenueReportService
     {
         if (subOrder.ParentOrder.User != null)
         {
-            return $"{subOrder.ParentOrder.User.FirstName} {subOrder.ParentOrder.User.LastName}";
+            var firstName = subOrder.ParentOrder.User.FirstName?.Trim() ?? string.Empty;
+            var lastName = subOrder.ParentOrder.User.LastName?.Trim() ?? string.Empty;
+            
+            if (!string.IsNullOrEmpty(firstName) && !string.IsNullOrEmpty(lastName))
+            {
+                return $"{firstName} {lastName}";
+            }
+            else if (!string.IsNullOrEmpty(firstName))
+            {
+                return firstName;
+            }
+            else if (!string.IsNullOrEmpty(lastName))
+            {
+                return lastName;
+            }
         }
         return "Guest";
     }
