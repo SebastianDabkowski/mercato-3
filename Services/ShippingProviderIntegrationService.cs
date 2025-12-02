@@ -14,6 +14,7 @@ public class ShippingProviderIntegrationService : IShippingProviderIntegrationSe
     private readonly ILogger<ShippingProviderIntegrationService> _logger;
     private readonly IOrderStatusService _orderStatusService;
     private readonly IEmailService _emailService;
+    private readonly IShippingLabelService _labelService;
     private readonly Dictionary<string, IShippingProviderService> _providers;
 
     public ShippingProviderIntegrationService(
@@ -21,12 +22,14 @@ public class ShippingProviderIntegrationService : IShippingProviderIntegrationSe
         ILogger<ShippingProviderIntegrationService> logger,
         IOrderStatusService orderStatusService,
         IEmailService emailService,
+        IShippingLabelService labelService,
         IEnumerable<IShippingProviderService> providers)
     {
         _context = context;
         _logger = logger;
         _orderStatusService = orderStatusService;
         _emailService = emailService;
+        _labelService = labelService;
         
         // Build a dictionary of providers by their ProviderId
         _providers = providers.ToDictionary(p => p.ProviderId, p => p);
@@ -122,6 +125,9 @@ public class ShippingProviderIntegrationService : IShippingProviderIntegrationSe
             TrackingUrl = result.TrackingUrl,
             Status = ShipmentStatus.Created,
             LabelUrl = result.LabelUrl,
+            LabelData = result.LabelData,
+            LabelFormat = result.LabelFormat,
+            LabelContentType = result.LabelContentType,
             ShippingCost = result.ShippingCost,
             EstimatedDeliveryDate = result.EstimatedDeliveryDate,
             Metadata = result.Metadata != null 
@@ -156,8 +162,8 @@ public class ShippingProviderIntegrationService : IShippingProviderIntegrationSe
         await _context.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Shipment created successfully for sub-order {SubOrderId}, Tracking: {TrackingNumber}",
-            subOrderId, result.TrackingNumber);
+            "Shipment created successfully for sub-order {SubOrderId}, Tracking: {TrackingNumber}, Label: {HasLabel}",
+            subOrderId, result.TrackingNumber, result.LabelData != null ? "Yes" : "No");
 
         return shipment;
     }

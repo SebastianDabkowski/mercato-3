@@ -83,6 +83,14 @@ public class MockShippingProviderService : IShippingProviderService
         // Simulate shipping cost
         var shippingCost = ProviderId.Contains("express", StringComparison.OrdinalIgnoreCase) ? 15.99m : 8.99m;
 
+        // Generate a mock PDF label
+        var labelData = GenerateMockPdfLabel(
+            trackingNumber,
+            providerShipmentId,
+            carrierService,
+            shipFromAddress,
+            shipToAddress);
+
         _logger.LogInformation(
             "Shipment created successfully. Tracking: {TrackingNumber}, Provider ID: {ProviderShipmentId}",
             trackingNumber, providerShipmentId);
@@ -95,6 +103,9 @@ public class MockShippingProviderService : IShippingProviderService
             CarrierService = carrierService,
             TrackingUrl = $"https://track.example.com/{trackingNumber}",
             LabelUrl = $"https://labels.example.com/{providerShipmentId}.pdf",
+            LabelData = labelData,
+            LabelFormat = "PDF",
+            LabelContentType = "application/pdf",
             ShippingCost = shippingCost,
             EstimatedDeliveryDate = estimatedDelivery,
             Metadata = new Dictionary<string, string>
@@ -369,5 +380,120 @@ public class MockShippingProviderService : IShippingProviderService
             "exception" => ShipmentStatus.Exception,
             _ => ShipmentStatus.InTransit
         };
+    }
+
+    /// <summary>
+    /// Generates a mock PDF shipping label.
+    /// In production, this would be replaced with actual PDF generation from the carrier.
+    /// </summary>
+    private byte[] GenerateMockPdfLabel(
+        string trackingNumber,
+        string providerShipmentId,
+        string carrierService,
+        Address shipFromAddress,
+        Address shipToAddress)
+    {
+        // Create a simple text-based mock PDF
+        // In production, this would use a PDF library or receive actual label data from the carrier API
+        var pdfContent = $@"%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+/F2 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica-Bold
+>>
+>>
+>>
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 950
+>>
+stream
+BT
+/F2 18 Tf
+50 750 Td
+({carrierService}) Tj
+/F1 12 Tf
+50 720 Td
+(Shipment ID: {providerShipmentId}) Tj
+0 -20 Td
+(Date: {DateTime.UtcNow:yyyy-MM-dd}) Tj
+0 -40 Td
+/F2 14 Tf
+(FROM:) Tj
+0 -20 Td
+/F1 12 Tf
+({shipFromAddress.FullName}) Tj
+0 -18 Td
+({shipFromAddress.AddressLine1}) Tj
+0 -18 Td
+({shipFromAddress.City}, {shipFromAddress.StateProvince} {shipFromAddress.PostalCode}) Tj
+0 -18 Td
+({shipFromAddress.CountryCode}) Tj
+0 -40 Td
+/F2 14 Tf
+(TO:) Tj
+0 -20 Td
+/F1 12 Tf
+({shipToAddress.FullName}) Tj
+0 -18 Td
+({shipToAddress.AddressLine1}) Tj
+0 -18 Td
+({shipToAddress.City}, {shipToAddress.StateProvince} {shipToAddress.PostalCode}) Tj
+0 -18 Td
+({shipToAddress.CountryCode}) Tj
+0 -40 Td
+/F2 24 Tf
+(Tracking Number:) Tj
+0 -30 Td
+({trackingNumber}) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000366 00000 n
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+1366
+%%EOF
+";
+
+        return System.Text.Encoding.UTF8.GetBytes(pdfContent);
     }
 }

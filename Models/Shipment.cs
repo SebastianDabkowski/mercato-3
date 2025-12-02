@@ -71,6 +71,23 @@ public class Shipment
     public string? LabelUrl { get; set; }
 
     /// <summary>
+    /// Gets or sets the shipping label data stored as binary (PDF or image format).
+    /// </summary>
+    public byte[]? LabelData { get; set; }
+
+    /// <summary>
+    /// Gets or sets the format of the label (e.g., "PDF", "PNG", "ZPL").
+    /// </summary>
+    [MaxLength(20)]
+    public string? LabelFormat { get; set; }
+
+    /// <summary>
+    /// Gets or sets the MIME content type of the label data (e.g., "application/pdf", "image/png").
+    /// </summary>
+    [MaxLength(100)]
+    public string? LabelContentType { get; set; }
+
+    /// <summary>
     /// Gets or sets the shipping cost charged by the provider.
     /// </summary>
     public decimal? ShippingCost { get; set; }

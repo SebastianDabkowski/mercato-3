@@ -88,6 +88,7 @@ builder.Services.AddScoped<IOrderItemFulfillmentService, OrderItemFulfillmentSer
 builder.Services.AddScoped<IOrderExportService, OrderExportService>();
 builder.Services.AddScoped<IReturnRequestService, ReturnRequestService>();
 builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();
+builder.Services.AddScoped<IShippingLabelService, ShippingLabelService>();
 builder.Services.AddScoped<IShippingProviderIntegrationService, ShippingProviderIntegrationService>();
 
 // Register shipping provider services as singleton collection
