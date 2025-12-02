@@ -1,0 +1,126 @@
+@page
+@model MercatoApp.Pages.Admin.ProductQuestions.IndexModel
+@{
+    ViewData["Title"] = "Product Questions - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-3">
+                <i class="bi bi-question-circle"></i> Product Questions
+            </h1>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            @if (Model.Questions.Any())
+            {
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Question</th>
+                            <th>Asked By</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Visibility</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var question in Model.Questions)
+                        {
+                            <tr class="@(!question.IsVisible ? "table-warning" : "")">
+                                <td>
+                                    <a asp-page="/Product" asp-route-id="@question.ProductId" target="_blank">
+                                        @question.Product.Title
+                                    </a>
+                                    <br />
+                                    <small class="text-muted">Store: @question.Product.Store.StoreName</small>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 300px;" title="@question.Question">
+                                        @question.Question
+                                    </div>
+                                    @if (question.Replies.Any())
+                                    {
+                                        <small class="text-muted">
+                                            (@question.Replies.Count reply/replies)
+                                        </small>
+                                    }
+                                </td>
+                                <td>@question.Buyer.Email</td>
+                                <td>@question.AskedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @if (question.IsAnswered)
+                                    {
+                                        <span class="badge bg-success">Answered</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (question.IsVisible)
+                                    {
+                                        <span class="badge bg-success">Visible</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Hidden</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-page="/Admin/ProductQuestions/Details" asp-route-id="@question.Id" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    @if (question.IsVisible)
+                                    {
+                                        <form method="post" asp-page-handler="Hide" asp-route-id="@question.Id" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-warning" 
+                                                    onclick="return confirm('Are you sure you want to hide this question?');">
+                                                <i class="bi bi-eye-slash"></i> Hide
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="Show" asp-route-id="@question.Id" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-eye"></i> Show
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No product questions found.
+                </div>
+            }
+        </div>
+    </div>
+</div>

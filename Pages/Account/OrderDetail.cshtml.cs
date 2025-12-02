@@ -3,6 +3,7 @@ using MercatoApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 namespace MercatoApp.Pages.Account;
@@ -18,6 +19,7 @@ public class OrderDetailModel : PageModel
     private readonly IProductReviewService _reviewService;
     private readonly IReviewModerationService _moderationService;
     private readonly ISellerRatingService _sellerRatingService;
+    private readonly IOrderMessageService _messageService;
     private readonly ILogger<OrderDetailModel> _logger;
 
     public OrderDetailModel(
@@ -26,6 +28,7 @@ public class OrderDetailModel : PageModel
         IProductReviewService reviewService,
         IReviewModerationService moderationService,
         ISellerRatingService sellerRatingService,
+        IOrderMessageService messageService,
         ILogger<OrderDetailModel> logger)
     {
         _orderService = orderService;
@@ -33,6 +36,7 @@ public class OrderDetailModel : PageModel
         _reviewService = reviewService;
         _moderationService = moderationService;
         _sellerRatingService = sellerRatingService;
+        _messageService = messageService;
         _logger = logger;
     }
 
@@ -67,6 +71,22 @@ public class OrderDetailModel : PageModel
     /// Key is SellerSubOrderId, value is the rating.
     /// </summary>
     public Dictionary<int, SellerRating> ExistingSellerRatings { get; set; } = new Dictionary<int, SellerRating>();
+
+    /// <summary>
+    /// Gets or sets the order messages.
+    /// </summary>
+    public List<OrderMessage> Messages { get; set; } = new();
+
+    [BindProperty]
+    [Required(ErrorMessage = "Please enter a message.")]
+    [MaxLength(2000, ErrorMessage = "Message cannot exceed 2000 characters.")]
+    public string MessageInput { get; set; } = string.Empty;
+
+    [TempData]
+    public string? SuccessMessage { get; set; }
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
 
     /// <summary>
     /// Handles GET request to display order details.
@@ -121,7 +141,53 @@ public class OrderDetailModel : PageModel
             }
         }
 
+        // Load order messages
+        Messages = await _messageService.GetOrderMessagesAsync(orderId);
+        
+        // Mark messages as read
+        await _messageService.MarkMessagesAsReadAsync(orderId, userId, false);
+
         return Page();
+    }
+
+    /// <summary>
+    /// Handles POST request to send a message about the order.
+    /// </summary>
+    /// <param name="orderId">The order ID.</param>
+    /// <returns>The page result.</returns>
+    public async Task<IActionResult> OnPostSendMessageAsync(int orderId)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return RedirectToPage("/Account/Login");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await OnGetAsync(orderId);
+            return Page();
+        }
+
+        try
+        {
+            await _messageService.SendMessageAsync(orderId, userId, MessageInput, false);
+            SuccessMessage = "Your message has been sent to the seller.";
+            return RedirectToPage(new { orderId });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            ErrorMessage = "You are not authorized to send messages for this order.";
+            await OnGetAsync(orderId);
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending message for order {OrderId}", orderId);
+            ErrorMessage = "Failed to send message. Please try again.";
+            await OnGetAsync(orderId);
+            return Page();
+        }
     }
 
     /// <summary>

@@ -223,6 +223,84 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Order Messaging Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-chat-dots"></i> Messages with Buyer
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+                        
+                        @if (Model.Messages.Any())
+                        {
+                            <div class="mb-4" style="max-height: 400px; overflow-y: auto;">
+                                @foreach (var message in Model.Messages)
+                                {
+                                    <div class="mb-3 @(message.IsFromSeller ? "text-end" : "")">
+                                        <div class="d-inline-block text-start" style="max-width: 70%;">
+                                            <div class="card @(message.IsFromSeller ? "bg-light" : "border-primary")">
+                                                <div class="card-body p-2">
+                                                    <div class="mb-1">
+                                                        @if (message.IsFromSeller)
+                                                        {
+                                                            <span class="badge bg-primary">You</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary">Buyer</span>
+                                                        }
+                                                        <small class="text-muted ms-1">@message.SentAt.ToString("MMM dd, yyyy h:mm tt")</small>
+                                                    </div>
+                                                    <div>@message.Content</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-3">
+                                <i class="bi bi-info-circle"></i> No messages yet. Start a conversation with the buyer about this order.
+                            </p>
+                        }
+                        
+                        <div class="border-top pt-3">
+                            <form method="post" asp-page-handler="SendMessage" asp-route-subOrderId="@Model.SubOrder.Id">
+                                <div class="mb-3">
+                                    <label asp-for="MessageInput" class="form-label">Send a Message</label>
+                                    <textarea asp-for="MessageInput" class="form-control" rows="3" 
+                                              placeholder="Type your message here..." maxlength="2000" required></textarea>
+                                    <span asp-validation-for="MessageInput" class="text-danger"></span>
+                                </div>
+                                <div class="alert alert-info" role="alert">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Messages are private between you and the buyer. Please do not share personal contact information.
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send"></i> Send Message
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="col-lg-4">

@@ -2,6 +2,7 @@ using MercatoApp.Models;
 using MercatoApp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 namespace MercatoApp.Pages;
@@ -14,6 +15,7 @@ public class ProductModel : PageModel
     private readonly ICartService _cartService;
     private readonly IGuestCartService _guestCartService;
     private readonly IProductReviewService _reviewService;
+    private readonly IProductQuestionService _questionService;
 
     public ProductModel(
         IProductService productService,
@@ -21,7 +23,8 @@ public class ProductModel : PageModel
         IRecentlyViewedService recentlyViewedService,
         ICartService cartService,
         IGuestCartService guestCartService,
-        IProductReviewService reviewService)
+        IProductReviewService reviewService,
+        IProductQuestionService questionService)
     {
         _productService = productService;
         _variantService = variantService;
@@ -29,6 +32,7 @@ public class ProductModel : PageModel
         _cartService = cartService;
         _guestCartService = guestCartService;
         _reviewService = reviewService;
+        _questionService = questionService;
     }
 
     public Product? Product { get; set; }
@@ -42,6 +46,12 @@ public class ProductModel : PageModel
     public int PageSize { get; set; } = 10;
     public int TotalPages => TotalReviewCount > 0 ? (int)Math.Ceiling((double)TotalReviewCount / PageSize) : 0;
     public ReviewSortOption SortOption { get; set; } = ReviewSortOption.Newest;
+    public List<ProductQuestion> Questions { get; set; } = new();
+
+    [BindProperty]
+    [Required(ErrorMessage = "Please enter your question.")]
+    [MaxLength(2000, ErrorMessage = "Question cannot exceed 2000 characters.")]
+    public string QuestionInput { get; set; } = string.Empty;
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -128,9 +138,59 @@ public class ProductModel : PageModel
             TotalReviewCount = await _reviewService.GetApprovedReviewCountAsync(id);
             Reviews = await _reviewService.GetApprovedReviewsForProductAsync(id, SortOption, CurrentPage, PageSize);
             AverageRating = await _reviewService.GetAverageRatingAsync(id);
+            
+            // Load product questions
+            Questions = await _questionService.GetProductQuestionsAsync(id);
+            
+            // Mark replies as read if user is authenticated and has questions
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdClaim, out var userId))
+                {
+                    foreach (var question in Questions.Where(q => q.BuyerId == userId && q.Replies.Any(r => !r.IsReadByBuyer)))
+                    {
+                        await _questionService.MarkRepliesAsReadAsync(question.Id, userId);
+                    }
+                }
+            }
         }
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostAskQuestionAsync(int id)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return RedirectToPage("/Account/Login", new { returnUrl = $"/Product/{id}" });
+        }
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            ErrorMessage = "Unable to identify user.";
+            return RedirectToPage(new { id });
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await OnGetAsync(id);
+            return Page();
+        }
+
+        try
+        {
+            await _questionService.AskQuestionAsync(id, userId, QuestionInput);
+            SuccessMessage = "Your question has been submitted. The seller will be notified.";
+            return RedirectToPage(new { id });
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            await OnGetAsync(id);
+            return Page();
+        }
     }
 
     public async Task<IActionResult> OnPostAddToCartAsync(int id, int? variantId, int quantity = 1)

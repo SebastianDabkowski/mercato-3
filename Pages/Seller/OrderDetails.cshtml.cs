@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using MercatoApp.Data;
 
@@ -17,6 +18,7 @@ public class OrderDetailsModel : PageModel
     private readonly IReturnRequestService _returnRequestService;
     private readonly IShippingProviderIntegrationService _shippingProviderService;
     private readonly IShippingLabelService _labelService;
+    private readonly IOrderMessageService _messageService;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OrderDetailsModel> _logger;
 
@@ -26,6 +28,7 @@ public class OrderDetailsModel : PageModel
         IReturnRequestService returnRequestService,
         IShippingProviderIntegrationService shippingProviderService,
         IShippingLabelService labelService,
+        IOrderMessageService messageService,
         ApplicationDbContext context,
         ILogger<OrderDetailsModel> logger)
     {
@@ -34,6 +37,7 @@ public class OrderDetailsModel : PageModel
         _returnRequestService = returnRequestService;
         _shippingProviderService = shippingProviderService;
         _labelService = labelService;
+        _messageService = messageService;
         _context = context;
         _logger = logger;
     }
@@ -43,6 +47,7 @@ public class OrderDetailsModel : PageModel
     public List<ReturnRequest> ReturnRequests { get; set; } = new List<ReturnRequest>();
     public Shipment? Shipment { get; set; }
     public bool HasShippingLabel { get; set; }
+    public List<OrderMessage> Messages { get; set; } = new();
 
     [BindProperty]
     public string? TrackingNumber { get; set; }
@@ -52,6 +57,17 @@ public class OrderDetailsModel : PageModel
 
     [BindProperty]
     public string? TrackingUrl { get; set; }
+
+    [BindProperty]
+    [Required(ErrorMessage = "Please enter a message.")]
+    [MaxLength(2000, ErrorMessage = "Message cannot exceed 2000 characters.")]
+    public string MessageInput { get; set; } = string.Empty;
+
+    [TempData]
+    public string? SuccessMessage { get; set; }
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
 
     public async Task<IActionResult> OnGetAsync(int subOrderId)
     {
@@ -94,7 +110,74 @@ public class OrderDetailsModel : PageModel
         Shipment = await _shippingProviderService.GetShipmentBySubOrderIdAsync(subOrderId);
         HasShippingLabel = Shipment?.LabelData != null && Shipment.LabelData.Length > 0;
 
+        // Load order messages
+        Messages = await _messageService.GetOrderMessagesAsync(SubOrder.ParentOrderId);
+        
+        // Mark messages as read
+        await _messageService.MarkMessagesAsReadAsync(SubOrder.ParentOrderId, userId, true);
+
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostSendMessageAsync(int subOrderId)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return RedirectToPage("/Account/Login");
+        }
+
+        // Get the seller's store
+        CurrentStore = await _context.Stores
+            .FirstOrDefaultAsync(s => s.UserId == userId);
+
+        if (CurrentStore == null)
+        {
+            ErrorMessage = "Store not found.";
+            return RedirectToPage(new { subOrderId });
+        }
+
+        // Get the sub-order
+        SubOrder = await _orderService.GetSubOrderByIdAsync(subOrderId);
+
+        if (SubOrder == null)
+        {
+            ErrorMessage = "Order not found.";
+            return RedirectToPage("/Seller/Orders");
+        }
+
+        // Verify that this sub-order belongs to the current seller's store
+        if (SubOrder.StoreId != CurrentStore.Id)
+        {
+            ErrorMessage = "You don't have permission to access this order.";
+            return RedirectToPage("/Seller/Orders");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await OnGetAsync(subOrderId);
+            return Page();
+        }
+
+        try
+        {
+            await _messageService.SendMessageAsync(SubOrder.ParentOrderId, userId, MessageInput, true);
+            SuccessMessage = "Your message has been sent to the buyer.";
+            return RedirectToPage(new { subOrderId });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            ErrorMessage = "You are not authorized to send messages for this order.";
+            await OnGetAsync(subOrderId);
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending message for order {OrderId}", SubOrder.ParentOrderId);
+            ErrorMessage = "Failed to send message. Please try again.";
+            await OnGetAsync(subOrderId);
+            return Page();
+        }
     }
 
     public async Task<IActionResult> OnPostUpdateStatusAsync(int subOrderId, string action)

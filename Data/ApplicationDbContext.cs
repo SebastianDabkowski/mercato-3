@@ -312,6 +312,21 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<Notification> Notifications { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the product questions table.
+    /// </summary>
+    public DbSet<ProductQuestion> ProductQuestions { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the product question replies table.
+    /// </summary>
+    public DbSet<ProductQuestionReply> ProductQuestionReplies { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the order messages table.
+    /// </summary>
+    public DbSet<OrderMessage> OrderMessages { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
