@@ -1,0 +1,140 @@
+@page
+@model MercatoApp.Pages.Admin.ProductQuestions.DetailsModel
+@{
+    ViewData["Title"] = "Question Details - Admin";
+}
+
+<div class="container-fluid my-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Admin/ProductQuestions/Index">Product Questions</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Question #@Model.Question?.Id</li>
+        </ol>
+    </nav>
+
+    @if (Model.Question != null)
+    {
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="bi bi-question-circle"></i> Question Details
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h5>Product</h5>
+                        <p>
+                            <a asp-page="/Product" asp-route-id="@Model.Question.ProductId" target="_blank">
+                                @Model.Question.Product.Title
+                            </a>
+                        </p>
+                        <p class="text-muted">
+                            <small>Store: @Model.Question.Product.Store.StoreName</small>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Status</h5>
+                        <p>
+                            @if (Model.Question.IsAnswered)
+                            {
+                                <span class="badge bg-success">Answered</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            }
+                            
+                            @if (Model.Question.IsVisible)
+                            {
+                                <span class="badge bg-success">Visible</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Hidden</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="mb-4">
+                    <h5>Question</h5>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <p class="mb-2">@Model.Question.Question</p>
+                            <small class="text-muted">
+                                Asked by @Model.Question.Buyer.Email on @Model.Question.AskedAt.ToString("MMM dd, yyyy h:mm tt")
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Question.Replies.Any())
+                {
+                    <h5>Replies</h5>
+                    <div class="mb-4">
+                        @foreach (var reply in Model.Question.Replies.OrderBy(r => r.RepliedAt))
+                        {
+                            <div class="card mb-2 @(reply.IsFromSeller ? "border-primary" : "")">
+                                <div class="card-body">
+                                    <p class="mb-2">@reply.Reply</p>
+                                    <small class="text-muted">
+                                        @if (reply.IsFromSeller)
+                                        {
+                                            <span class="badge bg-primary">Seller</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Other</span>
+                                        }
+                                        replied on @reply.RepliedAt.ToString("MMM dd, yyyy h:mm tt")
+                                    </small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No replies yet.
+                    </div>
+                }
+
+                <div class="mt-4">
+                    <a asp-page="/Admin/ProductQuestions/Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                    @if (Model.Question.IsVisible)
+                    {
+                        <form method="post" asp-page-handler="Hide" asp-route-id="@Model.Question.Id" class="d-inline">
+                            <button type="submit" class="btn btn-warning" 
+                                    onclick="return confirm('Are you sure you want to hide this question?');">
+                                <i class="bi bi-eye-slash"></i> Hide Question
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Show" asp-route-id="@Model.Question.Id" class="d-inline">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-eye"></i> Show Question
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Question not found.
+        </div>
+        <a asp-page="/Admin/ProductQuestions/Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    }
+</div>
