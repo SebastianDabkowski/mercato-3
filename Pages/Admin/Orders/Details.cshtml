@@ -1,0 +1,345 @@
+@page
+@model MercatoApp.Pages.Admin.Orders.DetailsModel
+@{
+    ViewData["Title"] = "Order Details - Admin";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-page="/Admin/Orders/Index">Orders</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Order #@Model.Order?.OrderNumber</li>
+                </ol>
+            </nav>
+
+            <!-- Success/Error Messages -->
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (Model.Order != null)
+            {
+                <!-- Order Header -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h3 class="mb-0">
+                                    <i class="bi bi-receipt"></i> Order #@Model.Order.OrderNumber
+                                </h3>
+                            </div>
+                            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                                <span class="fs-6">
+                                    <partial name="_OrderStatusBadge" model="Model.Order.Status" />
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Order Date</h6>
+                                <p class="mb-3 mb-md-0">
+                                    <i class="bi bi-calendar"></i> @Model.Order.OrderedAt.ToString("MMMM dd, yyyy")<br/>
+                                    <small class="text-muted">@Model.Order.OrderedAt.ToString("h:mm tt")</small>
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Customer</h6>
+                                <p class="mb-3 mb-md-0">
+                                    @if (Model.Order.User != null)
+                                    {
+                                        <i class="bi bi-person"></i> @Model.Order.User.Email<br/>
+                                        <small class="text-muted">User ID: @Model.Order.UserId</small>
+                                    }
+                                    else if (!string.IsNullOrEmpty(Model.Order.GuestEmail))
+                                    {
+                                        <i class="bi bi-person"></i> @Model.Order.GuestEmail<br/>
+                                        <small class="text-muted">Guest Order</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Unknown</span>
+                                    }
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Payment Status</h6>
+                                <p class="mb-3 mb-md-0">
+                                    <partial name="_PaymentStatusBadge" model="Model.Order.PaymentStatus" />
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-muted">Total Amount</h6>
+                                <p class="h4 text-primary mb-0">@Model.Order.TotalAmount.ToString("C")</p>
+                                @if (Model.Order.RefundedAmount > 0)
+                                {
+                                    <small class="text-danger">Refunded: @Model.Order.RefundedAmount.ToString("C")</small>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delivery Address -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-geo-alt"></i> Delivery Address
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Order.DeliveryAddress != null)
+                        {
+                            <address class="mb-0">
+                                <strong>@Model.Order.DeliveryAddress.FullName</strong><br />
+                                @Model.Order.DeliveryAddress.AddressLine1<br />
+                                @if (!string.IsNullOrEmpty(Model.Order.DeliveryAddress.AddressLine2))
+                                {
+                                    @Model.Order.DeliveryAddress.AddressLine2<br />
+                                }
+                                @Model.Order.DeliveryAddress.City@(!string.IsNullOrEmpty(Model.Order.DeliveryAddress.StateProvince) ? $", {Model.Order.DeliveryAddress.StateProvince}" : "") @Model.Order.DeliveryAddress.PostalCode<br />
+                                @Model.Order.DeliveryAddress.CountryCode<br />
+                                <br />
+                                <i class="bi bi-telephone"></i> @Model.Order.DeliveryAddress.PhoneNumber
+                            </address>
+                        }
+                    </div>
+                </div>
+
+                <!-- Sub-Orders (Seller Shipments) -->
+                @foreach (var subOrder in Model.Order.SubOrders.OrderBy(so => so.Id))
+                {
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-shop"></i> @subOrder.Store.StoreName
+                                    </h5>
+                                    <small class="text-muted">Sub-Order #@subOrder.SubOrderNumber</small>
+                                </div>
+                                <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                                    <partial name="_OrderStatusBadge" model="subOrder.Status" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Items -->
+                            <h6 class="text-muted mb-2">Items</h6>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th class="text-center">Quantity</th>
+                                            <th class="text-end">Price</th>
+                                            <th class="text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in subOrder.Items)
+                                        {
+                                            <tr>
+                                                <td>@item.Product.Title</td>
+                                                <td class="text-center">@item.Quantity</td>
+                                                <td class="text-end">@item.UnitPrice.ToString("C")</td>
+                                                <td class="text-end">@((item.Quantity * item.UnitPrice).ToString("C"))</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Shipping & Tracking Info -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    @if (subOrder.ShippingMethod != null)
+                                    {
+                                        <h6 class="text-muted mb-1">Shipping Method</h6>
+                                        <p class="mb-2">
+                                            <i class="bi bi-truck"></i> <strong>@subOrder.ShippingMethod.Name</strong>
+                                        </p>
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(subOrder.TrackingNumber))
+                                    {
+                                        <h6 class="text-muted mb-1 mt-3">Tracking Information</h6>
+                                        <div class="card bg-light">
+                                            <div class="card-body p-3">
+                                                <p class="mb-1">
+                                                    <strong>Tracking Number:</strong> 
+                                                    @if (!string.IsNullOrEmpty(subOrder.TrackingUrl))
+                                                    {
+                                                        <a href="@subOrder.TrackingUrl" target="_blank">
+                                                            @subOrder.TrackingNumber <i class="bi bi-box-arrow-up-right"></i>
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@subOrder.TrackingNumber</span>
+                                                    }
+                                                </p>
+                                                @if (!string.IsNullOrEmpty(subOrder.CarrierName))
+                                                {
+                                                    <p class="mb-0">
+                                                        <strong>Carrier:</strong> @subOrder.CarrierName
+                                                    </p>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="col-md-6">
+                                    <!-- Sub-order totals -->
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <dl class="row mb-0 small">
+                                                <dt class="col-6">Items Subtotal:</dt>
+                                                <dd class="col-6 text-end">@subOrder.Subtotal.ToString("C")</dd>
+                                                
+                                                <dt class="col-6">Shipping Cost:</dt>
+                                                <dd class="col-6 text-end">@subOrder.ShippingCost.ToString("C")</dd>
+                                                
+                                                @if (subOrder.RefundedAmount > 0)
+                                                {
+                                                    <dt class="col-6 text-danger">Refunded:</dt>
+                                                    <dd class="col-6 text-end text-danger">-@subOrder.RefundedAmount.ToString("C")</dd>
+                                                }
+                                                
+                                                <dt class="col-6 border-top pt-2 mt-2"><strong>Sub-Order Total:</strong></dt>
+                                                <dd class="col-6 text-end border-top pt-2 mt-2">
+                                                    <strong>@subOrder.TotalAmount.ToString("C")</strong>
+                                                </dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status History -->
+                            @if (subOrder.StatusHistory.Any())
+                            {
+                                <h6 class="text-muted mb-2 mt-4">
+                                    <i class="bi bi-clock-history"></i> Status History
+                                </h6>
+                                <div class="card bg-light">
+                                    <div class="card-body p-3">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Date & Time</th>
+                                                        <th>Previous Status</th>
+                                                        <th>New Status</th>
+                                                        <th>Changed By</th>
+                                                        <th>Notes</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var history in subOrder.StatusHistory.OrderByDescending(h => h.ChangedAt))
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                <small>
+                                                                    @history.ChangedAt.ToString("MMM dd, yyyy")<br/>
+                                                                    @history.ChangedAt.ToString("h:mm:ss tt")
+                                                                </small>
+                                                            </td>
+                                                            <td>
+                                                                @if (history.PreviousStatus.HasValue)
+                                                                {
+                                                                    <partial name="_OrderStatusBadge" model="history.PreviousStatus.Value" />
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="text-muted">-</span>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <partial name="_OrderStatusBadge" model="history.NewStatus" />
+                                                            </td>
+                                                            <td>
+                                                                @if (history.ChangedByUser != null)
+                                                                {
+                                                                    <small>@history.ChangedByUser.Email</small>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <small class="text-muted">System</small>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                @if (!string.IsNullOrEmpty(history.Notes))
+                                                                {
+                                                                    <small>@history.Notes</small>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="text-muted">-</span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Order Summary -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calculator"></i> Order Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3">Subtotal:</dt>
+                            <dd class="col-sm-9 text-end">@Model.Order.Subtotal.ToString("C")</dd>
+                            
+                            <dt class="col-sm-3">Shipping:</dt>
+                            <dd class="col-sm-9 text-end">@Model.Order.ShippingCost.ToString("C")</dd>
+                            
+                            @if (Model.Order.TaxAmount > 0)
+                            {
+                                <dt class="col-sm-3">Tax:</dt>
+                                <dd class="col-sm-9 text-end">@Model.Order.TaxAmount.ToString("C")</dd>
+                            }
+                            
+                            @if (Model.Order.RefundedAmount > 0)
+                            {
+                                <dt class="col-sm-3 text-danger">Refunded:</dt>
+                                <dd class="col-sm-9 text-end text-danger">-@Model.Order.RefundedAmount.ToString("C")</dd>
+                            }
+                            
+                            <dt class="col-sm-3 border-top pt-2 mt-2"><strong>Total:</strong></dt>
+                            <dd class="col-sm-9 text-end border-top pt-2 mt-2">
+                                <strong class="h4 text-primary">@Model.Order.TotalAmount.ToString("C")</strong>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

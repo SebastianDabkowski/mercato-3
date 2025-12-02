@@ -46,6 +46,14 @@ public interface IEmailService
     /// <param name="order">The order to send confirmation for.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task SendOrderConfirmationEmailAsync(Models.Order order);
+
+    /// <summary>
+    /// Sends a shipping status update email to the buyer.
+    /// </summary>
+    /// <param name="subOrder">The sub-order that was updated.</param>
+    /// <param name="parentOrder">The parent order.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SendShippingStatusUpdateEmailAsync(Models.SellerSubOrder subOrder, Models.Order parentOrder);
 }
 
 /// <summary>
@@ -130,6 +138,40 @@ public class EmailService : IEmailService
             order.TotalAmount,
             order.Items?.Count ?? 0,
             order.DeliveryAddress?.AddressLine1 ?? "N/A");
+
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task SendShippingStatusUpdateEmailAsync(Models.SellerSubOrder subOrder, Models.Order parentOrder)
+    {
+        // In production, this would send an actual email with shipping status and tracking info
+        // For now, just log it
+        var recipientEmail = parentOrder.GuestEmail ?? parentOrder.User?.Email ?? "unknown";
+        
+        var statusMessage = subOrder.Status switch
+        {
+            Models.OrderStatus.Preparing => "is being prepared",
+            Models.OrderStatus.Shipped => "has been shipped",
+            Models.OrderStatus.Delivered => "has been delivered",
+            _ => $"status has been updated to {subOrder.Status}"
+        };
+
+        var trackingInfo = !string.IsNullOrEmpty(subOrder.TrackingNumber)
+            ? $"Tracking Number: {subOrder.TrackingNumber}" +
+              (!string.IsNullOrEmpty(subOrder.CarrierName) ? $" via {subOrder.CarrierName}" : "") +
+              (!string.IsNullOrEmpty(subOrder.TrackingUrl) ? $", Tracking URL: {subOrder.TrackingUrl}" : "")
+            : "No tracking information available";
+        
+        _logger.LogInformation(
+            "Shipping status update email would be sent to {Email} for order {OrderNumber}, sub-order {SubOrderNumber}. " +
+            "Status: {Status}. Store: {StoreName}. {TrackingInfo}",
+            recipientEmail,
+            parentOrder.OrderNumber,
+            subOrder.SubOrderNumber,
+            statusMessage,
+            subOrder.Store?.StoreName ?? "Unknown Store",
+            trackingInfo);
 
         return Task.CompletedTask;
     }
