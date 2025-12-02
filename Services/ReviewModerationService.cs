@@ -38,14 +38,34 @@ public class ReviewModerationService : IReviewModerationService
             throw new InvalidOperationException("Review not found.");
         }
 
-        // Check if there's already an active flag for the same reason
-        var existingFlag = await _context.ReviewFlags
-            .FirstOrDefaultAsync(f => f.ProductReviewId == reviewId && f.Reason == reason && f.IsActive);
-
-        if (existingFlag != null)
+        // Check if there's already an active flag from the same user
+        // For manual flags (user-initiated), prevent duplicate reports from the same user regardless of reason
+        if (!isAutomated && flaggedByUserId.HasValue)
         {
-            _logger.LogInformation("Review {ReviewId} already has an active flag for reason {Reason}", reviewId, reason);
-            return existingFlag;
+            var existingUserFlag = await _context.ReviewFlags
+                .FirstOrDefaultAsync(f => f.ProductReviewId == reviewId && 
+                                        f.FlaggedByUserId == flaggedByUserId && 
+                                        f.IsActive && 
+                                        !f.IsAutomated);
+
+            if (existingUserFlag != null)
+            {
+                _logger.LogInformation("Review {ReviewId} already has an active flag from user {UserId}", reviewId, flaggedByUserId);
+                throw new InvalidOperationException("You have already reported this review. Our team will review it shortly.");
+            }
+        }
+
+        // For automated flags, check if there's already an active flag for the same reason
+        if (isAutomated)
+        {
+            var existingFlag = await _context.ReviewFlags
+                .FirstOrDefaultAsync(f => f.ProductReviewId == reviewId && f.Reason == reason && f.IsActive);
+
+            if (existingFlag != null)
+            {
+                _logger.LogInformation("Review {ReviewId} already has an active automated flag for reason {Reason}", reviewId, reason);
+                return existingFlag;
+            }
         }
 
         var flag = new ReviewFlag
