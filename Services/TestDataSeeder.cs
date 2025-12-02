@@ -290,6 +290,69 @@ public static class TestDataSeeder
 
         context.ShippingRules.AddRange(shippingRules);
         await context.SaveChangesAsync();
+
+        // Seed test promo codes
+        var promoCodes = new[]
+        {
+            // Platform-wide percentage discount
+            new PromoCode
+            {
+                Code = "SAVE20",
+                Scope = PromoCodeScope.Platform,
+                DiscountType = PromoCodeDiscountType.Percentage,
+                DiscountValue = 20m,
+                MinimumOrderSubtotal = 50m,
+                MaximumDiscountAmount = 50m,
+                StartDate = DateTime.UtcNow.AddDays(-30),
+                ExpirationDate = DateTime.UtcNow.AddDays(30),
+                MaximumUsageCount = 100,
+                CurrentUsageCount = 0,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            // Platform-wide fixed discount
+            new PromoCode
+            {
+                Code = "WELCOME10",
+                Scope = PromoCodeScope.Platform,
+                DiscountType = PromoCodeDiscountType.FixedAmount,
+                DiscountValue = 10m,
+                MinimumOrderSubtotal = 30m,
+                StartDate = DateTime.UtcNow.AddDays(-60),
+                ExpirationDate = DateTime.UtcNow.AddDays(60),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            // Seller-specific promo code for store1
+            new PromoCode
+            {
+                Code = "ELECTRONICS15",
+                Scope = PromoCodeScope.Seller,
+                StoreId = store.Id,
+                DiscountType = PromoCodeDiscountType.Percentage,
+                DiscountValue = 15m,
+                MinimumOrderSubtotal = 100m,
+                MaximumDiscountAmount = 30m,
+                StartDate = DateTime.UtcNow.AddDays(-15),
+                ExpirationDate = DateTime.UtcNow.AddDays(45),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            // Expired promo code for testing
+            new PromoCode
+            {
+                Code = "EXPIRED",
+                Scope = PromoCodeScope.Platform,
+                DiscountType = PromoCodeDiscountType.Percentage,
+                DiscountValue = 50m,
+                ExpirationDate = DateTime.UtcNow.AddDays(-1),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow.AddDays(-90)
+            }
+        };
+
+        context.PromoCodes.AddRange(promoCodes);
+        await context.SaveChangesAsync();
     }
 
     private static string HashPassword(string password)
