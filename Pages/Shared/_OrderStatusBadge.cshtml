@@ -1,0 +1,32 @@
+@model MercatoApp.Models.OrderStatus
+@{
+    var badgeClass = Model switch
+    {
+        MercatoApp.Models.OrderStatus.New => "bg-warning text-dark",
+        MercatoApp.Models.OrderStatus.Paid => "bg-success",
+        MercatoApp.Models.OrderStatus.Preparing => "bg-info",
+        MercatoApp.Models.OrderStatus.Shipped => "bg-primary",
+        MercatoApp.Models.OrderStatus.Delivered => "bg-success",
+        MercatoApp.Models.OrderStatus.Cancelled => "bg-secondary",
+        MercatoApp.Models.OrderStatus.Refunded => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    var iconClass = Model switch
+    {
+        MercatoApp.Models.OrderStatus.New => "bi-hourglass-split",
+        MercatoApp.Models.OrderStatus.Paid => "bi-check-circle",
+        MercatoApp.Models.OrderStatus.Preparing => "bi-box-seam",
+        MercatoApp.Models.OrderStatus.Shipped => "bi-truck",
+        MercatoApp.Models.OrderStatus.Delivered => "bi-check-circle",
+        MercatoApp.Models.OrderStatus.Cancelled => "bi-x-circle",
+        MercatoApp.Models.OrderStatus.Refunded => "bi-arrow-counterclockwise",
+        _ => "bi-question-circle"
+    };
+
+    var statusText = Model.ToString();
+}
+
+<span class="badge @badgeClass">
+    <i class="bi @iconClass"></i> @statusText
+</span>
