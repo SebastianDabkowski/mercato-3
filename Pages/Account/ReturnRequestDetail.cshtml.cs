@@ -38,6 +38,12 @@ public class ReturnRequestDetailModel : PageModel
     public RefundTransaction? RefundTransaction { get; set; }
 
     /// <summary>
+    /// Gets or sets the new message content input.
+    /// </summary>
+    [BindProperty]
+    public string NewMessageContent { get; set; } = string.Empty;
+
+    /// <summary>
     /// Handles GET request to display return request details.
     /// </summary>
     /// <param name="id">The return request ID.</param>
@@ -77,6 +83,49 @@ public class ReturnRequestDetailModel : PageModel
             RefundTransaction = refunds.FirstOrDefault(r => r.ReturnRequestId == id);
         }
 
+        // Mark messages as read for the buyer
+        await _returnRequestService.MarkMessagesAsReadAsync(id, userId, isSellerViewing: false);
+
         return Page();
+    }
+
+    /// <summary>
+    /// Handles POST request to add a message to the return request.
+    /// </summary>
+    /// <param name="id">The return request ID.</param>
+    /// <returns>The page result.</returns>
+    public async Task<IActionResult> OnPostAddMessageAsync(int id)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("User ID claim not found or invalid");
+            return RedirectToPage("/Account/Login");
+        }
+
+        // Validate message content
+        if (string.IsNullOrWhiteSpace(NewMessageContent))
+        {
+            TempData["ErrorMessage"] = "Message cannot be empty.";
+            return RedirectToPage(new { id });
+        }
+
+        if (NewMessageContent.Length > 2000)
+        {
+            TempData["ErrorMessage"] = "Message cannot exceed 2000 characters.";
+            return RedirectToPage(new { id });
+        }
+
+        // Add the message
+        var message = await _returnRequestService.AddMessageAsync(id, userId, NewMessageContent, isFromSeller: false);
+
+        if (message == null)
+        {
+            TempData["ErrorMessage"] = "Failed to send message. You may not have permission to message this case.";
+            return RedirectToPage(new { id });
+        }
+
+        TempData["SuccessMessage"] = "Message sent successfully.";
+        return RedirectToPage(new { id });
     }
 }

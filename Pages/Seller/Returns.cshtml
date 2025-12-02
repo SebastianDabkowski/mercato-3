@@ -183,6 +183,10 @@
                                     <td>
                                         <a asp-page="/Seller/ReturnDetail" asp-route-id="@request.Id" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-eye"></i> View Details
+                                            @if (Model.UnreadMessageCounts.TryGetValue(request.Id, out var unreadCount) && unreadCount > 0)
+                                            {
+                                                <span class="badge bg-danger ms-1">@unreadCount new</span>
+                                            }
                                         </a>
                                     </td>
                                 </tr>

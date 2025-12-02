@@ -80,4 +80,32 @@ public interface IReturnRequestService
     /// <param name="sellerNotes">Required notes explaining rejection reason.</param>
     /// <returns>True if successful, false otherwise.</returns>
     Task<bool> RejectReturnRequestAsync(int returnRequestId, int storeId, string sellerNotes);
+
+    /// <summary>
+    /// Adds a message to a return request thread.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="senderId">The user ID of the message sender.</param>
+    /// <param name="content">The message content.</param>
+    /// <param name="isFromSeller">Whether the message is from the seller.</param>
+    /// <returns>The created message, or null if the operation failed.</returns>
+    Task<ReturnRequestMessage?> AddMessageAsync(int returnRequestId, int senderId, string content, bool isFromSeller);
+
+    /// <summary>
+    /// Marks unread messages as read for a specific user viewing a return request.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="userId">The user ID who is reading the messages.</param>
+    /// <param name="isSellerViewing">Whether the viewer is the seller.</param>
+    /// <returns>The number of messages marked as read.</returns>
+    Task<int> MarkMessagesAsReadAsync(int returnRequestId, int userId, bool isSellerViewing);
+
+    /// <summary>
+    /// Gets the count of unread messages for a specific return request and viewer.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="userId">The user ID who is viewing.</param>
+    /// <param name="isSellerViewing">Whether the viewer is the seller.</param>
+    /// <returns>The count of unread messages sent by the other party.</returns>
+    Task<int> GetUnreadMessageCountAsync(int returnRequestId, int userId, bool isSellerViewing);
 }

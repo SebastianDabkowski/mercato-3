@@ -150,6 +150,10 @@
                                         <div class="mt-3">
                                             <a asp-page="/Account/ReturnRequestDetail" asp-route-id="@request.Id" class="btn btn-primary btn-sm w-100 mb-2">
                                                 <i class="bi bi-eye"></i> View Details
+                                                @if (Model.UnreadMessageCounts.TryGetValue(request.Id, out var unreadCount) && unreadCount > 0)
+                                                {
+                                                    <span class="badge bg-danger ms-1">@unreadCount new</span>
+                                                }
                                             </a>
                                             <a asp-page="/Account/OrderDetail" asp-route-orderId="@request.SubOrder.ParentOrder.Id" class="btn btn-outline-primary btn-sm w-100">
                                                 <i class="bi bi-box-seam"></i> View Order

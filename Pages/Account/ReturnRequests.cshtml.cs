@@ -30,6 +30,12 @@ public class ReturnRequestsModel : PageModel
     public List<ReturnRequest> ReturnRequests { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets the unread message counts for each return request.
+    /// Key is return request ID, value is unread count.
+    /// </summary>
+    public Dictionary<int, int> UnreadMessageCounts { get; set; } = new();
+
+    /// <summary>
     /// Handles GET request to display all return requests for the logged-in buyer.
     /// </summary>
     /// <returns>The page result.</returns>
@@ -44,6 +50,13 @@ public class ReturnRequestsModel : PageModel
 
         // Get all return requests for the buyer
         ReturnRequests = await _returnRequestService.GetReturnRequestsByBuyerAsync(userId);
+
+        // Get unread message counts for each return request
+        foreach (var request in ReturnRequests)
+        {
+            var unreadCount = await _returnRequestService.GetUnreadMessageCountAsync(request.Id, userId, isSellerViewing: false);
+            UnreadMessageCounts[request.Id] = unreadCount;
+        }
 
         return Page();
     }
