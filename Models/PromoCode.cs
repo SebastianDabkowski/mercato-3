@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace MercatoApp.Models;
 
 /// <summary>
@@ -13,6 +15,8 @@ public class PromoCode
     /// <summary>
     /// Gets or sets the promo code string (e.g., "SAVE20").
     /// </summary>
+    [Required]
+    [StringLength(50, MinimumLength = 3)]
     public string Code { get; set; } = null!;
 
     /// <summary>

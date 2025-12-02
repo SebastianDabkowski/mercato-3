@@ -60,10 +60,13 @@ public class PromoCodeService : IPromoCodeService
             return null;
         }
 
-        // Find the promo code (case-insensitive)
+        // Normalize the code to uppercase for comparison
+        var normalizedCode = code.Trim().ToUpper();
+
+        // Find the promo code (case-insensitive via normalized comparison)
         var promoCode = await _context.PromoCodes
             .Include(p => p.Store)
-            .FirstOrDefaultAsync(p => p.Code.ToUpper() == code.ToUpper());
+            .FirstOrDefaultAsync(p => p.Code.ToUpper() == normalizedCode);
 
         if (promoCode == null)
         {
@@ -165,14 +168,13 @@ public class PromoCodeService : IPromoCodeService
     /// <inheritdoc />
     public async Task IncrementUsageCountAsync(int promoCodeId)
     {
-        var promoCode = await _context.PromoCodes.FindAsync(promoCodeId);
-        if (promoCode != null)
-        {
-            promoCode.CurrentUsageCount++;
-            await _context.SaveChangesAsync();
-            
-            _logger.LogInformation("Incremented usage count for promo code {PromoCodeId}: {CurrentUsage}",
-                promoCodeId, promoCode.CurrentUsageCount);
-        }
+        // Use ExecuteUpdateAsync for atomic increment to avoid race conditions
+        await _context.PromoCodes
+            .Where(p => p.Id == promoCodeId)
+            .ExecuteUpdateAsync(p => p.SetProperty(
+                pc => pc.CurrentUsageCount,
+                pc => pc.CurrentUsageCount + 1));
+
+        _logger.LogInformation("Incremented usage count for promo code {PromoCodeId}", promoCodeId);
     }
 }
