@@ -18,5 +18,10 @@ public enum AccountStatus
     /// <summary>
     /// Account has been suspended by admin.
     /// </summary>
-    Suspended
+    Suspended,
+
+    /// <summary>
+    /// Account has been blocked by admin.
+    /// </summary>
+    Blocked
 }
