@@ -181,6 +181,13 @@ public class OrderService : IOrderService
                 .ThenInclude(i => i.Product)
             .Include(o => o.Items)
                 .ThenInclude(i => i.ProductVariant)
+            .Include(o => o.PaymentMethod)
+            .Include(o => o.PaymentTransactions)
+                .ThenInclude(t => t.PaymentMethod)
+            .Include(o => o.ShippingMethods)
+                .ThenInclude(sm => sm.ShippingMethod)
+            .Include(o => o.ShippingMethods)
+                .ThenInclude(sm => sm.Store)
             .FirstOrDefaultAsync(o => o.Id == orderId);
     }
 
