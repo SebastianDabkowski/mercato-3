@@ -9,6 +9,14 @@
         <i class="bi bi-cart"></i> Shopping Cart
     </h1>
 
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     @if (!Model.ItemsBySeller.Any())
     {
         <div class="text-center py-5">
@@ -87,14 +95,15 @@
                                                         <input type="hidden" name="cartItemId" value="@item.Id" />
                                                         <div class="input-group input-group-sm" style="width: 120px; margin: 0 auto;">
                                                             <button type="submit" name="quantity" value="@(item.Quantity - 1)" 
-                                                                    class="btn btn-outline-secondary" 
-                                                                    @(item.Quantity <= 1 ? "disabled" : "")>
+                                                                    class="btn btn-outline-secondary"
+                                                                    title="@(item.Quantity == 1 ? "Remove item" : "Decrease quantity")">
                                                                 <i class="bi bi-dash"></i>
                                                             </button>
                                                             <input type="number" class="form-control text-center" 
                                                                    value="@item.Quantity" min="1" readonly />
                                                             <button type="submit" name="quantity" value="@(item.Quantity + 1)" 
-                                                                    class="btn btn-outline-secondary">
+                                                                    class="btn btn-outline-secondary"
+                                                                    title="Increase quantity">
                                                                 <i class="bi bi-plus"></i>
                                                             </button>
                                                         </div>
