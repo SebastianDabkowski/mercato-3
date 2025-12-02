@@ -117,6 +117,20 @@ public class Store
     public string? BankRoutingNumber { get; set; }
 
     /// <summary>
+    /// Gets or sets the custom commission percentage override for this seller.
+    /// If null, uses the global commission configuration.
+    /// </summary>
+    [Range(0, 100)]
+    public decimal? CommissionPercentageOverride { get; set; }
+
+    /// <summary>
+    /// Gets or sets the custom fixed commission amount override for this seller.
+    /// If null, uses the global commission configuration.
+    /// </summary>
+    [Range(0, 999999.99)]
+    public decimal? FixedCommissionAmountOverride { get; set; }
+
+    /// <summary>
     /// Gets or sets the date and time when the store was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
