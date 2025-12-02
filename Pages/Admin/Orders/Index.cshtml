@@ -1,0 +1,219 @@
+@page
+@model MercatoApp.Pages.Admin.Orders.IndexModel
+@{
+    ViewData["Title"] = "Manage Orders - Admin";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-bag-check"></i> Manage Orders
+                </h1>
+            </div>
+
+            <!-- Success/Error Messages -->
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Filter Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-funnel"></i> Filter Orders
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <!-- Status Filter -->
+                        <div class="col-md-6">
+                            <label for="FilterStatus" class="form-label">Status</label>
+                            <select name="FilterStatus" id="FilterStatus" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="New" selected="@(Model.FilterStatus == "New")">New</option>
+                                <option value="Paid" selected="@(Model.FilterStatus == "Paid")">Paid</option>
+                                <option value="Preparing" selected="@(Model.FilterStatus == "Preparing")">Preparing</option>
+                                <option value="Shipped" selected="@(Model.FilterStatus == "Shipped")">Shipped</option>
+                                <option value="Delivered" selected="@(Model.FilterStatus == "Delivered")">Delivered</option>
+                                <option value="Cancelled" selected="@(Model.FilterStatus == "Cancelled")">Cancelled</option>
+                                <option value="Refunded" selected="@(Model.FilterStatus == "Refunded")">Refunded</option>
+                            </select>
+                        </div>
+
+                        <!-- Order Number Filter -->
+                        <div class="col-md-6">
+                            <label for="FilterOrderNumber" class="form-label">Order Number</label>
+                            <input type="text" class="form-control" id="FilterOrderNumber" name="FilterOrderNumber" 
+                                value="@Model.FilterOrderNumber" placeholder="Search by order number...">
+                        </div>
+
+                        <!-- Filter Actions -->
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Apply Filters
+                            </button>
+                            <a asp-page="/Admin/Orders/Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results Info -->
+            @if (Model.TotalCount > 0)
+            {
+                <div class="alert alert-info">
+                    Showing @Model.Orders.Count of @Model.TotalCount order(s)
+                    @if (Model.PageNumber > 1)
+                    {
+                        <span> - Page @Model.PageNumber of @Model.TotalPages</span>
+                    }
+                </div>
+            }
+
+            <!-- Orders List -->
+            @if (!Model.Orders.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 
+                    @if (!string.IsNullOrEmpty(Model.FilterStatus) || !string.IsNullOrEmpty(Model.FilterOrderNumber))
+                    {
+                        <text>No orders found matching your filters.</text>
+                    }
+                    else
+                    {
+                        <text>No orders found in the system.</text>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Order Number</th>
+                                        <th>Customer</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Total</th>
+                                        <th>Sub-Orders</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var order in Model.Orders)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@order.OrderNumber</strong>
+                                            </td>
+                                            <td>
+                                                @if (order.User != null)
+                                                {
+                                                    <span>@order.User.Email</span>
+                                                }
+                                                else if (!string.IsNullOrEmpty(order.GuestEmail))
+                                                {
+                                                    <span>@order.GuestEmail <small class="text-muted">(Guest)</small></span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Unknown</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @order.OrderedAt.ToString("MMM dd, yyyy")<br/>
+                                                <small class="text-muted">@order.OrderedAt.ToString("h:mm tt")</small>
+                                            </td>
+                                            <td>
+                                                <partial name="_OrderStatusBadge" model="order.Status" />
+                                            </td>
+                                            <td>
+                                                <strong>@order.TotalAmount.ToString("C")</strong>
+                                            </td>
+                                            <td>
+                                                @order.SubOrders.Count
+                                            </td>
+                                            <td>
+                                                <a asp-page="/Admin/Orders/Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i> View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="Order list pagination" class="mt-3">
+                        <ul class="pagination justify-content-center">
+                            <!-- Previous Page -->
+                            <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                                <a class="page-link" 
+                                   asp-page="/Admin/Orders/Index" 
+                                   asp-route-pageNumber="@(Model.PageNumber - 1)"
+                                   asp-route-filterStatus="@Model.FilterStatus"
+                                   asp-route-filterOrderNumber="@Model.FilterOrderNumber">
+                                    Previous
+                                </a>
+                            </li>
+
+                            <!-- Page Numbers -->
+                            @{
+                                var startPage = Math.Max(1, Model.PageNumber - 2);
+                                var endPage = Math.Min(Model.TotalPages, Model.PageNumber + 2);
+                            }
+
+                            @for (var i = startPage; i <= endPage; i++)
+                            {
+                                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                    <a class="page-link" 
+                                       asp-page="/Admin/Orders/Index" 
+                                       asp-route-pageNumber="@i"
+                                       asp-route-filterStatus="@Model.FilterStatus"
+                                       asp-route-filterOrderNumber="@Model.FilterOrderNumber">
+                                        @i
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- Next Page -->
+                            <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" 
+                                   asp-page="/Admin/Orders/Index" 
+                                   asp-route-pageNumber="@(Model.PageNumber + 1)"
+                                   asp-route-filterStatus="@Model.FilterStatus"
+                                   asp-route-filterOrderNumber="@Model.FilterOrderNumber">
+                                    Next
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>

@@ -12,15 +12,18 @@ public class OrderStatusService : IOrderStatusService
 {
     private readonly ApplicationDbContext _context;
     private readonly IEscrowService _escrowService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<OrderStatusService> _logger;
 
     public OrderStatusService(
         ApplicationDbContext context,
         IEscrowService escrowService,
+        IEmailService emailService,
         ILogger<OrderStatusService> logger)
     {
         _context = context;
         _escrowService = escrowService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -66,6 +69,8 @@ public class OrderStatusService : IOrderStatusService
     {
         var subOrder = await _context.SellerSubOrders
             .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.User)
+            .Include(so => so.Store)
             .FirstOrDefaultAsync(so => so.Id == subOrderId);
 
         if (subOrder == null)
@@ -89,6 +94,17 @@ public class OrderStatusService : IOrderStatusService
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
 
+        // Send email notification
+        try
+        {
+            await _emailService.SendShippingStatusUpdateEmailAsync(subOrder, subOrder.ParentOrder);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
+            // Don't fail the status update if email fails
+        }
+
         _logger.LogInformation("Sub-order {SubOrderId} status updated to Preparing by user {UserId}", subOrderId, userId);
 
         return (true, null);
@@ -104,6 +120,8 @@ public class OrderStatusService : IOrderStatusService
     {
         var subOrder = await _context.SellerSubOrders
             .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.User)
+            .Include(so => so.Store)
             .FirstOrDefaultAsync(so => so.Id == subOrderId);
 
         if (subOrder == null)
@@ -133,6 +151,17 @@ public class OrderStatusService : IOrderStatusService
         await _context.SaveChangesAsync();
         await UpdateParentOrderStatusAsync(subOrder.ParentOrderId);
 
+        // Send email notification with tracking information
+        try
+        {
+            await _emailService.SendShippingStatusUpdateEmailAsync(subOrder, subOrder.ParentOrder);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
+            // Don't fail the status update if email fails
+        }
+
         _logger.LogInformation("Sub-order {SubOrderId} status updated to Shipped by user {UserId}", subOrderId, userId);
 
         return (true, null);
@@ -143,6 +172,8 @@ public class OrderStatusService : IOrderStatusService
     {
         var subOrder = await _context.SellerSubOrders
             .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.User)
+            .Include(so => so.Store)
             .FirstOrDefaultAsync(so => so.Id == subOrderId);
 
         if (subOrder == null)
@@ -175,6 +206,17 @@ public class OrderStatusService : IOrderStatusService
         {
             _logger.LogError(ex, "Failed to mark escrow eligible for payout for sub-order {SubOrderId}", subOrderId);
             // Don't fail the status update - escrow can be updated separately
+        }
+
+        // Send email notification
+        try
+        {
+            await _emailService.SendShippingStatusUpdateEmailAsync(subOrder, subOrder.ParentOrder);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
+            // Don't fail the status update if email fails
         }
 
         _logger.LogInformation("Sub-order {SubOrderId} status updated to Delivered by user {UserId}", subOrderId, userId);
