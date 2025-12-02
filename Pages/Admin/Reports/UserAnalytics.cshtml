@@ -1,0 +1,370 @@
+@page
+@model MercatoApp.Pages.Admin.Reports.UserAnalyticsModel
+@{
+    ViewData["Title"] = "User Analytics - Admin";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-people"></i> User Analytics
+                </h1>
+            </div>
+
+            <!-- Error Messages -->
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Date Range Filter -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-range"></i> Select Date Range
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="DateRange" class="form-label">Date Range Preset</label>
+                            <select name="DateRange" id="DateRange" class="form-select" onchange="toggleCustomDates()">
+                                <option value="today" selected="@(Model.DateRange == "today")">Today</option>
+                                <option value="last7days" selected="@(Model.DateRange == "last7days")">Last 7 Days</option>
+                                <option value="last30days" selected="@(Model.DateRange == "last30days")">Last 30 Days</option>
+                                <option value="custom" selected="@(Model.DateRange == "custom")">Custom Range</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3" id="customStartDateContainer" style="display: @(Model.DateRange == "custom" ? "block" : "none")">
+                            <label for="CustomStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="CustomStartDate" name="CustomStartDate" 
+                                   value="@(Model.CustomStartDate?.ToString("yyyy-MM-dd"))" max="@DateTime.UtcNow.ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <div class="col-md-3" id="customEndDateContainer" style="display: @(Model.DateRange == "custom" ? "block" : "none")">
+                            <label for="CustomEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="CustomEndDate" name="CustomEndDate" 
+                                   value="@(Model.CustomEndDate?.ToString("yyyy-MM-dd"))" max="@DateTime.UtcNow.ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-arrow-clockwise"></i> Update Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.Metrics != null)
+            {
+                <!-- Report Info -->
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle"></i> 
+                    Showing data from <strong>@Model.StartDate.ToString("MMM dd, yyyy")</strong> to <strong>@Model.EndDate.ToString("MMM dd, yyyy")</strong>
+                    <br/>
+                    <small class="text-muted">
+                        Last calculated: @Model.Metrics.CalculatedAt.ToString("MMM dd, yyyy h:mm tt") UTC
+                        <br/>
+                        <i class="bi bi-shield-check"></i> All data is aggregated and anonymized for privacy compliance.
+                    </small>
+                </div>
+
+                <!-- Check for insufficient data -->
+                @if (Model.Metrics.NewBuyerAccounts == 0 && Model.Metrics.NewSellerAccounts == 0 && Model.Metrics.TotalActiveUsers == 0)
+                {
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-circle"></i> 
+                        <strong>No user activity found for the selected period.</strong>
+                        <br/>
+                        There were no new registrations or user activities during this time period. Try selecting a different date range to see more data.
+                    </div>
+                }
+
+                <!-- Registration Metrics Section -->
+                <h3 class="mb-3">
+                    <i class="bi bi-person-plus"></i> Registration Metrics
+                </h3>
+                <div class="row g-4 mb-4">
+                    <!-- New Buyer Accounts -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-primary">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-cart"></i> New Buyer Accounts
+                                </h6>
+                                <h2 class="card-title mb-3 text-primary">@Model.Metrics.NewBuyerAccounts.ToString("N0")</h2>
+                                @if (Model.Metrics.NewBuyerAccounts == 0)
+                                {
+                                    <p class="card-text text-muted small">No new buyer accounts in this period</p>
+                                }
+                                else
+                                {
+                                    <p class="card-text text-muted small">Users registered as buyers</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New Seller Accounts -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-success">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-shop"></i> New Seller Accounts
+                                </h6>
+                                <h2 class="card-title mb-3 text-success">@Model.Metrics.NewSellerAccounts.ToString("N0")</h2>
+                                @if (Model.Metrics.NewSellerAccounts == 0)
+                                {
+                                    <p class="card-text text-muted small">No new seller accounts in this period</p>
+                                }
+                                else
+                                {
+                                    <p class="card-text text-muted small">Users registered as sellers</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Active Users -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-info">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-activity"></i> Total Active Users
+                                </h6>
+                                <h2 class="card-title mb-3 text-info">@Model.Metrics.TotalActiveUsers.ToString("N0")</h2>
+                                @if (Model.Metrics.TotalActiveUsers == 0)
+                                {
+                                    <p class="card-text text-muted small">No active users in this period</p>
+                                }
+                                else
+                                {
+                                    <p class="card-text text-muted small">Users who logged in or placed orders</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Metrics Section -->
+                <h3 class="mb-3 mt-5">
+                    <i class="bi bi-graph-up"></i> Activity Metrics
+                </h3>
+                <div class="row g-4 mb-4">
+                    <!-- Users Who Logged In -->
+                    <div class="col-md-6">
+                        <div class="card h-100 border-warning">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-box-arrow-in-right"></i> Users Who Logged In
+                                </h6>
+                                <h2 class="card-title mb-3 text-warning">@Model.Metrics.UsersWhoLoggedIn.ToString("N0")</h2>
+                                @if (Model.Metrics.UsersWhoLoggedIn == 0)
+                                {
+                                    <p class="card-text text-muted small">No login activity in this period</p>
+                                }
+                                else
+                                {
+                                    <p class="card-text text-muted small">Unique users with successful logins</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users Who Placed Orders -->
+                    <div class="col-md-6">
+                        <div class="card h-100 border-danger">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-bag-check"></i> Users Who Placed Orders
+                                </h6>
+                                <h2 class="card-title mb-3 text-danger">@Model.Metrics.UsersWhoPlacedOrders.ToString("N0")</h2>
+                                @if (Model.Metrics.UsersWhoPlacedOrders == 0)
+                                {
+                                    <p class="card-text text-muted small">No orders placed in this period</p>
+                                }
+                                else
+                                {
+                                    <p class="card-text text-muted small">Unique users who created orders</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registration Trend Chart -->
+                @if (Model.RegistrationData.Any(d => d.BuyerCount > 0 || d.SellerCount > 0))
+                {
+                    <h3 class="mb-3 mt-5">
+                        <i class="bi bi-bar-chart"></i> Registration Trends
+                    </h3>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <canvas id="registrationChart" style="max-height: 400px;"></canvas>
+                        </div>
+                    </div>
+                }
+
+                <!-- Activity Trend Chart -->
+                @if (Model.ActivityData.Any(d => d.LoginCount > 0 || d.OrderCount > 0))
+                {
+                    <h3 class="mb-3 mt-5">
+                        <i class="bi bi-bar-chart-line"></i> Activity Trends
+                    </h3>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <canvas id="activityChart" style="max-height: 400px;"></canvas>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCustomDates() {
+        const dateRange = document.getElementById('DateRange').value;
+        const startContainer = document.getElementById('customStartDateContainer');
+        const endContainer = document.getElementById('customEndDateContainer');
+        
+        if (dateRange === 'custom') {
+            startContainer.style.display = 'block';
+            endContainer.style.display = 'block';
+        } else {
+            startContainer.style.display = 'none';
+            endContainer.style.display = 'none';
+        }
+    }
+</script>
+
+@if (Model.Metrics != null)
+{
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Registration data from server
+        const registrationData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RegistrationData));
+        const activityData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ActivityData));
+
+        // Format dates for chart labels
+        const formatDate = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        };
+
+        // Registration Chart
+        @if (Model.RegistrationData.Any(d => d.BuyerCount > 0 || d.SellerCount > 0))
+        {
+            <text>
+            const registrationCtx = document.getElementById('registrationChart').getContext('2d');
+            new Chart(registrationCtx, {
+                type: 'line',
+                data: {
+                    labels: registrationData.map(d => formatDate(d.date)),
+                    datasets: [
+                        {
+                            label: 'New Buyer Accounts',
+                            data: registrationData.map(d => d.buyerCount),
+                            borderColor: 'rgb(13, 110, 253)',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        },
+                        {
+                            label: 'New Seller Accounts',
+                            data: registrationData.map(d => d.sellerCount),
+                            borderColor: 'rgb(25, 135, 84)',
+                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Daily Registration Activity'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Activity Chart
+        @if (Model.ActivityData.Any(d => d.LoginCount > 0 || d.OrderCount > 0))
+        {
+            <text>
+            const activityCtx = document.getElementById('activityChart').getContext('2d');
+            new Chart(activityCtx, {
+                type: 'bar',
+                data: {
+                    labels: activityData.map(d => formatDate(d.date)),
+                    datasets: [
+                        {
+                            label: 'Users Who Logged In',
+                            data: activityData.map(d => d.loginCount),
+                            backgroundColor: 'rgba(255, 193, 7, 0.6)',
+                            borderColor: 'rgb(255, 193, 7)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Users Who Placed Orders',
+                            data: activityData.map(d => d.orderCount),
+                            backgroundColor: 'rgba(220, 53, 69, 0.6)',
+                            borderColor: 'rgb(220, 53, 69)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Daily User Activity'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+    </script>
+}
