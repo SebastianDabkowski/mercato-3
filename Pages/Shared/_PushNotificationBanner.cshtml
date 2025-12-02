@@ -1,0 +1,81 @@
+<!-- Push Notification Permission Banner -->
+<div id="pushNotificationBanner" class="alert alert-info alert-dismissible fade show position-fixed bottom-0 start-50 translate-middle-x m-3" style="display: none; z-index: 1050; max-width: 600px;">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-bell fs-4 me-3"></i>
+        <div class="flex-grow-1">
+            <strong>Stay Updated!</strong>
+            <p class="mb-0 small">Enable push notifications to get real-time updates about your orders, messages, and more.</p>
+        </div>
+        <div class="ms-3">
+            <button type="button" class="btn btn-primary btn-sm" id="enablePushNotifications">Enable</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm ms-1" id="dismissPushBanner">Later</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    #pushNotificationBanner {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+    }
+</style>
+
+<script>
+    (function() {
+        // Only show banner if user is authenticated and hasn't dismissed it
+        if (!document.querySelector('[data-authenticated]')) {
+            return;
+        }
+
+        // Check if user has already dismissed the banner
+        const dismissed = localStorage.getItem('pushNotificationBannerDismissed');
+        if (dismissed === 'true') {
+            return;
+        }
+
+        // Check notification permission
+        if (typeof Notification !== 'undefined') {
+            if (Notification.permission === 'default') {
+                // Show the banner after a short delay
+                setTimeout(() => {
+                    document.getElementById('pushNotificationBanner').style.display = 'block';
+                }, 3000);
+            }
+        }
+
+        // Handle enable button click
+        document.getElementById('enablePushNotifications').addEventListener('click', async function() {
+            const banner = document.getElementById('pushNotificationBanner');
+            
+            if (window.pushNotificationManager) {
+                const success = await window.pushNotificationManager.requestPermissionAndSubscribe();
+                
+                if (success) {
+                    banner.style.display = 'none';
+                    localStorage.setItem('pushNotificationBannerDismissed', 'true');
+                    
+                    // Show success message
+                    const successAlert = document.createElement('div');
+                    successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed bottom-0 start-50 translate-middle-x m-3';
+                    successAlert.style.cssText = 'z-index: 1050; max-width: 600px;';
+                    successAlert.innerHTML = `
+                        <i class="bi bi-check-circle me-2"></i>
+                        Push notifications enabled! You'll now receive updates.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(successAlert);
+                    
+                    setTimeout(() => {
+                        successAlert.remove();
+                    }, 5000);
+                }
+            }
+        });
+
+        // Handle dismiss button click
+        document.getElementById('dismissPushBanner').addEventListener('click', function() {
+            document.getElementById('pushNotificationBanner').style.display = 'none';
+            localStorage.setItem('pushNotificationBannerDismissed', 'true');
+        });
+    })();
+</script>

@@ -327,6 +327,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<OrderMessage> OrderMessages { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the push subscriptions table.
+    /// </summary>
+    public DbSet<PushSubscription> PushSubscriptions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
