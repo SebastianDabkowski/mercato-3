@@ -557,7 +557,8 @@ public class RefundService : IRefundService
                 refundTransaction.CompletedAt = DateTime.UtcNow;
                 refundTransaction.ProviderMetadata = System.Text.Json.JsonSerializer.Serialize(providerResult.Metadata);
 
-                // Update order and sub-order refunded amounts if not already updated
+                // On retry of a failed refund, we need to update amounts and escrow
+                // These were not updated during the initial failure
                 var order = refundTransaction.Order;
                 order.RefundedAmount += refundTransaction.RefundAmount;
                 order.UpdatedAt = DateTime.UtcNow;
