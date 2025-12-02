@@ -61,6 +61,11 @@ public enum EmailType
     SellerProductModeration,
 
     /// <summary>
+    /// Photo removal notification sent to seller.
+    /// </summary>
+    SellerPhotoRemoval,
+
+    /// <summary>
     /// Other email types.
     /// </summary>
     Other

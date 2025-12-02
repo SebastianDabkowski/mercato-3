@@ -350,6 +350,18 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ProductModerationLog> ProductModerationLogs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the photo moderation logs table.
+    /// Stores audit trail of photo moderation actions.
+    /// </summary>
+    public DbSet<PhotoModerationLog> PhotoModerationLogs { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the photo flags table.
+    /// Stores user and automated flags on product photos.
+    /// </summary>
+    public DbSet<PhotoFlag> PhotoFlags { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1682,6 +1694,66 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.ModeratedByUser)
                 .WithMany()
                 .HasForeignKey(e => e.ModeratedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PhotoModerationLog>(entity =>
+        {
+            // Index on product image ID for finding all moderation actions for a photo
+            entity.HasIndex(e => e.ProductImageId);
+
+            // Composite index for ordering moderation history by date
+            entity.HasIndex(e => new { e.ProductImageId, e.CreatedAt });
+
+            // Index on action type for filtering by action
+            entity.HasIndex(e => e.Action);
+
+            // Index on moderated by user for admin activity tracking
+            entity.HasIndex(e => e.ModeratedByUserId);
+
+            // Configure relationship with ProductImage
+            entity.HasOne(e => e.ProductImage)
+                .WithMany()
+                .HasForeignKey(e => e.ProductImageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with ModeratedByUser (optional)
+            entity.HasOne(e => e.ModeratedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ModeratedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PhotoFlag>(entity =>
+        {
+            // Index on product image ID for finding all flags for a photo
+            entity.HasIndex(e => e.ProductImageId);
+
+            // Composite index for finding unresolved flags
+            entity.HasIndex(e => new { e.ProductImageId, e.IsResolved });
+
+            // Index on flagged by user for user activity tracking
+            entity.HasIndex(e => e.FlaggedByUserId);
+
+            // Index on resolved status and date for admin queue
+            entity.HasIndex(e => new { e.IsResolved, e.CreatedAt });
+
+            // Configure relationship with ProductImage
+            entity.HasOne(e => e.ProductImage)
+                .WithMany()
+                .HasForeignKey(e => e.ProductImageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with FlaggedByUser (optional)
+            entity.HasOne(e => e.FlaggedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.FlaggedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with ResolvedByUser (optional)
+            entity.HasOne(e => e.ResolvedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }

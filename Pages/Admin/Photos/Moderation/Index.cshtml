@@ -1,0 +1,315 @@
+@page
+@model MercatoApp.Pages.Admin.Photos.Moderation.IndexModel
+@{
+    ViewData["Title"] = "Photo Moderation";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>Photo Moderation</h2>
+            <p class="text-muted">Review and moderate product photos submitted by sellers.</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Pending</h6>
+                    <h3 class="mb-0">@Model.Stats.GetValueOrDefault("Pending", 0)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Flagged</h6>
+                    <h3 class="mb-0">@Model.Stats.GetValueOrDefault("TotalFlagged", 0)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Approved</h6>
+                    <h3 class="mb-0">@Model.Stats.GetValueOrDefault("Approved", 0)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Rejected</h6>
+                    <h3 class="mb-0">@Model.Stats.GetValueOrDefault("Rejected", 0)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Photos</h6>
+                    <h3 class="mb-0">@Model.Stats.GetValueOrDefault("Total", 0)</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mb-3">
+        <div class="col-md-12 text-end">
+            @if (Model.Photos.Any())
+            {
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
+                    <i class="bi bi-check-circle"></i> Bulk Approve
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="photoTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "pending" ? "active" : "")" 
+               href="?tab=pending" role="tab">
+                Pending
+                @if (Model.Stats.GetValueOrDefault("Pending", 0) > 0)
+                {
+                    <span class="badge bg-warning text-dark">@Model.Stats.GetValueOrDefault("Pending", 0)</span>
+                }
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "flagged" ? "active" : "")" 
+               href="?tab=flagged" role="tab">
+                Flagged
+                @if (Model.Stats.GetValueOrDefault("TotalFlagged", 0) > 0)
+                {
+                    <span class="badge bg-danger">@Model.Stats.GetValueOrDefault("TotalFlagged", 0)</span>
+                }
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "approved" ? "active" : "")" 
+               href="?tab=approved" role="tab">
+                Approved
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "rejected" ? "active" : "")" 
+               href="?tab=rejected" role="tab">
+                Rejected
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "all" ? "active" : "")" 
+               href="?tab=all" role="tab">
+                All Photos
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-4" id="photoTabsContent">
+        <div class="tab-pane fade show active">
+            @if (Model.Photos.Any())
+            {
+                <form id="photoSelectionForm">
+                    <div class="row">
+                        @foreach (var photo in Model.Photos)
+                        {
+                            <div class="col-md-3 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <div class="form-check">
+                                            <input class="form-check-input photo-checkbox" type="checkbox" 
+                                                   value="@photo.Id" id="photo-@photo.Id" name="selectedPhotos">
+                                            <label class="form-check-label" for="photo-@photo.Id">
+                                                <small>ID: @photo.Id</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-2">
+                                        <div class="mb-2">
+                                            @if (!photo.IsRemoved && !string.IsNullOrEmpty(photo.ImageUrl))
+                                            {
+                                                <img src="@photo.ImageUrl" class="img-fluid rounded" alt="Product photo" style="max-height: 200px; width: 100%; object-fit: cover;" />
+                                            }
+                                            else
+                                            {
+                                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                                    <i class="bi bi-image-slash text-muted" style="font-size: 2rem;"></i>
+                                                    <p class="text-muted ms-2 mb-0">Removed</p>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="mb-2">
+                                            <span class="badge @(photo.ModerationStatus == MercatoApp.Models.PhotoModerationStatus.Approved ? "bg-success" : 
+                                                                  photo.ModerationStatus == MercatoApp.Models.PhotoModerationStatus.Rejected ? "bg-danger" :
+                                                                  photo.ModerationStatus == MercatoApp.Models.PhotoModerationStatus.Flagged ? "bg-warning text-dark" : "bg-secondary")">
+                                                @photo.ModerationStatus
+                                            </span>
+                                            @if (photo.IsFlagged)
+                                            {
+                                                <span class="badge bg-danger">Flagged</span>
+                                            }
+                                            @if (photo.IsMain)
+                                            {
+                                                <span class="badge bg-primary">Main Photo</span>
+                                            }
+                                        </div>
+                                        <h6 class="mb-1">@photo.Product.Title</h6>
+                                        <p class="mb-1 text-muted small">
+                                            <strong>Store:</strong> @photo.Product.Store.StoreName
+                                        </p>
+                                        <p class="mb-1 text-muted small">
+                                            <strong>Uploaded:</strong> @photo.CreatedAt.ToString("MMM d, yyyy")
+                                        </p>
+                                        @if (photo.IsRemoved && !string.IsNullOrEmpty(photo.RemovalReason))
+                                        {
+                                            <p class="mb-1 text-danger small">
+                                                <strong>Removal reason:</strong> @photo.RemovalReason
+                                            </p>
+                                        }
+                                    </div>
+                                    <div class="card-footer p-2">
+                                        <div class="d-grid gap-1">
+                                            @if (photo.ModerationStatus != MercatoApp.Models.PhotoModerationStatus.Approved)
+                                            {
+                                                <form method="post" asp-page-handler="Approve" class="d-inline">
+                                                    <input type="hidden" name="imageId" value="@photo.Id" />
+                                                    <button type="submit" class="btn btn-success btn-sm w-100">
+                                                        <i class="bi bi-check-circle"></i> Approve
+                                                    </button>
+                                                </form>
+                                            }
+                                            
+                                            @if (!photo.IsRemoved)
+                                            {
+                                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#removeModal-@photo.Id">
+                                                    <i class="bi bi-x-circle"></i> Remove
+                                                </button>
+                                            }
+                                            
+                                            <a href="/Admin/Photos/Moderation/Details?imageId=@photo.Id" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-info-circle"></i> Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Remove Modal -->
+                                <div class="modal fade" id="removeModal-@photo.Id" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" asp-page-handler="Remove">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Remove Photo</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <input type="hidden" name="imageId" value="@photo.Id" />
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Reason for removal:</label>
+                                                        <textarea name="reason" class="form-control" rows="3" required></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-danger">Remove Photo</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No photos found for the selected criteria.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Approve Modal -->
+<div class="modal fade" id="bulkApproveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="BulkApprove" id="bulkApproveForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bulk Approve Photos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to approve the selected photos?</p>
+                    <p class="text-muted"><span id="selectedCount">0</span> photo(s) selected</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Approve Selected</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Handle bulk selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.photo-checkbox');
+            const selectedCount = document.getElementById('selectedCount');
+            const bulkApproveForm = document.getElementById('bulkApproveForm');
+            
+            function updateSelectedCount() {
+                const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
+                const count = checkedBoxes.length;
+                selectedCount.textContent = count;
+                return checkedBoxes.map(cb => cb.value);
+            }
+            
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateSelectedCount);
+            });
+            
+            bulkApproveForm.addEventListener('submit', function(e) {
+                const selectedIds = updateSelectedCount();
+                if (selectedIds.length === 0) {
+                    e.preventDefault();
+                    alert('Please select at least one photo to approve.');
+                    return;
+                }
+                // Add selected IDs to the form
+                selectedIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'selectedPhotoIds';
+                    input.value = id;
+                    bulkApproveForm.appendChild(input);
+                });
+            });
+        });
+    </script>
+}

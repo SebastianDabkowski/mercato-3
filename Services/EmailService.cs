@@ -104,6 +104,14 @@ public interface IEmailService
     /// <param name="reason">The reason for the moderation decision.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task SendProductModerationNotificationToSellerAsync(Product product, ProductModerationStatus newStatus, string? reason);
+
+    /// <summary>
+    /// Sends a photo removal notification email to the seller.
+    /// </summary>
+    /// <param name="photo">The product image that was removed.</param>
+    /// <param name="reason">The reason for the removal.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SendPhotoRemovedNotificationToSellerAsync(ProductImage photo, string reason);
 }
 
 /// <summary>
@@ -561,5 +569,43 @@ public class EmailService : IEmailService
             EmailStatus.Sent,
             userId: product.Store.UserId,
             productId: product.Id);
+    }
+
+    /// <inheritdoc />
+    public async Task SendPhotoRemovedNotificationToSellerAsync(ProductImage photo, string reason)
+    {
+        // Get seller email from store owner
+        var sellerEmail = photo.Product.Store.ContactEmail ?? photo.Product.Store.User?.Email;
+
+        if (string.IsNullOrEmpty(sellerEmail))
+        {
+            _logger.LogWarning(
+                "Cannot send photo removal notification for photo {PhotoId}: No email address found for store {StoreId}",
+                photo.Id,
+                photo.Product.StoreId);
+            return;
+        }
+
+        var subject = $"Product Photo Removed: {photo.Product.Title}";
+
+        // In production, this would send an actual email with removal details
+        // For now, just log it
+        _logger.LogInformation(
+            "Photo removal notification would be sent to {Email} for photo {PhotoId} of product {ProductId}. " +
+            "Product: {ProductTitle}, Store: {StoreName}, Reason: {Reason}",
+            sellerEmail,
+            photo.Id,
+            photo.ProductId,
+            photo.Product.Title,
+            photo.Product.Store.StoreName,
+            reason);
+
+        await LogEmailAsync(
+            EmailType.SellerPhotoRemoval,
+            sellerEmail,
+            subject,
+            EmailStatus.Sent,
+            userId: photo.Product.Store.UserId,
+            productId: photo.ProductId);
     }
 }
