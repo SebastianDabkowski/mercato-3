@@ -307,6 +307,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<EmailLog> EmailLogs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the notifications table.
+    /// </summary>
+    public DbSet<Notification> Notifications { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1516,6 +1521,27 @@ public class ApplicationDbContext : DbContext
             // Create composite unique constraint to enforce one rating per sub-order per user
             entity.HasIndex(e => new { e.UserId, e.SellerSubOrderId })
                 .IsUnique();
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            // Index on user ID for finding all notifications for a user
+            entity.HasIndex(e => e.UserId);
+
+            // Composite index for finding unread notifications
+            entity.HasIndex(e => new { e.UserId, e.IsRead });
+
+            // Composite index for ordering notifications by date
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt });
+
+            // Index on type for filtering by notification type
+            entity.HasIndex(e => e.Type);
+
+            // Configure relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

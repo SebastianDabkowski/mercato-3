@@ -14,6 +14,7 @@ public class PayoutService : IPayoutService
     private readonly ILogger<PayoutService> _logger;
     private readonly IPayoutSettingsService _payoutSettingsService;
     private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
     private readonly IConfiguration _configuration;
 
     public PayoutService(
@@ -21,12 +22,14 @@ public class PayoutService : IPayoutService
         ILogger<PayoutService> logger,
         IPayoutSettingsService payoutSettingsService,
         IEmailService emailService,
+        INotificationService notificationService,
         IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _payoutSettingsService = payoutSettingsService;
         _emailService = emailService;
+        _notificationService = notificationService;
         _configuration = configuration;
     }
 
@@ -245,6 +248,24 @@ public class PayoutService : IPayoutService
             payout.Currency,
             eligibleEscrows.Count);
 
+        // Create notification for seller
+        try
+        {
+            await _notificationService.CreateNotificationAsync(
+                store.UserId,
+                NotificationType.PayoutScheduled,
+                "Payout Scheduled",
+                $"Payout #{payout.PayoutNumber} of ${payout.Amount:N2} has been scheduled for {scheduledDate:MMM dd, yyyy}.",
+                $"/Seller/Payouts/Details/{payout.Id}",
+                payout.Id,
+                "Payout");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create notification for payout {PayoutNumber}", payout.PayoutNumber);
+            // Don't fail payout creation if notification fails
+        }
+
         result.Success = true;
         result.Payout = payout;
         return result;
@@ -424,6 +445,16 @@ public class PayoutService : IPayoutService
                     if (payoutWithDetails != null)
                     {
                         await _emailService.SendPayoutNotificationToSellerAsync(payoutWithDetails);
+                        
+                        // Create notification for seller
+                        await _notificationService.CreateNotificationAsync(
+                            payoutWithDetails.Store.UserId,
+                            NotificationType.PayoutCompleted,
+                            "Payout Completed",
+                            $"Payout #{payoutWithDetails.PayoutNumber} of ${payoutWithDetails.Amount:N2} has been completed.",
+                            $"/Seller/Payouts/Details/{payoutWithDetails.Id}",
+                            payoutWithDetails.Id,
+                            "Payout");
                     }
                 }
                 catch (Exception ex)

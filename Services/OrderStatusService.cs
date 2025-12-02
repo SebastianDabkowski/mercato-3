@@ -13,17 +13,20 @@ public class OrderStatusService : IOrderStatusService
     private readonly ApplicationDbContext _context;
     private readonly IEscrowService _escrowService;
     private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<OrderStatusService> _logger;
 
     public OrderStatusService(
         ApplicationDbContext context,
         IEscrowService escrowService,
         IEmailService emailService,
+        INotificationService notificationService,
         ILogger<OrderStatusService> logger)
     {
         _context = context;
         _escrowService = escrowService;
         _emailService = emailService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -161,6 +164,28 @@ public class OrderStatusService : IOrderStatusService
             _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
             // Don't fail the status update if email fails
         }
+        
+        // Create notification for buyer
+        if (subOrder.ParentOrder.UserId.HasValue)
+        {
+            try
+            {
+                await _notificationService.CreateNotificationAsync(
+                    subOrder.ParentOrder.UserId.Value,
+                    NotificationType.OrderShipped,
+                    "Order Shipped",
+                    $"Your order #{subOrder.SubOrderNumber} has been shipped" + 
+                    (trackingNumber != null ? $" with tracking number {trackingNumber}" : "") + ".",
+                    $"/Account/Orders/Details/{subOrder.ParentOrderId}",
+                    subOrder.Id,
+                    "SellerSubOrder");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create notification for sub-order {SubOrderId}", subOrderId);
+                // Don't fail the status update if notification fails
+            }
+        }
 
         _logger.LogInformation("Sub-order {SubOrderId} status updated to Shipped by user {UserId}", subOrderId, userId);
 
@@ -217,6 +242,27 @@ public class OrderStatusService : IOrderStatusService
         {
             _logger.LogError(ex, "Failed to send shipping status update email for sub-order {SubOrderId}", subOrderId);
             // Don't fail the status update if email fails
+        }
+        
+        // Create notification for buyer
+        if (subOrder.ParentOrder.UserId.HasValue)
+        {
+            try
+            {
+                await _notificationService.CreateNotificationAsync(
+                    subOrder.ParentOrder.UserId.Value,
+                    NotificationType.OrderDelivered,
+                    "Order Delivered",
+                    $"Your order #{subOrder.SubOrderNumber} has been delivered.",
+                    $"/Account/Orders/Details/{subOrder.ParentOrderId}",
+                    subOrder.Id,
+                    "SellerSubOrder");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create notification for sub-order {SubOrderId}", subOrderId);
+                // Don't fail the status update if notification fails
+            }
         }
 
         _logger.LogInformation("Sub-order {SubOrderId} status updated to Delivered by user {UserId}", subOrderId, userId);

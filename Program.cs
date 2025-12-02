@@ -95,6 +95,7 @@ builder.Services.AddScoped<IProductReviewService, ProductReviewService>();
 builder.Services.AddScoped<IReviewModerationService, ReviewModerationService>();
 builder.Services.AddScoped<ISellerRatingService, SellerRatingService>();
 builder.Services.AddScoped<ISellerReputationService, SellerReputationService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // Register shipping provider services as singleton collection
 builder.Services.AddSingleton<IShippingProviderService>(sp => 

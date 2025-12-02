@@ -1,0 +1,126 @@
+@page
+@model MercatoApp.Pages.Account.NotificationsModel
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-bell"></i> Notifications
+                    @if (Model.UnreadCount > 0)
+                    {
+                        <span class="badge bg-danger">@Model.UnreadCount unread</span>
+                    }
+                </h1>
+                @if (Model.UnreadCount > 0)
+                {
+                    <form method="post" asp-page-handler="MarkAllAsRead" class="d-inline">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-check-all"></i> Mark All as Read
+                        </button>
+                    </form>
+                }
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="btn-group mb-3" role="group" aria-label="Notification filters">
+                <a asp-page="/Account/Notifications" asp-route-unreadOnly="false" asp-route-pageNumber="1" 
+                   class="btn @(!Model.UnreadOnly ? "btn-primary" : "btn-outline-primary")">
+                    All (@Model.TotalCount)
+                </a>
+                <a asp-page="/Account/Notifications" asp-route-unreadOnly="true" asp-route-pageNumber="1" 
+                   class="btn @(Model.UnreadOnly ? "btn-primary" : "btn-outline-primary")">
+                    Unread (@Model.UnreadCount)
+                </a>
+            </div>
+
+            @if (Model.Notifications.Count == 0)
+            {
+                <!-- Empty State -->
+                <div class="card text-center py-5">
+                    <div class="card-body">
+                        <i class="bi bi-bell-slash display-1 text-muted"></i>
+                        <h3 class="mt-3">No notifications</h3>
+                        <p class="text-muted">
+                            @if (Model.UnreadOnly)
+                            {
+                                <text>You don't have any unread notifications.</text>
+                            }
+                            else
+                            {
+                                <text>You don't have any notifications yet.</text>
+                            }
+                        </p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Notifications List -->
+                <div class="list-group mb-4">
+                    @foreach (var notification in Model.Notifications)
+                    {
+                        <a href="@(notification.RelatedUrl ?? "#")" 
+                           class="list-group-item list-group-item-action @(!notification.IsRead ? "bg-light" : "")">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi @Model.GetNotificationIcon(notification.Type) fs-4 me-3 @(!notification.IsRead ? "text-primary" : "text-muted")"></i>
+                                    <div>
+                                        <h5 class="mb-1 @(!notification.IsRead ? "fw-bold" : "")">
+                                            @notification.Title
+                                        </h5>
+                                        <p class="mb-1">@notification.Message</p>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">@Model.GetFriendlyTime(notification.CreatedAt)</small>
+                                    @if (!notification.IsRead)
+                                    {
+                                        <br />
+                                        <span class="badge bg-primary">New</span>
+                                    }
+                                </div>
+                            </div>
+                        </a>
+                    }
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="Notification pagination">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
+                                <a class="page-link" asp-page="/Account/Notifications" 
+                                   asp-route-pageNumber="@(Model.PageNumber - 1)" 
+                                   asp-route-unreadOnly="@Model.UnreadOnly">
+                                    Previous
+                                </a>
+                            </li>
+                            @for (int i = 1; i <= Model.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                    <a class="page-link" asp-page="/Account/Notifications" 
+                                       asp-route-pageNumber="@i" 
+                                       asp-route-unreadOnly="@Model.UnreadOnly">
+                                        @i
+                                    </a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-page="/Account/Notifications" 
+                                   asp-route-pageNumber="@(Model.PageNumber + 1)" 
+                                   asp-route-unreadOnly="@Model.UnreadOnly">
+                                    Next
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>
