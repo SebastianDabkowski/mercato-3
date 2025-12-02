@@ -33,6 +33,14 @@ public interface IOrderService
     Task<Order?> GetOrderByIdAsync(int orderId);
 
     /// <summary>
+    /// Gets an order by its ID with full details for buyer view, including authorization check.
+    /// </summary>
+    /// <param name="orderId">The order ID.</param>
+    /// <param name="userId">The user ID of the buyer requesting the order.</param>
+    /// <returns>The order with full details, or null if not found or not authorized.</returns>
+    Task<Order?> GetOrderByIdForBuyerAsync(int orderId, int userId);
+
+    /// <summary>
     /// Gets all orders for a user.
     /// </summary>
     /// <param name="userId">The user ID.</param>
