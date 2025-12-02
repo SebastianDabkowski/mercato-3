@@ -130,6 +130,7 @@ public class EmailLog
 
     /// <summary>
     /// Number of send attempts for this email.
+    /// Currently set to 1 on initial send. Future enhancement: increment on retry attempts.
     /// </summary>
     public int AttemptCount { get; set; } = 1;
 
