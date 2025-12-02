@@ -100,6 +100,7 @@ builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IProductQuestionService, ProductQuestionService>();
 builder.Services.AddScoped<IOrderMessageService, OrderMessageService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<ISellerDashboardService, SellerDashboardService>();
 
 // Register shipping provider services as singleton collection
 builder.Services.AddSingleton<IShippingProviderService>(sp => 
@@ -251,6 +252,11 @@ if (app.Environment.IsDevelopment())
 
     // Run comprehensive reputation test with sample data
     await SellerReputationComprehensiveTest.RunTestAsync(context, reputationService);
+
+    // Run seller dashboard test scenario
+    var dashboardService = scope.ServiceProvider.GetRequiredService<ISellerDashboardService>();
+    var dashboardTest = new SellerDashboardTestScenario(context, dashboardService);
+    await dashboardTest.RunAsync();
 }
 
 // Configure the HTTP request pipeline.
