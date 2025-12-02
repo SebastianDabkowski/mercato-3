@@ -383,7 +383,7 @@ public static class TestDataSeeder
             ParentOrderId = order.Id,
             StoreId = store2.Id,
             SubOrderNumber = "ORD-20241202-00001-2",
-            Status = OrderStatus.Shipped,
+            Status = OrderStatus.Delivered,  // Changed to Delivered for SLA testing
             TrackingNumber = "1Z999AA10123456784",
             CarrierName = "UPS",
             TrackingUrl = "https://www.ups.com/track?tracknum=1Z999AA10123456784",
@@ -505,6 +505,14 @@ public static class TestDataSeeder
                 NewStatus = OrderStatus.Shipped,
                 Notes = "Tracking: 1Z999AA10123456784 via UPS",
                 ChangedAt = DateTime.UtcNow.AddHours(-3)
+            },
+            new OrderStatusHistory
+            {
+                SellerSubOrderId = subOrder2.Id,
+                PreviousStatus = OrderStatus.Shipped,
+                NewStatus = OrderStatus.Delivered,
+                Notes = "Package delivered successfully",
+                ChangedAt = DateTime.UtcNow.AddHours(-1)
             }
         };
 

@@ -231,6 +231,10 @@ if (app.Environment.IsDevelopment())
     // Run case resolution and refund linkage test scenario
     var refundService = scope.ServiceProvider.GetRequiredService<IRefundService>();
     await CaseResolutionTestScenario.RunTestAsync(context, returnRequestService, refundService);
+
+    // Run SLA tracking test scenario
+    var slaService = scope.ServiceProvider.GetRequiredService<ISLAService>();
+    await SLATrackingTestScenario.RunTestAsync(context, returnRequestService, slaService);
 }
 
 // Configure the HTTP request pipeline.
