@@ -189,9 +189,12 @@ public class OrderStatusService : IOrderStatusService
             return (false, "Sub-order not found.");
         }
 
-        if (refundAmount <= 0 || refundAmount > subOrder.TotalAmount)
+        // Calculate remaining refundable amount
+        var remainingRefundableAmount = subOrder.TotalAmount - subOrder.RefundedAmount;
+
+        if (refundAmount <= 0 || refundAmount > remainingRefundableAmount)
         {
-            return (false, $"Invalid refund amount. Must be between 0 and {subOrder.TotalAmount:C}.");
+            return (false, $"Invalid refund amount. Must be between 0 and {remainingRefundableAmount:C} (remaining refundable amount).");
         }
 
         // Validate status transition
@@ -201,7 +204,7 @@ public class OrderStatusService : IOrderStatusService
         }
 
         subOrder.Status = OrderStatus.Refunded;
-        subOrder.RefundedAmount = refundAmount;
+        subOrder.RefundedAmount += refundAmount; // Add to existing refunded amount for partial refunds
         subOrder.UpdatedAt = DateTime.UtcNow;
 
         // Update parent order refunded amount
@@ -302,12 +305,12 @@ public class OrderStatusService : IOrderStatusService
         }
         else if (subOrderStatuses.Any(s => s == OrderStatus.Shipped || s == OrderStatus.Delivered))
         {
-            // At least one shipped or delivered
+            // At least one shipped or delivered (ignore cancelled/refunded for overall status)
             newStatus = OrderStatus.Shipped;
         }
         else if (subOrderStatuses.Any(s => s == OrderStatus.Preparing))
         {
-            // At least one preparing
+            // At least one preparing (ignore cancelled/refunded)
             newStatus = OrderStatus.Preparing;
         }
         else if (subOrderStatuses.All(s => s == OrderStatus.Paid))
@@ -322,17 +325,35 @@ public class OrderStatusService : IOrderStatusService
         }
         else
         {
-            // Mixed states - use the most advanced status
-            if (subOrderStatuses.Any(s => s == OrderStatus.Delivered))
-                newStatus = OrderStatus.Delivered;
-            else if (subOrderStatuses.Any(s => s == OrderStatus.Shipped))
-                newStatus = OrderStatus.Shipped;
-            else if (subOrderStatuses.Any(s => s == OrderStatus.Preparing))
-                newStatus = OrderStatus.Preparing;
-            else if (subOrderStatuses.Any(s => s == OrderStatus.Paid))
-                newStatus = OrderStatus.Paid;
+            // Mixed states - prioritize active orders over cancelled/refunded
+            var activeStatuses = subOrderStatuses
+                .Where(s => s != OrderStatus.Cancelled && s != OrderStatus.Refunded)
+                .ToList();
+            
+            if (activeStatuses.Any())
+            {
+                // Use most advanced active status
+                if (activeStatuses.Any(s => s == OrderStatus.Delivered))
+                    newStatus = OrderStatus.Delivered;
+                else if (activeStatuses.Any(s => s == OrderStatus.Shipped))
+                    newStatus = OrderStatus.Shipped;
+                else if (activeStatuses.Any(s => s == OrderStatus.Preparing))
+                    newStatus = OrderStatus.Preparing;
+                else if (activeStatuses.Any(s => s == OrderStatus.Paid))
+                    newStatus = OrderStatus.Paid;
+                else
+                    newStatus = OrderStatus.New;
+            }
             else
-                newStatus = OrderStatus.New;
+            {
+                // All are cancelled or refunded
+                if (subOrderStatuses.All(s => s == OrderStatus.Cancelled))
+                    newStatus = OrderStatus.Cancelled;
+                else if (subOrderStatuses.All(s => s == OrderStatus.Refunded))
+                    newStatus = OrderStatus.Refunded;
+                else
+                    newStatus = OrderStatus.Cancelled; // Mixed terminal states, default to cancelled
+            }
         }
 
         if (order.Status != newStatus)

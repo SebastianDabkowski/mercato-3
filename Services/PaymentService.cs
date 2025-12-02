@@ -143,8 +143,14 @@ public class PaymentService : IPaymentService
             {
                 order.PaymentStatus = PaymentStatus.Authorized;
                 order.UpdatedAt = DateTime.UtcNow;
+                
                 // Mark the order and sub-orders as Paid
-                await _orderStatusService.MarkOrderAsPaidAsync(order.Id);
+                var paymentSuccess = await _orderStatusService.MarkOrderAsPaidAsync(order.Id);
+                if (!paymentSuccess)
+                {
+                    _logger.LogError("Failed to mark order {OrderId} as paid", order.Id);
+                    throw new InvalidOperationException("Failed to update order status to paid.");
+                }
             }
             
             await _context.SaveChangesAsync();
@@ -190,7 +196,12 @@ public class PaymentService : IPaymentService
                 if (transaction.Order.Status == OrderStatus.New)
                 {
                     transaction.Order.UpdatedAt = DateTime.UtcNow;
-                    await _orderStatusService.MarkOrderAsPaidAsync(transaction.Order.Id);
+                    var paymentSuccess = await _orderStatusService.MarkOrderAsPaidAsync(transaction.Order.Id);
+                    if (!paymentSuccess)
+                    {
+                        _logger.LogError("Failed to mark order {OrderId} as paid", transaction.Order.Id);
+                        throw new InvalidOperationException("Failed to update order status to paid.");
+                    }
                 }
             }
 

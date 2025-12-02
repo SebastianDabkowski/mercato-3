@@ -358,7 +358,13 @@
                                     <p class="text-muted">Add tracking information for this shipment (optional).</p>
                                     <div class="mb-3">
                                         <label for="trackingNumber" class="form-label">Tracking Number</label>
-                                        <input type="text" class="form-control" id="trackingNumber" name="TrackingNumber" placeholder="e.g., 1Z999AA10123456784" />
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="trackingNumber" 
+                                               name="TrackingNumber" 
+                                               placeholder="e.g., 1Z999AA10123456784"
+                                               aria-describedby="trackingNumberHelp" />
+                                        <div id="trackingNumberHelp" class="form-text">Enter the shipment tracking number (optional)</div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="carrierName" class="form-label">Carrier Name</label>
