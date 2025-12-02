@@ -13,25 +13,30 @@ public class ProductModel : PageModel
     private readonly IRecentlyViewedService _recentlyViewedService;
     private readonly ICartService _cartService;
     private readonly IGuestCartService _guestCartService;
+    private readonly IProductReviewService _reviewService;
 
     public ProductModel(
         IProductService productService,
         IProductVariantService variantService,
         IRecentlyViewedService recentlyViewedService,
         ICartService cartService,
-        IGuestCartService guestCartService)
+        IGuestCartService guestCartService,
+        IProductReviewService reviewService)
     {
         _productService = productService;
         _variantService = variantService;
         _recentlyViewedService = recentlyViewedService;
         _cartService = cartService;
         _guestCartService = guestCartService;
+        _reviewService = reviewService;
     }
 
     public Product? Product { get; set; }
     public List<ProductVariantAttribute> VariantAttributes { get; set; } = new();
     public List<ProductVariant> Variants { get; set; } = new();
     public ProductVariant? SelectedVariant { get; set; }
+    public List<ProductReview> Reviews { get; set; } = new();
+    public decimal? AverageRating { get; set; }
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -109,6 +114,10 @@ public class ProductModel : PageModel
         {
             // Track the product view only if the product is available
             _recentlyViewedService.TrackProductView(id);
+            
+            // Load reviews for available products
+            Reviews = await _reviewService.GetApprovedReviewsForProductAsync(id);
+            AverageRating = await _reviewService.GetAverageRatingAsync(id);
         }
 
         return Page();

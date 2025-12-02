@@ -270,6 +270,64 @@
                     </div>
                 </div>
             }
+            
+            <!-- Reviews Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-star-fill text-warning"></i> Customer Reviews
+                        @if (Model.AverageRating.HasValue)
+                        {
+                            <span class="ms-2">
+                                <span class="badge bg-warning text-dark">@Model.AverageRating.Value.ToString("0.0") <i class="bi bi-star-fill"></i></span>
+                            </span>
+                        }
+                        @if (Model.Reviews.Any())
+                        {
+                            <small class="text-muted">(@Model.Reviews.Count review@(Model.Reviews.Count != 1 ? "s" : ""))</small>
+                        }
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Reviews.Any())
+                    {
+                        foreach (var review in Model.Reviews)
+                        {
+                            <div class="mb-3 @(review != Model.Reviews.Last() ? "border-bottom pb-3" : "")">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <strong>@review.User.FirstName @review.User.LastName.Substring(0, 1).</strong>
+                                        <div class="text-warning">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= review.Rating)
+                                                {
+                                                    <i class="bi bi-star-fill"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-star"></i>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">@review.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                </div>
+                                @if (!string.IsNullOrEmpty(review.ReviewText))
+                                {
+                                    <p class="mb-0">@review.ReviewText</p>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-info-circle"></i> No reviews yet. Be the first to review this product!
+                        </p>
+                    }
+                </div>
+            </div>
         </div>
         
         <div class="col-lg-4">
