@@ -50,7 +50,7 @@ public class Order
     /// <summary>
     /// Gets or sets the order status.
     /// </summary>
-    public OrderStatus Status { get; set; } = OrderStatus.Pending;
+    public OrderStatus Status { get; set; } = OrderStatus.New;
 
     /// <summary>
     /// Gets or sets the subtotal (sum of all items before shipping).
@@ -68,6 +68,11 @@ public class Order
     /// Gets or sets the tax amount (if applicable).
     /// </summary>
     public decimal TaxAmount { get; set; } = 0;
+
+    /// <summary>
+    /// Gets or sets the amount that has been refunded for this order.
+    /// </summary>
+    public decimal RefundedAmount { get; set; } = 0;
 
     /// <summary>
     /// Gets or sets the total amount (subtotal + shipping + tax).

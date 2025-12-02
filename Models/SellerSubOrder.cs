@@ -44,7 +44,30 @@ public class SellerSubOrder
     /// <summary>
     /// Gets or sets the order status specific to this seller's portion.
     /// </summary>
-    public OrderStatus Status { get; set; } = OrderStatus.Pending;
+    public OrderStatus Status { get; set; } = OrderStatus.New;
+
+    /// <summary>
+    /// Gets or sets the tracking number for this shipment (optional).
+    /// </summary>
+    [MaxLength(100)]
+    public string? TrackingNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets the carrier/courier name for this shipment (optional).
+    /// </summary>
+    [MaxLength(100)]
+    public string? CarrierName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the tracking URL for this shipment (optional).
+    /// </summary>
+    [MaxLength(500)]
+    public string? TrackingUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the amount that has been refunded for this sub-order.
+    /// </summary>
+    public decimal RefundedAmount { get; set; } = 0;
 
     /// <summary>
     /// Gets or sets the subtotal for items in this sub-order.

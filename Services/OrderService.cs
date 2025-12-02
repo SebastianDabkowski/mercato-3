@@ -141,7 +141,7 @@ public class OrderService : IOrderService
                 UserId = userId,
                 GuestEmail = guestEmail,
                 DeliveryAddressId = addressId,
-                Status = OrderStatus.Pending,
+                Status = OrderStatus.New,
                 Subtotal = itemsSubtotal,
                 ShippingCost = totalShipping,
                 TaxAmount = 0, // Tax calculation can be added later
@@ -192,7 +192,7 @@ public class OrderService : IOrderService
                     ParentOrderId = order.Id,
                     StoreId = store.Id,
                     SubOrderNumber = subOrderNumber,
-                    Status = OrderStatus.Pending,
+                    Status = OrderStatus.New,
                     Subtotal = sellerSubtotal,
                     ShippingCost = sellerShippingCost,
                     TotalAmount = sellerSubtotal + sellerShippingCost,
