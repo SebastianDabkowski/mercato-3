@@ -212,6 +212,8 @@ public class CartService : ICartService
     {
         var item = await _context.CartItems
             .Include(i => i.Cart)
+            .Include(i => i.Product)
+            .Include(i => i.ProductVariant)
             .FirstOrDefaultAsync(i => i.Id == cartItemId);
 
         if (item == null)
@@ -219,9 +221,42 @@ public class CartService : ICartService
             throw new InvalidOperationException($"Cart item with ID {cartItemId} not found.");
         }
 
-        if (quantity < 1)
+        // If quantity is 0, remove the item instead
+        if (quantity == 0)
         {
-            throw new ArgumentException("Quantity must be at least 1.", nameof(quantity));
+            // Create a copy of the item before removing it for return
+            var itemCopy = new CartItem
+            {
+                Id = item.Id,
+                CartId = item.CartId,
+                ProductId = item.ProductId,
+                ProductVariantId = item.ProductVariantId,
+                Quantity = 0,
+                PriceAtAdd = item.PriceAtAdd
+            };
+            await RemoveFromCartAsync(cartItemId);
+            return itemCopy;
+        }
+
+        if (quantity < 0)
+        {
+            throw new ArgumentException("Quantity cannot be negative.", nameof(quantity));
+        }
+
+        // Validate against available stock
+        int availableStock;
+        if (item.ProductVariantId.HasValue)
+        {
+            availableStock = item.ProductVariant!.Stock;
+        }
+        else
+        {
+            availableStock = item.Product.Stock;
+        }
+
+        if (quantity > availableStock)
+        {
+            throw new InvalidOperationException($"Requested quantity ({quantity}) exceeds available stock ({availableStock}).");
         }
 
         item.Quantity = quantity;

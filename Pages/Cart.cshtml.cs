@@ -42,18 +42,25 @@ public class CartModel : PageModel
     {
         try
         {
-            if (quantity < 1)
+            if (quantity < 0)
             {
-                return BadRequest("Quantity must be at least 1.");
+                return BadRequest("Quantity cannot be negative.");
             }
 
             await _cartService.UpdateCartItemQuantityAsync(cartItemId, quantity);
             return RedirectToPage();
         }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("exceeds available stock"))
+        {
+            _logger.LogWarning(ex, "Insufficient stock for cart item {CartItemId}", cartItemId);
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToPage();
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating cart item quantity");
-            return BadRequest("Failed to update quantity.");
+            TempData["ErrorMessage"] = "Failed to update quantity. Please try again.";
+            return RedirectToPage();
         }
     }
 
