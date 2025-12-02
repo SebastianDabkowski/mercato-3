@@ -248,4 +248,99 @@ public class ReturnRequestService : IReturnRequestService
                 .ThenInclude(m => m.Sender)
             .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
     }
+
+    /// <inheritdoc />
+    public async Task<bool> ApproveReturnRequestAsync(int returnRequestId, int storeId, string? sellerNotes = null)
+    {
+        var returnRequest = await _context.ReturnRequests
+            .Include(rr => rr.SubOrder)
+            .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
+
+        if (returnRequest == null)
+        {
+            _logger.LogWarning("Return request {ReturnRequestId} not found", returnRequestId);
+            return false;
+        }
+
+        // Verify the store owns this return request
+        if (returnRequest.SubOrder.StoreId != storeId)
+        {
+            _logger.LogWarning("Store {StoreId} attempted to approve return request {ReturnRequestId} belonging to store {ActualStoreId}",
+                storeId, returnRequestId, returnRequest.SubOrder.StoreId);
+            return false;
+        }
+
+        // Only allow approval if status is Requested
+        if (returnRequest.Status != ReturnStatus.Requested)
+        {
+            _logger.LogWarning("Return request {ReturnRequestId} cannot be approved. Current status: {Status}",
+                returnRequestId, returnRequest.Status);
+            return false;
+        }
+
+        // Update status
+        returnRequest.Status = ReturnStatus.Approved;
+        returnRequest.ApprovedAt = DateTime.UtcNow;
+        returnRequest.UpdatedAt = DateTime.UtcNow;
+        
+        if (!string.IsNullOrWhiteSpace(sellerNotes))
+        {
+            returnRequest.SellerNotes = sellerNotes;
+        }
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Return request {ReturnRequestId} approved by store {StoreId}",
+            returnRequestId, storeId);
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> RejectReturnRequestAsync(int returnRequestId, int storeId, string sellerNotes)
+    {
+        if (string.IsNullOrWhiteSpace(sellerNotes))
+        {
+            throw new ArgumentException("Seller notes are required when rejecting a return request.", nameof(sellerNotes));
+        }
+
+        var returnRequest = await _context.ReturnRequests
+            .Include(rr => rr.SubOrder)
+            .FirstOrDefaultAsync(rr => rr.Id == returnRequestId);
+
+        if (returnRequest == null)
+        {
+            _logger.LogWarning("Return request {ReturnRequestId} not found", returnRequestId);
+            return false;
+        }
+
+        // Verify the store owns this return request
+        if (returnRequest.SubOrder.StoreId != storeId)
+        {
+            _logger.LogWarning("Store {StoreId} attempted to reject return request {ReturnRequestId} belonging to store {ActualStoreId}",
+                storeId, returnRequestId, returnRequest.SubOrder.StoreId);
+            return false;
+        }
+
+        // Only allow rejection if status is Requested
+        if (returnRequest.Status != ReturnStatus.Requested)
+        {
+            _logger.LogWarning("Return request {ReturnRequestId} cannot be rejected. Current status: {Status}",
+                returnRequestId, returnRequest.Status);
+            return false;
+        }
+
+        // Update status
+        returnRequest.Status = ReturnStatus.Rejected;
+        returnRequest.RejectedAt = DateTime.UtcNow;
+        returnRequest.UpdatedAt = DateTime.UtcNow;
+        returnRequest.SellerNotes = sellerNotes;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Return request {ReturnRequestId} rejected by store {StoreId}",
+            returnRequestId, storeId);
+
+        return true;
+    }
 }

@@ -47,6 +47,16 @@
                                     <li><a class="dropdown-item" asp-page="/Account/Orders"><i class="bi bi-bag-check"></i> My Orders</a></li>
                                     <li><a class="dropdown-item" asp-page="/Account/ReturnRequests"><i class="bi bi-arrow-return-left"></i> Returns & Complaints</a></li>
                                     <li><a class="dropdown-item" asp-page="/Account/Addresses"><i class="bi bi-geo-alt"></i> Shipping Addresses</a></li>
+                                    @if (User.IsInRole("Seller") || User.IsInRole("Admin"))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><h6 class="dropdown-header">Seller Panel</h6></li>
+                                        <li><a class="dropdown-item" asp-page="/Seller/Orders"><i class="bi bi-box-seam"></i> Manage Orders</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Seller/Products/Index"><i class="bi bi-tag"></i> Manage Products</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Seller/Returns"><i class="bi bi-arrow-return-left"></i> Returns & Complaints</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Seller/Invoices"><i class="bi bi-file-earmark-text"></i> Commission Invoices</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Seller/Payouts"><i class="bi bi-cash-stack"></i> Payouts</a></li>
+                                    }
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form method="post" asp-page="/Account/Logout" class="d-inline">

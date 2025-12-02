@@ -1,0 +1,381 @@
+@page
+@model MercatoApp.Pages.Seller.ReturnDetailModel
+@{
+    ViewData["Title"] = $"Return Case {Model.ReturnRequest?.ReturnNumber} - Seller Panel";
+}
+
+<div class="container-fluid my-4">
+    @if (Model.ReturnRequest == null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i> Return request not found.
+        </div>
+        <a asp-page="/Seller/Returns" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Returns
+        </a>
+    }
+    else
+    {
+        var requestTypeLabel = Model.ReturnRequest.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "Complaint" : "Return";
+        var requestIcon = Model.ReturnRequest.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "exclamation-triangle" : "arrow-return-left";
+        var requestTypeClass = Model.ReturnRequest.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "text-danger" : "text-primary";
+
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a asp-page="/Seller/Returns">Returns & Complaints</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">@Model.ReturnRequest.ReturnNumber</li>
+                    </ol>
+                </nav>
+                <h1 class="mb-3">
+                    <i class="bi bi-@requestIcon @requestTypeClass"></i> @requestTypeLabel Case: @Model.ReturnRequest.ReturnNumber
+                </h1>
+            </div>
+            <div class="col-auto">
+                @await Html.PartialAsync("_ReturnStatusBadge", Model.ReturnRequest.Status)
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Case Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> Case Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Buyer:</strong><br />
+                                @Model.ReturnRequest.Buyer.FirstName @Model.ReturnRequest.Buyer.LastName<br />
+                                <small class="text-muted">@Model.ReturnRequest.Buyer.Email</small>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Order Reference:</strong><br />
+                                <a asp-page="/Seller/OrderDetails" asp-route-id="@Model.ReturnRequest.SubOrder.Id">
+                                    @Model.ReturnRequest.SubOrder.SubOrderNumber
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Request Type:</strong><br />
+                                <span class="@requestTypeClass">
+                                    <i class="bi bi-@requestIcon"></i> @requestTypeLabel
+                                </span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Reason:</strong><br />
+                                @Model.ReturnRequest.Reason.ToString()
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Created:</strong><br />
+                                @Model.ReturnRequest.RequestedAt.ToString("MMM dd, yyyy HH:mm")
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Last Updated:</strong><br />
+                                @Model.ReturnRequest.UpdatedAt.ToString("MMM dd, yyyy HH:mm")
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.ReturnRequest.Description))
+                        {
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Buyer Description:</strong><br />
+                                    <p class="mt-2 p-3 bg-light border rounded">@Model.ReturnRequest.Description</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Items Being Returned -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-box-seam"></i> Items @(Model.ReturnRequest.IsFullReturn ? "(Full Return)" : "(Partial Return)")
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.ReturnRequest.IsFullReturn)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Unit Price</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Model.ReturnRequest.SubOrder.Items)
+                                        {
+                                            <tr>
+                                                <td>@item.ProductTitle</td>
+                                                <td>@item.Quantity</td>
+                                                <td>@item.UnitPrice.ToString("C")</td>
+                                                <td>@((item.UnitPrice * item.Quantity).ToString("C"))</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Refund Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Model.ReturnRequest.Items)
+                                        {
+                                            <tr>
+                                                <td>@item.OrderItem.ProductTitle</td>
+                                                <td>@item.Quantity</td>
+                                                <td>@item.RefundAmount.ToString("C")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        <div class="mt-3">
+                            <strong>Total Refund Amount: @Model.ReturnRequest.RefundAmount.ToString("C")</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seller Notes/Response -->
+                @if (Model.ReturnRequest.Status != MercatoApp.Models.ReturnStatus.Requested && !string.IsNullOrWhiteSpace(Model.ReturnRequest.SellerNotes))
+                {
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-chat-left-text"></i> Your Response
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">@Model.ReturnRequest.SellerNotes</p>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Actions Card -->
+                @if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.Requested)
+                {
+                    <div class="card mb-4 border-warning">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-hand-thumbs-up"></i> Actions Required
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">This case is pending your review. Please choose an action:</p>
+                            
+                            <!-- Approve Button -->
+                            <button type="button" class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#approveModal">
+                                <i class="bi bi-check-circle"></i> Approve Return
+                            </button>
+
+                            <!-- Reject Button -->
+                            <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                <i class="bi bi-x-circle"></i> Reject Return
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <!-- Order Context -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-bag-check"></i> Order Context
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            <strong>Order:</strong><br />
+                            <a asp-page="/Seller/OrderDetails" asp-route-id="@Model.ReturnRequest.SubOrder.Id">
+                                @Model.ReturnRequest.SubOrder.SubOrderNumber
+                            </a>
+                        </p>
+                        <p class="mb-2">
+                            <strong>Order Status:</strong><br />
+                            @await Html.PartialAsync("_OrderStatusBadge", Model.ReturnRequest.SubOrder.Status)
+                        </p>
+                        <p class="mb-2">
+                            <strong>Order Total:</strong><br />
+                            @Model.ReturnRequest.SubOrder.TotalAmount.ToString("C")
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(Model.ReturnRequest.SubOrder.TrackingNumber))
+                        {
+                            <p class="mb-0">
+                                <strong>Tracking:</strong><br />
+                                @Model.ReturnRequest.SubOrder.TrackingNumber
+                            </p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> Timeline
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="timeline">
+                            <li class="mb-3">
+                                <i class="bi bi-circle-fill text-primary"></i>
+                                <strong>Case Created</strong><br />
+                                <small class="text-muted">@Model.ReturnRequest.RequestedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                            </li>
+                            @if (Model.ReturnRequest.ApprovedAt.HasValue)
+                            {
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <strong>Approved</strong><br />
+                                    <small class="text-muted">@Model.ReturnRequest.ApprovedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                                </li>
+                            }
+                            @if (Model.ReturnRequest.RejectedAt.HasValue)
+                            {
+                                <li class="mb-3">
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                    <strong>Rejected</strong><br />
+                                    <small class="text-muted">@Model.ReturnRequest.RejectedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                                </li>
+                            }
+                            @if (Model.ReturnRequest.CompletedAt.HasValue)
+                            {
+                                <li>
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <strong>Completed</strong><br />
+                                    <small class="text-muted">@Model.ReturnRequest.CompletedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approve Modal -->
+        <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" asp-page-handler="Approve">
+                        <input type="hidden" name="returnRequestId" value="@Model.ReturnRequest.Id" />
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title" id="approveModalLabel">
+                                <i class="bi bi-check-circle"></i> Approve Return Request
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to approve this return request?</p>
+                            <p class="mb-3">The buyer will be notified and can proceed with returning the items. The refund amount will be <strong>@Model.ReturnRequest.RefundAmount.ToString("C")</strong>.</p>
+                            
+                            <div class="mb-3">
+                                <label for="approveNotes" class="form-label">Optional Notes to Buyer</label>
+                                <textarea class="form-control" id="approveNotes" name="sellerNotes" rows="3" maxlength="1000" aria-describedby="approveNotesHelp" placeholder="Add any instructions for the buyer (e.g., return shipping address)"></textarea>
+                                <small id="approveNotesHelp" class="text-muted">Max 1000 characters</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Approve Return
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject Modal -->
+        <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" asp-page-handler="Reject">
+                        <input type="hidden" name="returnRequestId" value="@Model.ReturnRequest.Id" />
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title" id="rejectModalLabel">
+                                <i class="bi bi-x-circle"></i> Reject Return Request
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to reject this return request?</p>
+                            <p class="mb-3 text-danger">This action will notify the buyer that their request has been denied.</p>
+                            
+                            <div class="mb-3">
+                                <label for="rejectNotes" class="form-label">Reason for Rejection <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="rejectNotes" name="sellerNotes" rows="4" maxlength="1000" required aria-required="true" aria-describedby="rejectNotesHelp" placeholder="Please explain why you are rejecting this request"></textarea>
+                                <small id="rejectNotesHelp" class="text-muted">Required. Max 1000 characters</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-x-circle"></i> Reject Return
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <style>
+        .timeline {
+            list-style: none;
+            padding-left: 20px;
+        }
+        .timeline li {
+            position: relative;
+        }
+        .timeline li i {
+            position: absolute;
+            left: -20px;
+            top: 2px;
+        }
+    </style>
+}
