@@ -86,7 +86,7 @@ public class SellerSubOrder
 
     /// <summary>
     /// Gets or sets the order items belonging to this sub-order (navigation property).
-    /// Note: Items are linked via StoreId matching
+    /// Items are linked via SellerSubOrderId foreign key.
     /// </summary>
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
 }

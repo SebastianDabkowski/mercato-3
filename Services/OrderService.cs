@@ -297,9 +297,6 @@ public class OrderService : IOrderService
             .Include(o => o.SubOrders)
                 .ThenInclude(so => so.Store)
             .Include(o => o.SubOrders)
-                .ThenInclude(so => so.Items)
-                    .ThenInclude(i => i.Product)
-            .Include(o => o.SubOrders)
                 .ThenInclude(so => so.ShippingMethod)
             .FirstOrDefaultAsync(o => o.Id == orderId);
     }
