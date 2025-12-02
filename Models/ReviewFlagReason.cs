@@ -41,6 +41,18 @@ public enum ReviewFlagReason
     Fraudulent,
 
     /// <summary>
+    /// Review contains abusive or offensive content.
+    /// Buyer-facing option for reporting inappropriate reviews.
+    /// </summary>
+    Abuse,
+
+    /// <summary>
+    /// Review contains false or misleading information.
+    /// Buyer-facing option for reporting inaccurate reviews.
+    /// </summary>
+    FalseInformation,
+
+    /// <summary>
     /// Other reason for flagging.
     /// </summary>
     Other

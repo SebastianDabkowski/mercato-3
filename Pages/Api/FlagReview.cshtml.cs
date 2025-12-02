@@ -59,6 +59,14 @@ public class FlagReviewModel : PageModel
 
             return new JsonResult(new { success = true, message = "Review flagged successfully" });
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "User {UserId} attempted to flag review {ReviewId} but operation failed", userId, reviewId);
+            return new JsonResult(new { success = false, message = ex.Message })
+            {
+                StatusCode = 400
+            };
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error flagging review {ReviewId}", reviewId);
