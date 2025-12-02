@@ -114,6 +114,20 @@ public class EmailVerificationService : IEmailVerificationService
 
         _logger.LogInformation("Email verified successfully for user: {Email}", user.Email);
 
+        // Send buyer registration confirmation email for buyers
+        if (user.UserType == UserType.Buyer)
+        {
+            try
+            {
+                await _emailService.SendBuyerRegistrationConfirmationEmailAsync(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send buyer registration confirmation email to {Email}", user.Email);
+                // Don't fail the verification if email fails
+            }
+        }
+
         return new EmailVerificationResult
         {
             Success = true,
