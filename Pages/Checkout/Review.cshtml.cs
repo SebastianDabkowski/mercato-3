@@ -189,7 +189,7 @@ public class ReviewModel : PageModel
 
         try
         {
-            // Create the order
+            // Create the order (validation happens inside this method)
             var order = await _orderService.CreateOrderFromCartAsync(
                 userId, 
                 sessionId, 
@@ -224,6 +224,8 @@ public class ReviewModel : PageModel
         catch (InvalidOperationException ex)
         {
             _logger.LogError(ex, "Error creating order");
+            
+            // Display the error message from the validation
             TempData["ErrorMessage"] = ex.Message;
             await OnGetAsync();
             return Page();
