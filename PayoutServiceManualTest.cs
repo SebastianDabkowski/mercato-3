@@ -39,7 +39,12 @@ public static class PayoutServiceManualTest
             .Build();
         
         var payoutSettingsService = new PayoutSettingsService(context, settingsLogger);
-        var payoutService = new PayoutService(context, payoutLogger, payoutSettingsService, configuration);
+        
+        // Create a mock email service for testing
+        var emailLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<EmailService>();
+        var emailService = new EmailService(context, emailLogger);
+        
+        var payoutService = new PayoutService(context, payoutLogger, payoutSettingsService, emailService, configuration);
 
         // Setup test data
         await SetupTestDataAsync(context, payoutSettingsService);

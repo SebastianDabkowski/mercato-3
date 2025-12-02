@@ -13,6 +13,7 @@ public class ReturnRequestService : IReturnRequestService
     private readonly ILogger<ReturnRequestService> _logger;
     private readonly IRefundService _refundService;
     private readonly ISLAService _slaService;
+    private readonly IEmailService _emailService;
     private readonly int _returnWindowDays;
 
     // Default return window in days (configurable)
@@ -23,12 +24,14 @@ public class ReturnRequestService : IReturnRequestService
         ILogger<ReturnRequestService> logger,
         IRefundService refundService,
         ISLAService slaService,
+        IEmailService emailService,
         IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _refundService = refundService;
         _slaService = slaService;
+        _emailService = emailService;
         _returnWindowDays = configuration.GetValue<int?>("ReturnPolicy:ReturnWindowDays") ?? DefaultReturnWindowDays;
     }
 
@@ -209,6 +212,28 @@ public class ReturnRequestService : IReturnRequestService
             returnNumber,
             subOrderId,
             buyerId);
+
+        // Send email notification to seller
+        try
+        {
+            // Reload return request with navigation properties for email
+            var returnRequestWithDetails = await _context.ReturnRequests
+                .Include(rr => rr.SubOrder)
+                    .ThenInclude(so => so.Store)
+                        .ThenInclude(s => s.User)
+                .Include(rr => rr.Buyer)
+                .FirstOrDefaultAsync(rr => rr.Id == returnRequest.Id);
+
+            if (returnRequestWithDetails != null)
+            {
+                await _emailService.SendReturnRequestNotificationToSellerAsync(returnRequestWithDetails);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Don't fail the return request creation if email notification fails
+            _logger.LogError(ex, "Failed to send seller notification for return request {ReturnNumber}", returnNumber);
+        }
 
         return returnRequest;
     }

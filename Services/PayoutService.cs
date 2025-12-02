@@ -13,17 +13,20 @@ public class PayoutService : IPayoutService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<PayoutService> _logger;
     private readonly IPayoutSettingsService _payoutSettingsService;
+    private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
 
     public PayoutService(
         ApplicationDbContext context,
         ILogger<PayoutService> logger,
         IPayoutSettingsService payoutSettingsService,
+        IEmailService emailService,
         IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _payoutSettingsService = payoutSettingsService;
+        _emailService = emailService;
         _configuration = configuration;
     }
 
@@ -407,6 +410,27 @@ public class PayoutService : IPayoutService
                     processResult.externalId);
 
                 result.Success = true;
+
+                // Send email notification to seller after payout is completed
+                try
+                {
+                    // Reload payout with full navigation properties for email
+                    var payoutWithDetails = await _context.Payouts
+                        .Include(p => p.Store)
+                            .ThenInclude(s => s.User)
+                        .Include(p => p.PayoutMethod)
+                        .FirstOrDefaultAsync(p => p.Id == payout.Id);
+
+                    if (payoutWithDetails != null)
+                    {
+                        await _emailService.SendPayoutNotificationToSellerAsync(payoutWithDetails);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Don't fail the payout if email notification fails
+                    _logger.LogError(ex, "Failed to send seller notification for payout {PayoutNumber}", payout.PayoutNumber);
+                }
             }
             else
             {

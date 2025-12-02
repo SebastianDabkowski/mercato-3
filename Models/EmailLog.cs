@@ -41,6 +41,21 @@ public enum EmailType
     StoreInvitation,
 
     /// <summary>
+    /// New order notification sent to seller.
+    /// </summary>
+    SellerNewOrder,
+
+    /// <summary>
+    /// Return or complaint notification sent to seller.
+    /// </summary>
+    SellerReturnRequest,
+
+    /// <summary>
+    /// Payout notification sent to seller.
+    /// </summary>
+    SellerPayout,
+
+    /// <summary>
     /// Other email types.
     /// </summary>
     Other
@@ -109,6 +124,16 @@ public class EmailLog
     public int? SellerSubOrderId { get; set; }
 
     /// <summary>
+    /// Return request ID (if email relates to a return request).
+    /// </summary>
+    public int? ReturnRequestId { get; set; }
+
+    /// <summary>
+    /// Payout ID (if email relates to a payout).
+    /// </summary>
+    public int? PayoutId { get; set; }
+
+    /// <summary>
     /// Subject line of the email.
     /// </summary>
     public required string Subject { get; set; }
@@ -168,4 +193,14 @@ public class EmailLog
     /// Navigation property to the seller sub-order.
     /// </summary>
     public SellerSubOrder? SellerSubOrder { get; set; }
+
+    /// <summary>
+    /// Navigation property to the return request.
+    /// </summary>
+    public ReturnRequest? ReturnRequest { get; set; }
+
+    /// <summary>
+    /// Navigation property to the payout.
+    /// </summary>
+    public Payout? Payout { get; set; }
 }
