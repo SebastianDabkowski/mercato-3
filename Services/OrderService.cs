@@ -321,7 +321,17 @@ public class OrderService : IOrderService
         int page = 1,
         int pageSize = 10)
     {
-        // Build the query
+        // Validate pagination parameters
+        if (page < 1)
+        {
+            page = 1;
+        }
+        if (pageSize < 1 || pageSize > 100)
+        {
+            pageSize = 10; // Default to safe value
+        }
+
+        // Build the base query
         var query = _context.Orders
             .Include(o => o.DeliveryAddress)
             .Include(o => o.SubOrders)
@@ -346,10 +356,17 @@ public class OrderService : IOrderService
             query = query.Where(o => o.OrderedAt <= endOfDay);
         }
 
-        // Apply seller filter - filter orders that have sub-orders from this seller
+        // Apply seller filter - optimized to avoid subquery in Any()
         if (sellerId.HasValue)
         {
-            query = query.Where(o => o.SubOrders.Any(so => so.StoreId == sellerId.Value));
+            // Get order IDs that have sub-orders from this seller
+            var orderIdsWithSeller = await _context.SellerSubOrders
+                .Where(so => so.StoreId == sellerId.Value)
+                .Select(so => so.ParentOrderId)
+                .Distinct()
+                .ToListAsync();
+            
+            query = query.Where(o => orderIdsWithSeller.Contains(o.Id));
         }
 
         // Get total count before pagination
@@ -363,6 +380,28 @@ public class OrderService : IOrderService
             .ToListAsync();
 
         return (orders, totalCount);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<Store>> GetUserOrderSellersAsync(int userId)
+    {
+        // Get unique seller IDs from user's orders efficiently
+        var sellerIds = await _context.SellerSubOrders
+            .Where(so => so.ParentOrder.UserId == userId)
+            .Select(so => so.StoreId)
+            .Distinct()
+            .ToListAsync();
+
+        if (!sellerIds.Any())
+        {
+            return new List<Store>();
+        }
+
+        // Load the stores
+        return await _context.Stores
+            .Where(s => sellerIds.Contains(s.Id))
+            .OrderBy(s => s.StoreName)
+            .ToListAsync();
     }
 
     /// <inheritdoc />

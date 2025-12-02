@@ -60,6 +60,13 @@ public interface IOrderService
         int pageSize = 10);
 
     /// <summary>
+    /// Gets unique sellers from a user's orders for filter dropdown.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <returns>A list of stores that have fulfilled orders for this user.</returns>
+    Task<List<Store>> GetUserOrderSellersAsync(int userId);
+
+    /// <summary>
     /// Validates if items in the cart can be shipped to the delivery address.
     /// </summary>
     /// <param name="userId">The user ID (null for guest).</param>
