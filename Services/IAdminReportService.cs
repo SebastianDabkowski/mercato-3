@@ -32,6 +32,35 @@ public class OrderRevenueReportData
 }
 
 /// <summary>
+/// Represents a commission summary grouped by seller.
+/// </summary>
+public class CommissionSummaryData
+{
+    public int StoreId { get; set; }
+    public string StoreName { get; set; } = string.Empty;
+    public decimal TotalGMV { get; set; }
+    public decimal TotalCommission { get; set; }
+    public decimal TotalNetPayout { get; set; }
+    public int OrderCount { get; set; }
+}
+
+/// <summary>
+/// Represents a single order contributing to a seller's commission summary.
+/// </summary>
+public class CommissionOrderDetail
+{
+    public int OrderId { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public string SubOrderNumber { get; set; } = string.Empty;
+    public DateTime OrderDate { get; set; }
+    public string BuyerName { get; set; } = string.Empty;
+    public decimal OrderValue { get; set; }
+    public decimal Commission { get; set; }
+    public decimal NetPayout { get; set; }
+    public string OrderStatus { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// Interface for admin reporting service.
 /// </summary>
 public interface IAdminReportService
@@ -84,4 +113,36 @@ public interface IAdminReportService
         int? storeId = null,
         string? orderStatus = null,
         string? paymentStatus = null);
+
+    /// <summary>
+    /// Gets commission summary data grouped by seller.
+    /// </summary>
+    /// <param name="fromDate">Start date for the reporting period.</param>
+    /// <param name="toDate">End date for the reporting period.</param>
+    /// <returns>A list of commission summaries grouped by seller.</returns>
+    Task<List<CommissionSummaryData>> GetCommissionSummaryAsync(
+        DateTime fromDate,
+        DateTime toDate);
+
+    /// <summary>
+    /// Gets individual orders contributing to a seller's commission summary.
+    /// </summary>
+    /// <param name="storeId">The store ID to get orders for.</param>
+    /// <param name="fromDate">Start date for the reporting period.</param>
+    /// <param name="toDate">End date for the reporting period.</param>
+    /// <returns>A list of order details for the specified seller.</returns>
+    Task<List<CommissionOrderDetail>> GetCommissionOrderDetailsAsync(
+        int storeId,
+        DateTime fromDate,
+        DateTime toDate);
+
+    /// <summary>
+    /// Exports commission summary to CSV format.
+    /// </summary>
+    /// <param name="fromDate">Start date for the reporting period.</param>
+    /// <param name="toDate">End date for the reporting period.</param>
+    /// <returns>The CSV export result.</returns>
+    Task<AdminReportExportResult> ExportCommissionSummaryToCsvAsync(
+        DateTime fromDate,
+        DateTime toDate);
 }
