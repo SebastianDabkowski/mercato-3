@@ -313,8 +313,8 @@
                             
                             <div class="mb-3">
                                 <label for="approveNotes" class="form-label">Optional Notes to Buyer</label>
-                                <textarea class="form-control" id="approveNotes" name="sellerNotes" rows="3" maxlength="1000" placeholder="Add any instructions for the buyer (e.g., return shipping address)"></textarea>
-                                <small class="text-muted">Max 1000 characters</small>
+                                <textarea class="form-control" id="approveNotes" name="sellerNotes" rows="3" maxlength="1000" aria-describedby="approveNotesHelp" placeholder="Add any instructions for the buyer (e.g., return shipping address)"></textarea>
+                                <small id="approveNotesHelp" class="text-muted">Max 1000 characters</small>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -346,8 +346,8 @@
                             
                             <div class="mb-3">
                                 <label for="rejectNotes" class="form-label">Reason for Rejection <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="rejectNotes" name="sellerNotes" rows="4" maxlength="1000" required placeholder="Please explain why you are rejecting this request"></textarea>
-                                <small class="text-muted">Required. Max 1000 characters</small>
+                                <textarea class="form-control" id="rejectNotes" name="sellerNotes" rows="4" maxlength="1000" required aria-required="true" aria-describedby="rejectNotesHelp" placeholder="Please explain why you are rejecting this request"></textarea>
+                                <small id="rejectNotesHelp" class="text-muted">Required. Max 1000 characters</small>
                             </div>
                         </div>
                         <div class="modal-footer">

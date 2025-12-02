@@ -40,22 +40,29 @@ public class ReturnDetailModel : PageModel
     public Store? CurrentStore { get; set; }
 
     /// <summary>
+    /// Gets the current seller's store.
+    /// </summary>
+    /// <returns>The store, or null if not found.</returns>
+    private async Task<Store?> GetCurrentStoreAsync()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return null;
+        }
+
+        return await _context.Stores.FirstOrDefaultAsync(s => s.UserId == userId);
+    }
+
+    /// <summary>
     /// Handles GET request to display return request details.
     /// </summary>
     /// <param name="id">The return request ID.</param>
     /// <returns>The page result.</returns>
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(userIdClaim, out var userId))
-        {
-            _logger.LogWarning("User ID claim not found or invalid");
-            return RedirectToPage("/Account/Login");
-        }
-
         // Get the seller's store
-        CurrentStore = await _context.Stores
-            .FirstOrDefaultAsync(s => s.UserId == userId);
+        CurrentStore = await GetCurrentStoreAsync();
 
         if (CurrentStore == null)
         {
@@ -92,15 +99,8 @@ public class ReturnDetailModel : PageModel
     /// <returns>The page result.</returns>
     public async Task<IActionResult> OnPostApproveAsync(int returnRequestId, string? sellerNotes)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(userIdClaim, out var userId))
-        {
-            return RedirectToPage("/Account/Login");
-        }
-
         // Get the seller's store
-        CurrentStore = await _context.Stores
-            .FirstOrDefaultAsync(s => s.UserId == userId);
+        CurrentStore = await GetCurrentStoreAsync();
 
         if (CurrentStore == null)
         {
@@ -138,15 +138,8 @@ public class ReturnDetailModel : PageModel
     /// <returns>The page result.</returns>
     public async Task<IActionResult> OnPostRejectAsync(int returnRequestId, string sellerNotes)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(userIdClaim, out var userId))
-        {
-            return RedirectToPage("/Account/Login");
-        }
-
         // Get the seller's store
-        CurrentStore = await _context.Stores
-            .FirstOrDefaultAsync(s => s.UserId == userId);
+        CurrentStore = await GetCurrentStoreAsync();
 
         if (CurrentStore == null)
         {
