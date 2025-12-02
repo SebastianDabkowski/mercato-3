@@ -1,0 +1,111 @@
+@page
+@model MercatoApp.Pages.Seller.ProductQuestionsModel
+@{
+    ViewData["Title"] = "Product Questions";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <!-- Success/Error Messages -->
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-question-circle"></i> Product Questions
+                </h2>
+            </div>
+
+            @if (Model.Questions.Any())
+            {
+                <div class="card">
+                    <div class="card-body">
+                        @foreach (var question in Model.Questions)
+                        {
+                            <div class="border-bottom pb-4 mb-4">
+                                <!-- Question Header -->
+                                <div class="mb-3">
+                                    <h5>
+                                        <a asp-page="/Seller/ProductDetails" asp-route-id="@question.ProductId">
+                                            @question.Product.Title
+                                        </a>
+                                    </h5>
+                                    <div class="mb-2">
+                                        <strong>Q:</strong> @question.Question
+                                    </div>
+                                    <small class="text-muted">
+                                        Asked by @question.Buyer.Email on @question.AskedAt.ToString("MMM dd, yyyy h:mm tt")
+                                    </small>
+                                </div>
+
+                                <!-- Existing Replies -->
+                                @if (question.Replies.Any())
+                                {
+                                    <div class="ms-4 mb-3">
+                                        @foreach (var reply in question.Replies.OrderBy(r => r.RepliedAt))
+                                        {
+                                            <div class="mb-2">
+                                                <strong>A:</strong> @reply.Reply
+                                                <br />
+                                                <small class="text-muted">
+                                                    @if (reply.IsFromSeller)
+                                                    {
+                                                        <span class="badge bg-primary">Seller</span>
+                                                    }
+                                                    replied on @reply.RepliedAt.ToString("MMM dd, yyyy h:mm tt")
+                                                </small>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                <!-- Reply Form -->
+                                @if (!question.IsAnswered || question.Replies.All(r => !r.IsFromSeller))
+                                {
+                                    <div class="ms-4">
+                                        <form method="post" asp-page-handler="Reply" asp-route-questionId="@question.Id">
+                                            <div class="mb-2">
+                                                <label class="form-label">Your Reply</label>
+                                                <textarea name="ReplyInput" class="form-control" rows="3" 
+                                                          placeholder="Type your reply here..." maxlength="2000" required></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-send"></i> Send Reply
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="ms-4 text-success">
+                                        <i class="bi bi-check-circle"></i> Question answered
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No product questions at this time.
+                </div>
+            }
+        </div>
+    </div>
+</div>
