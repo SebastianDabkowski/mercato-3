@@ -1,0 +1,364 @@
+@page
+@model MercatoApp.Pages.Admin.Returns.DetailModel
+@{
+    ViewData["Title"] = $"Admin - {(Model.ReturnRequest?.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "Complaint" : "Return")} #{Model.ReturnRequest?.ReturnNumber}";
+    var requestTypeLabel = Model.ReturnRequest?.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "Complaint" : "Return";
+    var requestIcon = Model.ReturnRequest?.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "exclamation-triangle" : "arrow-return-left";
+}
+
+<div class="container-fluid my-4">
+    @if (Model.ReturnRequest == null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i> Return request not found.
+        </div>
+        <a asp-page="/Admin/Returns/Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to All Returns
+        </a>
+    }
+    else
+    {
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a asp-page="/Admin/Returns/Index">Returns & Complaints</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">@Model.ReturnRequest.ReturnNumber</li>
+                    </ol>
+                </nav>
+                <h1 class="mb-3">
+                    <i class="bi bi-shield-check"></i> Admin View: @requestTypeLabel Case @Model.ReturnRequest.ReturnNumber
+                </h1>
+            </div>
+            <div class="col-auto">
+                @await Html.PartialAsync("_ReturnStatusBadge", Model.ReturnRequest.Status)
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Case Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> Case Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Buyer:</strong><br />
+                                @Model.ReturnRequest.Buyer.FirstName @Model.ReturnRequest.Buyer.LastName<br />
+                                <small class="text-muted">@Model.ReturnRequest.Buyer.Email</small>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Seller:</strong><br />
+                                @Model.ReturnRequest.SubOrder.Store.StoreName<br />
+                                <small class="text-muted">Store ID: @Model.ReturnRequest.SubOrder.StoreId</small>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Request Type:</strong><br />
+                                <i class="bi bi-@requestIcon"></i> @requestTypeLabel
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Reason:</strong><br />
+                                @Model.ReturnRequest.Reason.ToString()
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Order Reference:</strong><br />
+                                @Model.ReturnRequest.SubOrder.SubOrderNumber
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Parent Order:</strong><br />
+                                @Model.ReturnRequest.SubOrder.ParentOrder.OrderNumber
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Created:</strong><br />
+                                @Model.ReturnRequest.RequestedAt.ToString("MMM dd, yyyy HH:mm")
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Last Updated:</strong><br />
+                                @Model.ReturnRequest.UpdatedAt.ToString("MMM dd, yyyy HH:mm")
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.ReturnRequest.Description))
+                        {
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Buyer Description:</strong><br />
+                                    <p class="mt-2 p-3 bg-light border rounded">@Model.ReturnRequest.Description</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-box-seam"></i> Items @(Model.ReturnRequest.IsFullReturn ? "(Full Return)" : "(Partial Return)")
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.ReturnRequest.IsFullReturn)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Unit Price</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Model.ReturnRequest.SubOrder.Items)
+                                        {
+                                            <tr>
+                                                <td>@item.ProductTitle</td>
+                                                <td>@item.Quantity</td>
+                                                <td>@item.UnitPrice.ToString("C")</td>
+                                                <td>@((item.UnitPrice * item.Quantity).ToString("C"))</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Refund Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Model.ReturnRequest.Items)
+                                        {
+                                            <tr>
+                                                <td>@item.OrderItem.ProductTitle</td>
+                                                <td>@item.Quantity</td>
+                                                <td>@item.RefundAmount.ToString("C")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        <div class="mt-3">
+                            <strong>Total Refund Amount: @Model.ReturnRequest.RefundAmount.ToString("C")</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seller Notes -->
+                @if (!string.IsNullOrWhiteSpace(Model.ReturnRequest.SellerNotes))
+                {
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-chat-left-text"></i> Seller Response
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">@Model.ReturnRequest.SellerNotes</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Messaging Thread (Read-Only for Admins) -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0">
+                            <i class="bi bi-chat-dots"></i> Message Thread (Read-Only)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Admin Note:</strong> You are viewing the full conversation between buyer and seller for moderation purposes. 
+                            This view is read-only. Admins cannot send messages in this thread.
+                        </div>
+
+                        @if (Model.ReturnRequest.Messages.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var message in Model.ReturnRequest.Messages.OrderBy(m => m.SentAt))
+                                {
+                                    <div class="list-group-item @(message.IsFromSeller ? "border-start border-primary border-3" : "border-start border-success border-3")">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <strong>
+                                                    @if (message.IsFromSeller)
+                                                    {
+                                                        <i class="bi bi-shop"></i> @("Seller")
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-person"></i> @("Buyer")
+                                                    }
+                                                </strong>
+                                                <br/>
+                                                <small class="text-muted">
+                                                    @message.Sender.FirstName @message.Sender.LastName (@message.Sender.Email)
+                                                </small>
+                                            </div>
+                                            <small class="text-muted">
+                                                @message.SentAt.ToString("MMM dd, yyyy 'at' h:mm tt")
+                                                @if (message.IsRead)
+                                                {
+                                                    <br/><span class="badge bg-secondary">Read</span>
+                                                }
+                                                else
+                                                {
+                                                    <br/><span class="badge bg-info">Unread</span>
+                                                }
+                                            </small>
+                                        </div>
+                                        <p class="mb-0">@message.Content</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> 
+                                No messages in this thread yet.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Status Timeline -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> Timeline
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="timeline">
+                            <li class="mb-3">
+                                <i class="bi bi-circle-fill text-primary"></i>
+                                <strong>Case Created</strong><br />
+                                <small class="text-muted">@Model.ReturnRequest.RequestedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                            </li>
+                            @if (Model.ReturnRequest.ApprovedAt.HasValue)
+                            {
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <strong>Approved</strong><br />
+                                    <small class="text-muted">@Model.ReturnRequest.ApprovedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                                </li>
+                            }
+                            @if (Model.ReturnRequest.RejectedAt.HasValue)
+                            {
+                                <li class="mb-3">
+                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                    <strong>Rejected</strong><br />
+                                    <small class="text-muted">@Model.ReturnRequest.RejectedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                                </li>
+                            }
+                            @if (Model.ReturnRequest.CompletedAt.HasValue)
+                            {
+                                <li>
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <strong>Completed</strong><br />
+                                    <small class="text-muted">@Model.ReturnRequest.CompletedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Refund Information -->
+                @if (Model.RefundTransaction != null)
+                {
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Refund Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2">
+                                <strong>Refund Number:</strong> @Model.RefundTransaction.RefundNumber
+                            </p>
+                            <p class="mb-2">
+                                <strong>Amount:</strong> @Model.RefundTransaction.RefundAmount.ToString("C")
+                            </p>
+                            <p class="mb-2">
+                                <strong>Status:</strong>
+                                @if (Model.RefundTransaction.Status == MercatoApp.Models.RefundStatus.Completed)
+                                {
+                                    <span class="badge bg-success">Completed</span>
+                                }
+                                else if (Model.RefundTransaction.Status == MercatoApp.Models.RefundStatus.Processing)
+                                {
+                                    <span class="badge bg-warning">Processing</span>
+                                }
+                                else if (Model.RefundTransaction.Status == MercatoApp.Models.RefundStatus.Failed)
+                                {
+                                    <span class="badge bg-danger">Failed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@Model.RefundTransaction.Status</span>
+                                }
+                            </p>
+                            <p class="mb-2">
+                                <strong>Requested:</strong> @Model.RefundTransaction.RequestedAt.ToString("MMM dd, yyyy 'at' h:mm tt")
+                            </p>
+                            @if (Model.RefundTransaction.CompletedAt.HasValue)
+                            {
+                                <p class="mb-2">
+                                    <strong>Completed:</strong> @Model.RefundTransaction.CompletedAt.Value.ToString("MMM dd, yyyy 'at' h:mm tt")
+                                </p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="text-center mt-4">
+            <a asp-page="/Admin/Returns/Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to All Returns
+            </a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <style>
+        .timeline {
+            list-style: none;
+            padding-left: 20px;
+        }
+        .timeline li {
+            position: relative;
+        }
+        .timeline li i {
+            position: absolute;
+            left: -20px;
+            top: 2px;
+        }
+    </style>
+}

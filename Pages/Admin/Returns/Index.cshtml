@@ -1,0 +1,156 @@
+@page
+@model MercatoApp.Pages.Admin.Returns.IndexModel
+@{
+    ViewData["Title"] = "Manage Returns & Complaints - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-3">
+                <i class="bi bi-shield-check"></i> Manage Returns & Complaints
+            </h1>
+            <p class="text-muted">
+                Admin view of all return and complaint requests across all stores
+            </p>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel"></i> Filter Cases
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="StatusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="@((int)MercatoApp.Models.ReturnStatus.Requested)" selected="@(Model.StatusFilter == MercatoApp.Models.ReturnStatus.Requested)">Pending Review</option>
+                        <option value="@((int)MercatoApp.Models.ReturnStatus.Approved)" selected="@(Model.StatusFilter == MercatoApp.Models.ReturnStatus.Approved)">Approved</option>
+                        <option value="@((int)MercatoApp.Models.ReturnStatus.Rejected)" selected="@(Model.StatusFilter == MercatoApp.Models.ReturnStatus.Rejected)">Rejected</option>
+                        <option value="@((int)MercatoApp.Models.ReturnStatus.Completed)" selected="@(Model.StatusFilter == MercatoApp.Models.ReturnStatus.Completed)">Completed</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select name="TypeFilter" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="@((int)MercatoApp.Models.ReturnRequestType.Return)" selected="@(Model.TypeFilter == MercatoApp.Models.ReturnRequestType.Return)">Return</option>
+                        <option value="@((int)MercatoApp.Models.ReturnRequestType.Complaint)" selected="@(Model.TypeFilter == MercatoApp.Models.ReturnRequestType.Complaint)">Complaint</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Store</label>
+                    <select name="StoreFilter" class="form-select">
+                        <option value="">All Stores</option>
+                        @foreach (var store in Model.AvailableStores)
+                        {
+                            <option value="@store.Id" selected="@(Model.StoreFilter == store.Id)">@store.StoreName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results -->
+    @if (!Model.ReturnRequests.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No return requests found matching the selected filters.
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list"></i> Return Requests (@Model.ReturnRequests.Count)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Case #</th>
+                                <th>Type</th>
+                                <th>Store</th>
+                                <th>Buyer</th>
+                                <th>Reason</th>
+                                <th>Refund Amount</th>
+                                <th>Created</th>
+                                <th>Messages</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var request in Model.ReturnRequests)
+                            {
+                                var requestTypeLabel = request.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "Complaint" : "Return";
+                                var requestIcon = request.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "exclamation-triangle" : "arrow-return-left";
+                                var messageCount = request.Messages?.Count ?? 0;
+
+                                <tr>
+                                    <td>
+                                        <strong>@request.ReturnNumber</strong>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-@requestIcon"></i> @requestTypeLabel
+                                    </td>
+                                    <td>
+                                        @request.SubOrder.Store.StoreName
+                                    </td>
+                                    <td>
+                                        @request.Buyer.FirstName @request.Buyer.LastName<br/>
+                                        <small class="text-muted">@request.Buyer.Email</small>
+                                    </td>
+                                    <td>
+                                        @request.Reason
+                                    </td>
+                                    <td>
+                                        @request.RefundAmount.ToString("C")
+                                    </td>
+                                    <td>
+                                        @request.RequestedAt.ToString("MMM dd, yyyy")
+                                    </td>
+                                    <td>
+                                        @if (messageCount > 0)
+                                        {
+                                            <span class="badge bg-info">@messageCount message@(messageCount > 1 ? "s" : "")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">None</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @await Html.PartialAsync("_ReturnStatusBadge", request.Status)
+                                    </td>
+                                    <td>
+                                        <a asp-page="/Admin/Returns/Detail" asp-route-id="@request.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
