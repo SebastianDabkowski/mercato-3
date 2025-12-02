@@ -199,8 +199,9 @@
                                 <strong>Resolution: @resolutionTypeText</strong>
                                 @if (Model.ReturnRequest.ResolutionType == MercatoApp.Models.ResolutionType.FullRefund || Model.ReturnRequest.ResolutionType == MercatoApp.Models.ResolutionType.PartialRefund)
                                 {
+                                    var actualRefundAmount = Model.ReturnRequest.ResolutionAmount ?? Model.ReturnRequest.RefundAmount;
                                     <br/>
-                                    <strong>Refund Amount: @((Model.ReturnRequest.ResolutionAmount ?? Model.ReturnRequest.RefundAmount).ToString("C"))</strong>
+                                    <strong>Refund Amount: @actualRefundAmount.ToString("C")</strong>
                                     @if (Model.ReturnRequest.Refund != null)
                                     {
                                         <br/>

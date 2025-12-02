@@ -577,7 +577,7 @@
                                            name="resolutionAmount" 
                                            step="0.01" 
                                            min="0.01" 
-                                           max="@Model.ReturnRequest.RefundAmount" 
+                                           max="@Model.ReturnRequest.RefundAmount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" 
                                            placeholder="0.00">
                                 </div>
                                 <small class="text-muted">Maximum refundable: @Model.ReturnRequest.RefundAmount.ToString("C")</small>

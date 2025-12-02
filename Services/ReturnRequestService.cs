@@ -623,7 +623,7 @@ public class ReturnRequestService : IReturnRequestService
                     orderId: returnRequest.SubOrder.ParentOrderId,
                     sellerSubOrderId: returnRequest.SubOrderId,
                     refundAmount: amountToRefund,
-                    reason: $"Return case resolution: {resolutionType}",
+                    reason: $"Return case {returnRequest.ReturnNumber} resolution: {resolutionType}",
                     initiatedByUserId: initiatedByUserId,
                     notes: resolutionNotes,
                     returnRequestId: returnRequestId);
@@ -635,7 +635,7 @@ public class ReturnRequestService : IReturnRequestService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create refund for return request {ReturnRequestId}", returnRequestId);
-                return (false, $"Case resolved, but refund initiation failed: {ex.Message}", returnRequest);
+                return (false, "Case resolved, but refund initiation failed. Please contact support.", returnRequest);
             }
         }
 
