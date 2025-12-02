@@ -76,8 +76,9 @@ public class ProductReviewService : IProductReviewService
 
         // Check rate limiting: max 10 reviews per user per day
         var today = DateTime.UtcNow.Date;
+        var tomorrow = today.AddDays(1);
         var reviewsToday = await _context.ProductReviews
-            .CountAsync(r => r.UserId == userId && r.CreatedAt >= today);
+            .CountAsync(r => r.UserId == userId && r.CreatedAt >= today && r.CreatedAt < tomorrow);
 
         if (reviewsToday >= 10)
         {
@@ -119,16 +120,17 @@ public class ProductReviewService : IProductReviewService
     /// <inheritdoc />
     public async Task<decimal?> GetAverageRatingAsync(int productId)
     {
-        var reviews = await _context.ProductReviews
-            .Where(r => r.ProductId == productId && r.IsApproved)
-            .ToListAsync();
+        var hasReviews = await _context.ProductReviews
+            .AnyAsync(r => r.ProductId == productId && r.IsApproved);
 
-        if (!reviews.Any())
+        if (!hasReviews)
         {
             return null;
         }
 
-        return (decimal)reviews.Average(r => r.Rating);
+        return await _context.ProductReviews
+            .Where(r => r.ProductId == productId && r.IsApproved)
+            .AverageAsync(r => (decimal)r.Rating);
     }
 
     /// <inheritdoc />
