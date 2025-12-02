@@ -40,6 +40,13 @@ public class PaymentTransaction
     public string? ProviderTransactionId { get; set; }
 
     /// <summary>
+    /// Gets or sets the idempotency key to prevent duplicate transactions.
+    /// Used to ensure payment provider retries don't create duplicate charges.
+    /// </summary>
+    [MaxLength(100)]
+    public string? IdempotencyKey { get; set; }
+
+    /// <summary>
     /// Gets or sets the payment amount.
     /// </summary>
     [Required]

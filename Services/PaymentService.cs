@@ -11,25 +11,33 @@ public class PaymentService : IPaymentService
 {
     private readonly ApplicationDbContext _context;
     private readonly IOrderStatusService _orderStatusService;
+    private readonly IPaymentProviderService _paymentProviderService;
     private readonly ILogger<PaymentService> _logger;
 
     public PaymentService(
         ApplicationDbContext context,
         IOrderStatusService orderStatusService,
+        IPaymentProviderService paymentProviderService,
         ILogger<PaymentService> logger)
     {
         _context = context;
         _orderStatusService = orderStatusService;
+        _paymentProviderService = paymentProviderService;
         _logger = logger;
     }
 
     /// <inheritdoc />
     public async Task<List<PaymentMethod>> GetActivePaymentMethodsAsync()
     {
-        return await _context.PaymentMethods
+        var allMethods = await _context.PaymentMethods
             .Where(pm => pm.IsActive)
             .OrderBy(pm => pm.DisplayOrder)
             .ToListAsync();
+
+        // Filter by enabled methods in current environment
+        return allMethods
+            .Where(pm => _paymentProviderService.IsPaymentMethodEnabled(pm.ProviderId))
+            .ToList();
     }
 
     /// <inheritdoc />
@@ -49,19 +57,28 @@ public class PaymentService : IPaymentService
             {
                 Name = "Credit/Debit Card",
                 Description = "Pay securely with your credit or debit card",
-                ProviderId = "stripe",
+                ProviderId = "card",
                 IconClass = "bi-credit-card",
                 IsActive = true,
                 DisplayOrder = 1
             },
             new PaymentMethod
             {
-                Name = "PayPal",
-                Description = "Pay with your PayPal account",
-                ProviderId = "paypal",
-                IconClass = "bi-paypal",
+                Name = "Bank Transfer",
+                Description = "Pay directly from your bank account",
+                ProviderId = "bank_transfer",
+                IconClass = "bi-bank",
                 IsActive = true,
                 DisplayOrder = 2
+            },
+            new PaymentMethod
+            {
+                Name = "BLIK",
+                Description = "Pay with BLIK code (Poland only)",
+                ProviderId = "blik",
+                IconClass = "bi-phone",
+                IsActive = true,
+                DisplayOrder = 3
             },
             new PaymentMethod
             {
@@ -70,7 +87,7 @@ public class PaymentService : IPaymentService
                 ProviderId = "cash_on_delivery",
                 IconClass = "bi-cash",
                 IsActive = true,
-                DisplayOrder = 3
+                DisplayOrder = 4
             }
         };
 
@@ -99,6 +116,9 @@ public class PaymentService : IPaymentService
             throw new InvalidOperationException("Payment method not found.");
         }
 
+        // Generate idempotency key to prevent duplicate transactions
+        var idempotencyKey = $"order-{orderId}-{Guid.NewGuid():N}";
+
         var transaction = new PaymentTransaction
         {
             OrderId = orderId,
@@ -106,6 +126,7 @@ public class PaymentService : IPaymentService
             Amount = amount,
             CurrencyCode = "USD",
             Status = PaymentStatus.Pending,
+            IdempotencyKey = idempotencyKey,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -113,7 +134,8 @@ public class PaymentService : IPaymentService
         _context.PaymentTransactions.Add(transaction);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Created payment transaction {TransactionId} for order {OrderId}", transaction.Id, orderId);
+        _logger.LogInformation("Created payment transaction {TransactionId} for order {OrderId} with idempotency key {IdempotencyKey}", 
+            transaction.Id, orderId, idempotencyKey);
 
         return transaction;
     }
@@ -123,6 +145,7 @@ public class PaymentService : IPaymentService
     {
         var transaction = await _context.PaymentTransactions
             .Include(t => t.PaymentMethod)
+            .Include(t => t.Order)
             .FirstOrDefaultAsync(t => t.Id == transactionId);
 
         if (transaction == null)
@@ -130,44 +153,57 @@ public class PaymentService : IPaymentService
             throw new InvalidOperationException("Payment transaction not found.");
         }
 
-        // For cash on delivery, mark as authorized immediately
-        if (transaction.PaymentMethod.ProviderId == "cash_on_delivery")
+        // Use payment provider to initiate payment
+        var result = await _paymentProviderService.InitiatePaymentAsync(transaction);
+
+        if (!string.IsNullOrEmpty(result.ErrorMessage))
+        {
+            // Payment initiation failed
+            transaction.Status = PaymentStatus.Failed;
+            transaction.ErrorMessage = result.ErrorMessage;
+            transaction.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            throw new InvalidOperationException(result.ErrorMessage);
+        }
+
+        // Update transaction with provider ID if available
+        if (!string.IsNullOrEmpty(result.ProviderTransactionId))
+        {
+            transaction.ProviderTransactionId = result.ProviderTransactionId;
+        }
+
+        // For immediate payments (e.g., cash on delivery)
+        if (result.IsImmediate)
         {
             transaction.Status = PaymentStatus.Authorized;
-            transaction.ProviderTransactionId = $"COD-{transaction.OrderId}-{transaction.Id}";
             transaction.UpdatedAt = DateTime.UtcNow;
             
-            // Update order status to Paid for cash on delivery
-            var order = await _context.Orders.FindAsync(transaction.OrderId);
-            if (order != null && order.Status == OrderStatus.New)
+            // Update order status to Paid for immediate payments
+            if (transaction.Order != null && transaction.Order.Status == OrderStatus.New)
             {
-                order.PaymentStatus = PaymentStatus.Authorized;
-                order.UpdatedAt = DateTime.UtcNow;
+                transaction.Order.PaymentStatus = PaymentStatus.Authorized;
+                transaction.Order.UpdatedAt = DateTime.UtcNow;
                 
-                // Mark the order and sub-orders as Paid
-                var paymentSuccess = await _orderStatusService.MarkOrderAsPaidAsync(order.Id);
+                var paymentSuccess = await _orderStatusService.MarkOrderAsPaidAsync(transaction.Order.Id);
                 if (!paymentSuccess)
                 {
-                    _logger.LogError("Failed to mark order {OrderId} as paid", order.Id);
+                    _logger.LogError("Failed to mark order {OrderId} as paid", transaction.Order.Id);
                     throw new InvalidOperationException("Failed to update order status to paid.");
                 }
             }
             
             await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Payment transaction {TransactionId} authorized (cash on delivery)", transactionId);
-            return null; // No redirect needed for cash on delivery
+            _logger.LogInformation("Payment transaction {TransactionId} authorized immediately", transactionId);
+            return null; // No redirect needed
         }
 
-        // For other payment providers, generate a redirect URL
-        // In a real implementation, this would integrate with actual payment providers
-        // For now, we'll simulate with a mock payment page
-        var redirectUrl = $"/Checkout/PaymentAuthorize?transactionId={transactionId}";
+        await _context.SaveChangesAsync();
         
         _logger.LogInformation("Initiated payment for transaction {TransactionId} with provider {ProviderId}", 
             transactionId, transaction.PaymentMethod.ProviderId);
 
-        return redirectUrl;
+        return result.RedirectUrl;
     }
 
     /// <inheritdoc />
@@ -182,6 +218,14 @@ public class PaymentService : IPaymentService
             throw new InvalidOperationException("Payment transaction not found.");
         }
 
+        // Prevent duplicate processing (idempotency check)
+        if (transaction.Status == PaymentStatus.Completed || transaction.Status == PaymentStatus.Failed)
+        {
+            _logger.LogWarning("Payment transaction {TransactionId} already processed with status {Status}",
+                transactionId, transaction.Status);
+            return transaction;
+        }
+
         if (success)
         {
             transaction.Status = PaymentStatus.Completed;
@@ -192,6 +236,7 @@ public class PaymentService : IPaymentService
             if (transaction.Order != null)
             {
                 transaction.Order.PaymentStatus = PaymentStatus.Completed;
+                
                 // Mark the order and sub-orders as Paid when payment is confirmed
                 if (transaction.Order.Status == OrderStatus.New)
                 {
@@ -211,6 +256,18 @@ public class PaymentService : IPaymentService
         {
             transaction.Status = PaymentStatus.Failed;
             transaction.ErrorMessage = errorMessage;
+            
+            // Update order payment status to failed
+            if (transaction.Order != null)
+            {
+                transaction.Order.PaymentStatus = PaymentStatus.Failed;
+                transaction.Order.UpdatedAt = DateTime.UtcNow;
+                
+                // Don't change order status to failed automatically - keep it as New
+                // so the user can retry payment with a different method
+                _logger.LogInformation("Order {OrderId} payment failed, order remains in New status for retry", 
+                    transaction.Order.Id);
+            }
             
             _logger.LogWarning("Payment transaction {TransactionId} failed: {ErrorMessage}", transactionId, errorMessage);
         }
