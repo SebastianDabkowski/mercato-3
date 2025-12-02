@@ -13,6 +13,7 @@ public class OrderService : IOrderService
     private readonly ICartService _cartService;
     private readonly IShippingMethodService _shippingMethodService;
     private readonly IAddressService _addressService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
@@ -20,12 +21,14 @@ public class OrderService : IOrderService
         ICartService cartService,
         IShippingMethodService shippingMethodService,
         IAddressService addressService,
+        IEmailService emailService,
         ILogger<OrderService> logger)
     {
         _context = context;
         _cartService = cartService;
         _shippingMethodService = shippingMethodService;
         _addressService = addressService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -269,6 +272,31 @@ public class OrderService : IOrderService
             }
 
             _logger.LogInformation("Created order {OrderNumber} for user {UserId}", orderNumber, userId ?? 0);
+
+            // Send email notifications to sellers for each sub-order
+            // Do this after transaction commit to ensure data is persisted
+            try
+            {
+                // Reload sub-orders with full navigation properties for email
+                var subOrdersWithDetails = await _context.SellerSubOrders
+                    .Include(so => so.Store)
+                        .ThenInclude(s => s.User)
+                    .Include(so => so.Items)
+                    .Include(so => so.ParentOrder)
+                        .ThenInclude(o => o.DeliveryAddress)
+                    .Where(so => so.ParentOrderId == order.Id)
+                    .ToListAsync();
+
+                foreach (var subOrder in subOrdersWithDetails)
+                {
+                    await _emailService.SendNewOrderNotificationToSellerAsync(subOrder, order);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Don't fail the order creation if email notification fails
+                _logger.LogError(ex, "Failed to send seller notifications for order {OrderNumber}", orderNumber);
+            }
 
             return order;
         }

@@ -73,6 +73,28 @@ public interface IEmailService
     /// <param name="order">The related order.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task SendRefundConfirmationEmailAsync(RefundTransaction refundTransaction, Order order);
+
+    /// <summary>
+    /// Sends a new order notification email to the seller.
+    /// </summary>
+    /// <param name="subOrder">The seller sub-order that was created.</param>
+    /// <param name="parentOrder">The parent order.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SendNewOrderNotificationToSellerAsync(SellerSubOrder subOrder, Order parentOrder);
+
+    /// <summary>
+    /// Sends a return request notification email to the seller.
+    /// </summary>
+    /// <param name="returnRequest">The return request that was created.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SendReturnRequestNotificationToSellerAsync(ReturnRequest returnRequest);
+
+    /// <summary>
+    /// Sends a payout notification email to the seller.
+    /// </summary>
+    /// <param name="payout">The payout that was processed.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SendPayoutNotificationToSellerAsync(Payout payout);
 }
 
 /// <summary>
@@ -314,6 +336,8 @@ public class EmailService : IEmailService
         int? orderId = null,
         int? refundTransactionId = null,
         int? sellerSubOrderId = null,
+        int? returnRequestId = null,
+        int? payoutId = null,
         string? errorMessage = null,
         string? providerMessageId = null)
     {
@@ -327,6 +351,8 @@ public class EmailService : IEmailService
                 OrderId = orderId,
                 RefundTransactionId = refundTransactionId,
                 SellerSubOrderId = sellerSubOrderId,
+                ReturnRequestId = returnRequestId,
+                PayoutId = payoutId,
                 Subject = subject,
                 Status = status,
                 ErrorMessage = errorMessage,
@@ -344,5 +370,141 @@ public class EmailService : IEmailService
             // Don't let email logging failures break the application
             _logger.LogError(ex, "Failed to log email send attempt for {EmailType} to {Email}", emailType, recipientEmail);
         }
+    }
+
+    /// <inheritdoc />
+    public async Task SendNewOrderNotificationToSellerAsync(SellerSubOrder subOrder, Order parentOrder)
+    {
+        // Get seller email from store owner
+        var store = subOrder.Store;
+        var sellerEmail = store.ContactEmail ?? store.User?.Email;
+
+        if (string.IsNullOrEmpty(sellerEmail))
+        {
+            _logger.LogWarning(
+                "Cannot send new order notification for sub-order {SubOrderNumber}: No email address found for store {StoreId}",
+                subOrder.SubOrderNumber,
+                subOrder.StoreId);
+            return;
+        }
+
+        var subject = $"New Order - {subOrder.SubOrderNumber}";
+
+        // In production, this would send an actual email with order details
+        // For now, just log it
+        _logger.LogInformation(
+            "New order notification would be sent to {Email} for sub-order {SubOrderNumber}. " +
+            "Store: {StoreName}, Amount: {Amount:C}, Items: {ItemCount}, " +
+            "Buyer Order: {ParentOrderNumber}, Delivery Address: {Address}",
+            sellerEmail,
+            subOrder.SubOrderNumber,
+            store.StoreName,
+            subOrder.TotalAmount,
+            subOrder.Items?.Count ?? 0,
+            parentOrder.OrderNumber,
+            parentOrder.DeliveryAddress?.AddressLine1 ?? "N/A");
+
+        await LogEmailAsync(
+            EmailType.SellerNewOrder,
+            sellerEmail,
+            subject,
+            EmailStatus.Sent,
+            userId: store.UserId,
+            orderId: parentOrder.Id,
+            sellerSubOrderId: subOrder.Id);
+    }
+
+    /// <inheritdoc />
+    public async Task SendReturnRequestNotificationToSellerAsync(ReturnRequest returnRequest)
+    {
+        // Get seller email from store owner
+        var store = returnRequest.SubOrder.Store;
+        var sellerEmail = store.ContactEmail ?? store.User?.Email;
+
+        if (string.IsNullOrEmpty(sellerEmail))
+        {
+            _logger.LogWarning(
+                "Cannot send return request notification for return {ReturnNumber}: No email address found for store {StoreId}",
+                returnRequest.ReturnNumber,
+                returnRequest.SubOrder.StoreId);
+            return;
+        }
+
+        var requestTypeLabel = returnRequest.RequestType == ReturnRequestType.Return ? "Return Request" : "Complaint";
+        var subject = $"{requestTypeLabel} - {returnRequest.ReturnNumber}";
+
+        // In production, this would send an actual email with return details
+        // For now, just log it
+        _logger.LogInformation(
+            "{RequestType} notification would be sent to {Email} for return {ReturnNumber}. " +
+            "Store: {StoreName}, Sub-Order: {SubOrderNumber}, Reason: {Reason}, " +
+            "Buyer: {BuyerName}, Requested At: {RequestedAt:g}",
+            requestTypeLabel,
+            sellerEmail,
+            returnRequest.ReturnNumber,
+            store.StoreName,
+            returnRequest.SubOrder.SubOrderNumber,
+            returnRequest.Reason,
+            $"{returnRequest.Buyer.FirstName} {returnRequest.Buyer.LastName}",
+            returnRequest.RequestedAt);
+
+        await LogEmailAsync(
+            EmailType.SellerReturnRequest,
+            sellerEmail,
+            subject,
+            EmailStatus.Sent,
+            userId: store.UserId,
+            sellerSubOrderId: returnRequest.SubOrderId,
+            returnRequestId: returnRequest.Id);
+    }
+
+    /// <inheritdoc />
+    public async Task SendPayoutNotificationToSellerAsync(Payout payout)
+    {
+        // Get seller email from store owner
+        var store = payout.Store;
+        var sellerEmail = store.ContactEmail ?? store.User?.Email;
+
+        if (string.IsNullOrEmpty(sellerEmail))
+        {
+            _logger.LogWarning(
+                "Cannot send payout notification for payout {PayoutNumber}: No email address found for store {StoreId}",
+                payout.PayoutNumber,
+                payout.StoreId);
+            return;
+        }
+
+        var subject = $"Payout Processed - {payout.PayoutNumber}";
+
+        var statusMessage = payout.Status switch
+        {
+            PayoutStatus.Paid => "has been completed",
+            PayoutStatus.Processing => "is being processed",
+            PayoutStatus.Failed => "has failed",
+            _ => $"status is {payout.Status}"
+        };
+
+        // In production, this would send an actual email with payout details
+        // For now, just log it
+        _logger.LogInformation(
+            "Payout notification would be sent to {Email} for payout {PayoutNumber}. " +
+            "Store: {StoreName}, Amount: {Amount:C} {Currency}, Status: {Status}, " +
+            "Scheduled Date: {ScheduledDate:d}, Method: {PayoutMethod}",
+            sellerEmail,
+            payout.PayoutNumber,
+            store.StoreName,
+            payout.Amount,
+            payout.Currency,
+            statusMessage,
+            payout.ScheduledDate,
+            payout.PayoutMethod?.DisplayName ?? "Default");
+
+        await LogEmailAsync(
+            EmailType.SellerPayout,
+            sellerEmail,
+            subject,
+            EmailStatus.Sent,
+            userId: store.UserId,
+            payoutId: payout.Id);
     }
 }
