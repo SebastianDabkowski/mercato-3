@@ -62,4 +62,22 @@ public interface IReturnRequestService
     /// <param name="returnRequestId">The return request ID.</param>
     /// <returns>The return request, or null if not found.</returns>
     Task<ReturnRequest?> GetReturnRequestByIdAsync(int returnRequestId);
+
+    /// <summary>
+    /// Approves a return request.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="storeId">The store ID (for authorization).</param>
+    /// <param name="sellerNotes">Optional notes from the seller.</param>
+    /// <returns>True if successful, false otherwise.</returns>
+    Task<bool> ApproveReturnRequestAsync(int returnRequestId, int storeId, string? sellerNotes = null);
+
+    /// <summary>
+    /// Rejects a return request.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="storeId">The store ID (for authorization).</param>
+    /// <param name="sellerNotes">Required notes explaining rejection reason.</param>
+    /// <returns>True if successful, false otherwise.</returns>
+    Task<bool> RejectReturnRequestAsync(int returnRequestId, int storeId, string sellerNotes);
 }

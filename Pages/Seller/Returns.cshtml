@@ -1,0 +1,196 @@
+@page
+@model MercatoApp.Pages.Seller.ReturnsModel
+@{
+    ViewData["Title"] = "Returns & Complaints - Seller Panel";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-3">
+                <i class="bi bi-arrow-return-left"></i> Returns & Complaints
+            </h1>
+            <p class="text-muted">
+                Manage return and complaint requests for @Model.CurrentStore?.StoreName
+            </p>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel"></i> Filter Cases
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <!-- Status Filter -->
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="StatusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="@((int)MercatoApp.Models.ReturnStatus.Requested)" selected="@(Model.StatusFilter == MercatoApp.Models.ReturnStatus.Requested)">Pending Review</option>
+                        <option value="@((int)MercatoApp.Models.ReturnStatus.Approved)" selected="@(Model.StatusFilter == MercatoApp.Models.ReturnStatus.Approved)">Approved</option>
+                        <option value="@((int)MercatoApp.Models.ReturnStatus.Rejected)" selected="@(Model.StatusFilter == MercatoApp.Models.ReturnStatus.Rejected)">Rejected</option>
+                        <option value="@((int)MercatoApp.Models.ReturnStatus.Completed)" selected="@(Model.StatusFilter == MercatoApp.Models.ReturnStatus.Completed)">Completed</option>
+                    </select>
+                </div>
+
+                <!-- Type Filter -->
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select name="TypeFilter" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="@((int)MercatoApp.Models.ReturnRequestType.Return)" selected="@(Model.TypeFilter == MercatoApp.Models.ReturnRequestType.Return)">Return</option>
+                        <option value="@((int)MercatoApp.Models.ReturnRequestType.Complaint)" selected="@(Model.TypeFilter == MercatoApp.Models.ReturnRequestType.Complaint)">Complaint</option>
+                    </select>
+                </div>
+
+                <!-- Buyer Email Filter -->
+                <div class="col-md-4">
+                    <label class="form-label">Buyer Email</label>
+                    <input type="email" name="BuyerEmail" class="form-control" placeholder="buyer@example.com" value="@Model.BuyerEmail">
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.ReturnRequests.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 
+            No return or complaint requests found matching your criteria.
+        </div>
+    }
+    else
+    {
+        <!-- Summary Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <h3 class="text-warning">@Model.ReturnRequests.Count(r => r.Status == MercatoApp.Models.ReturnStatus.Requested)</h3>
+                        <p class="mb-0 text-muted">Pending Review</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <h3 class="text-primary">@Model.ReturnRequests.Count(r => r.Status == MercatoApp.Models.ReturnStatus.Approved)</h3>
+                        <p class="mb-0 text-muted">Approved</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-danger">
+                    <div class="card-body text-center">
+                        <h3 class="text-danger">@Model.ReturnRequests.Count(r => r.Status == MercatoApp.Models.ReturnStatus.Rejected)</h3>
+                        <p class="mb-0 text-muted">Rejected</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h3 class="text-success">@Model.ReturnRequests.Count(r => r.Status == MercatoApp.Models.ReturnStatus.Completed)</h3>
+                        <p class="mb-0 text-muted">Completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cases List -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Cases (@Model.ReturnRequests.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Type</th>
+                                <th>Buyer</th>
+                                <th>Order Reference</th>
+                                <th>Created Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var request in Model.ReturnRequests)
+                            {
+                                var requestTypeLabel = request.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "Complaint" : "Return";
+                                var requestIcon = request.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "exclamation-triangle" : "arrow-return-left";
+                                var requestTypeClass = request.RequestType == MercatoApp.Models.ReturnRequestType.Complaint ? "text-danger" : "text-primary";
+
+                                <tr>
+                                    <td>
+                                        <strong>@request.ReturnNumber</strong>
+                                    </td>
+                                    <td>
+                                        <span class="@requestTypeClass">
+                                            <i class="bi bi-@requestIcon"></i> @requestTypeLabel
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (request.Buyer != null)
+                                        {
+                                            <span>@request.Buyer.FirstName @request.Buyer.LastName</span>
+                                            <br />
+                                            <small class="text-muted">@request.Buyer.Email</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a asp-page="/Seller/OrderDetails" asp-route-id="@request.SubOrder.Id">
+                                            @request.SubOrder.SubOrderNumber
+                                        </a>
+                                    </td>
+                                    <td>
+                                        @request.RequestedAt.ToString("MMM dd, yyyy")
+                                        <br />
+                                        <small class="text-muted">@request.RequestedAt.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        @await Html.PartialAsync("_ReturnStatusBadge", request.Status)
+                                    </td>
+                                    <td>
+                                        <a asp-page="/Seller/ReturnDetail" asp-route-id="@request.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
