@@ -33,6 +33,14 @@ public class SellerReputationService : ISellerReputationService
     /// <inheritdoc />
     public async Task<decimal?> CalculateReputationScoreAsync(int storeId)
     {
+        // Get the store entity once for the entire operation
+        var store = await _context.Stores.FindAsync(storeId);
+        if (store == null)
+        {
+            _logger.LogWarning("Store {StoreId} not found", storeId);
+            return null;
+        }
+
         var metrics = await GetReputationMetricsAsync(storeId);
 
         // Check if the store has enough orders to calculate reputation
@@ -43,8 +51,7 @@ public class SellerReputationService : ISellerReputationService
                 storeId, metrics.TotalCompletedOrders, MINIMUM_ORDERS_FOR_REPUTATION);
             
             // Clear the reputation score if it exists
-            var store = await _context.Stores.FindAsync(storeId);
-            if (store != null && store.ReputationScore.HasValue)
+            if (store.ReputationScore.HasValue)
             {
                 store.ReputationScore = null;
                 store.ReputationScoreUpdatedAt = null;
@@ -81,18 +88,14 @@ public class SellerReputationService : ISellerReputationService
         // Round to 2 decimal places
         reputationScore = Math.Round(reputationScore, 2);
 
-        // Update the store's reputation score
-        var storeToUpdate = await _context.Stores.FindAsync(storeId);
-        if (storeToUpdate != null)
-        {
-            storeToUpdate.ReputationScore = reputationScore;
-            storeToUpdate.ReputationScoreUpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+        // Update the store's reputation score (reuse already loaded entity)
+        store.ReputationScore = reputationScore;
+        store.ReputationScoreUpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Updated reputation score for Store {StoreId}: {Score} (Rating: {Rating}, OnTime: {OnTime}%, Disputes: {Dispute}%, Cancellations: {Cancel}%)",
-                storeId, reputationScore, metrics.AverageRating, metrics.OnTimeShippingRate, metrics.DisputeRate, metrics.CancellationRate);
-        }
+        _logger.LogInformation(
+            "Updated reputation score for Store {StoreId}: {Score} (Rating: {Rating}, OnTime: {OnTime}%, Disputes: {Dispute}%, Cancellations: {Cancel}%)",
+            storeId, reputationScore, metrics.AverageRating, metrics.OnTimeShippingRate, metrics.DisputeRate, metrics.CancellationRate);
 
         return reputationScore;
     }
@@ -109,6 +112,8 @@ public class SellerReputationService : ISellerReputationService
 
         int updatedCount = 0;
 
+        // Process stores sequentially to avoid database contention and ensure reliability
+        // For large-scale parallel processing, consider using a background job framework
         foreach (var storeId in activeStores)
         {
             try
@@ -140,44 +145,54 @@ public class SellerReputationService : ISellerReputationService
             StoreId = storeId
         };
 
-        // Get average rating and count
-        var ratings = await _context.SellerRatings
+        // Get average rating and count using database aggregation
+        var ratingStats = await _context.SellerRatings
             .Where(sr => sr.StoreId == storeId)
-            .Select(sr => sr.Rating)
-            .ToListAsync();
+            .GroupBy(sr => sr.StoreId)
+            .Select(g => new { Average = g.Average(sr => sr.Rating), Count = g.Count() })
+            .FirstOrDefaultAsync();
 
-        if (ratings.Any())
+        if (ratingStats != null)
         {
-            metrics.AverageRating = (decimal)ratings.Average();
-            metrics.RatingCount = ratings.Count;
+            metrics.AverageRating = (decimal)ratingStats.Average;
+            metrics.RatingCount = ratingStats.Count;
         }
 
-        // Get order statistics for this store
-        var subOrders = await _context.SellerSubOrders
+        // Get order statistics using database aggregation
+        var orderStats = await _context.SellerSubOrders
             .Where(so => so.StoreId == storeId)
+            .GroupBy(so => so.StoreId)
+            .Select(g => new
+            {
+                TotalDelivered = g.Count(so => so.Status == OrderStatus.Delivered),
+                TotalShipped = g.Count(so => so.Status == OrderStatus.Shipped || so.Status == OrderStatus.Delivered),
+                TotalCancelled = g.Count(so => so.Status == OrderStatus.Cancelled),
+                TotalCompleted = g.Count(so => so.Status == OrderStatus.Delivered || so.Status == OrderStatus.Refunded)
+            })
+            .FirstOrDefaultAsync();
+
+        if (orderStats != null)
+        {
+            metrics.TotalDeliveredOrders = orderStats.TotalDelivered;
+            metrics.TotalShippedOrders = orderStats.TotalShipped;
+            metrics.TotalCancelledOrders = orderStats.TotalCancelled;
+            metrics.TotalCompletedOrders = orderStats.TotalCompleted;
+        }
+
+        // Count disputed orders (return requests) - optimized query
+        var subOrderIds = await _context.SellerSubOrders
+            .Where(so => so.StoreId == storeId)
+            .Select(so => so.Id)
             .ToListAsync();
 
-        // Count delivered orders
-        metrics.TotalDeliveredOrders = subOrders.Count(so => so.Status == OrderStatus.Delivered);
-
-        // Count shipped orders (including delivered, as delivered means it was shipped first)
-        metrics.TotalShippedOrders = subOrders.Count(so => 
-            so.Status == OrderStatus.Shipped || so.Status == OrderStatus.Delivered);
-
-        // Count cancelled orders
-        metrics.TotalCancelledOrders = subOrders.Count(so => so.Status == OrderStatus.Cancelled);
-
-        // Count disputed orders (return requests)
-        var disputedSubOrderIds = await _context.ReturnRequests
-            .Where(rr => subOrders.Select(so => so.Id).Contains(rr.SubOrderId))
-            .Select(rr => rr.SubOrderId)
-            .Distinct()
-            .ToListAsync();
-        metrics.TotalDisputedOrders = disputedSubOrderIds.Count;
-
-        // Count completed orders (delivered + refunded)
-        metrics.TotalCompletedOrders = subOrders.Count(so => 
-            so.Status == OrderStatus.Delivered || so.Status == OrderStatus.Refunded);
+        if (subOrderIds.Any())
+        {
+            metrics.TotalDisputedOrders = await _context.ReturnRequests
+                .Where(rr => subOrderIds.Contains(rr.SubOrderId))
+                .Select(rr => rr.SubOrderId)
+                .Distinct()
+                .CountAsync();
+        }
 
         // Calculate rates
         if (metrics.TotalShippedOrders > 0)
@@ -200,11 +215,12 @@ public class SellerReputationService : ISellerReputationService
         }
 
         // Get current reputation score from database
-        var store = await _context.Stores.FindAsync(storeId);
-        if (store != null)
-        {
-            metrics.ReputationScore = store.ReputationScore;
-        }
+        var store = await _context.Stores
+            .Where(s => s.Id == storeId)
+            .Select(s => s.ReputationScore)
+            .FirstOrDefaultAsync();
+        
+        metrics.ReputationScore = store;
 
         return metrics;
     }
