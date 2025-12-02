@@ -27,7 +27,12 @@ builder.Services.AddAntiforgery(options =>
 
 // Add Entity Framework with In-Memory database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase("MercatoDb"));
+{
+    options.UseInMemoryDatabase("MercatoDb");
+    // Suppress transaction warnings for in-memory database
+    options.ConfigureWarnings(warnings => 
+        warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
+});
 
 // Add HTTP context accessor for cookie access
 builder.Services.AddHttpContextAccessor();
