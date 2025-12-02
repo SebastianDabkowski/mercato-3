@@ -63,5 +63,20 @@ public enum NotificationType
     /// <summary>
     /// Notification about a seller rating.
     /// </summary>
-    SellerRating
+    SellerRating,
+
+    /// <summary>
+    /// Notification about a new product question.
+    /// </summary>
+    ProductQuestion,
+
+    /// <summary>
+    /// Notification about a reply to a product question.
+    /// </summary>
+    ProductQuestionReply,
+
+    /// <summary>
+    /// Notification about a new order message.
+    /// </summary>
+    OrderMessage
 }
