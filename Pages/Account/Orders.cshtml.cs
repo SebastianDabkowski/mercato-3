@@ -22,6 +22,29 @@ public class OrdersModel : PageModel
     }
 
     public List<Order> Orders { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int CurrentPage { get; set; }
+    public int PageSize { get; set; } = 10;
+    public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+
+    // Filter properties
+    [BindProperty(SupportsGet = true)]
+    public List<OrderStatus>? SelectedStatuses { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime? FromDate { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime? ToDate { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int? SellerId { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+
+    // Available sellers for filter dropdown
+    public List<Store> AvailableSellers { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -31,7 +54,23 @@ public class OrdersModel : PageModel
             return RedirectToPage("/Account/Login");
         }
 
-        Orders = await _orderService.GetUserOrdersAsync(userId);
+        CurrentPage = PageNumber;
+
+        // Get filtered and paginated orders
+        var (orders, totalCount) = await _orderService.GetUserOrdersFilteredAsync(
+            userId,
+            SelectedStatuses,
+            FromDate,
+            ToDate,
+            SellerId,
+            CurrentPage,
+            PageSize);
+
+        Orders = orders;
+        TotalCount = totalCount;
+
+        // Load available sellers from user's orders for the filter dropdown
+        AvailableSellers = await _orderService.GetUserOrderSellersAsync(userId);
 
         return Page();
     }

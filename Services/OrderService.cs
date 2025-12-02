@@ -312,6 +312,99 @@ public class OrderService : IOrderService
     }
 
     /// <inheritdoc />
+    public async Task<(List<Order> Orders, int TotalCount)> GetUserOrdersFilteredAsync(
+        int userId, 
+        List<OrderStatus>? statuses = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int? sellerId = null,
+        int page = 1,
+        int pageSize = 10)
+    {
+        // Validate pagination parameters
+        if (page < 1)
+        {
+            page = 1;
+        }
+        if (pageSize < 1 || pageSize > 100)
+        {
+            pageSize = 10; // Default to safe value
+        }
+
+        // Build the base query
+        var query = _context.Orders
+            .Include(o => o.DeliveryAddress)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.Store)
+            .Where(o => o.UserId == userId);
+
+        // Apply status filter
+        if (statuses != null && statuses.Any())
+        {
+            query = query.Where(o => statuses.Contains(o.Status));
+        }
+
+        // Apply date range filter
+        if (fromDate.HasValue)
+        {
+            query = query.Where(o => o.OrderedAt >= fromDate.Value);
+        }
+        if (toDate.HasValue)
+        {
+            // Include the entire day for toDate
+            var endOfDay = toDate.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(o => o.OrderedAt <= endOfDay);
+        }
+
+        // Apply seller filter - optimized to avoid subquery in Any()
+        if (sellerId.HasValue)
+        {
+            // Get order IDs that have sub-orders from this seller
+            var orderIdsWithSeller = await _context.SellerSubOrders
+                .Where(so => so.StoreId == sellerId.Value)
+                .Select(so => so.ParentOrderId)
+                .Distinct()
+                .ToListAsync();
+            
+            query = query.Where(o => orderIdsWithSeller.Contains(o.Id));
+        }
+
+        // Get total count before pagination
+        var totalCount = await query.CountAsync();
+
+        // Apply sorting and pagination
+        var orders = await query
+            .OrderByDescending(o => o.OrderedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (orders, totalCount);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<Store>> GetUserOrderSellersAsync(int userId)
+    {
+        // Get unique seller IDs from user's orders efficiently using explicit join
+        var sellerIds = await _context.SellerSubOrders
+            .Where(so => _context.Orders.Any(o => o.Id == so.ParentOrderId && o.UserId == userId))
+            .Select(so => so.StoreId)
+            .Distinct()
+            .ToListAsync();
+
+        if (!sellerIds.Any())
+        {
+            return new List<Store>();
+        }
+
+        // Load the stores
+        return await _context.Stores
+            .Where(s => sellerIds.Contains(s.Id))
+            .OrderBy(s => s.StoreName)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
     public async Task<(bool IsValid, string? ErrorMessage)> ValidateShippingForCartAsync(int? userId, string? sessionId, string countryCode)
     {
         // Check if shipping is allowed to this country
