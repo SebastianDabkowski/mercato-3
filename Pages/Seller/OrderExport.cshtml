@@ -101,12 +101,23 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Export Information</h5>
+                <p class="text-muted">The export file includes comprehensive logistics data for external systems and partners.</p>
+                <h6 class="mt-3">Included Columns:</h6>
+                <ul class="mb-2">
+                    <li><strong>Order Identifiers:</strong> Sub-Order Number, Parent Order Number, Created Date, Status</li>
+                    <li><strong>Buyer Contact:</strong> Name, Email, Phone Number</li>
+                    <li><strong>Delivery Address:</strong> Address Line 1, Address Line 2, City, State/Province, Postal Code, Country Code, Delivery Instructions</li>
+                    <li><strong>Shipping Details:</strong> Shipping Method, Tracking Number, Carrier Name</li>
+                    <li><strong>Financial Summary:</strong> Total Amount, Shipping Cost, Subtotal</li>
+                    <li><strong>Order Items:</strong> Item Count, Detailed Items List (Product Name, Variant, Quantity, Unit Price)</li>
+                </ul>
+                <h6 class="mt-3">Additional Notes:</h6>
                 <ul class="mb-0">
-                    <li>The exported file will include order details, buyer information, and totals.</li>
-                    <li>Columns include: Sub-Order Number, Parent Order Number, Date, Status, Buyer Name/Email, Amounts, Shipping Method, and Item Count.</li>
                     <li>Export respects your current filters - only matching orders are included.</li>
                     <li>Files are compatible with common spreadsheet tools and ERP/WMS systems.</li>
                     <li>All dates and times are in UTC format.</li>
+                    <li>CSV format uses proper escaping for special characters.</li>
+                    <li>Excel format includes formatting and auto-fit columns.</li>
                 </ul>
             </div>
         </div>
