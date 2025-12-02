@@ -139,6 +139,17 @@ public class UserAuthenticationService : IUserAuthenticationService
             };
         }
 
+        // Check if account is blocked
+        if (user.Status == AccountStatus.Blocked)
+        {
+            _logger.LogWarning("Login attempt for blocked account: {Email}", normalizedEmail);
+            return new LoginResult
+            {
+                Success = false,
+                ErrorMessage = "Your account has been blocked. Please contact support for more information."
+            };
+        }
+
         // Clear failed attempts on successful login
         ClearFailedAttempts(normalizedEmail);
         

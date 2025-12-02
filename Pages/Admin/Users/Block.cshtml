@@ -1,0 +1,115 @@
+@page
+@model MercatoApp.Pages.Admin.Users.BlockModel
+@{
+    ViewData["Title"] = "Block User Account - Admin";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-ban"></i> Block User Account
+                </h1>
+                <a asp-page="/Admin/Users/Details" asp-route-id="@Model.User?.Id" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+            </div>
+
+            @if (Model.User == null)
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> User not found.
+                </div>
+            }
+            else
+            {
+                <!-- Warning Alert -->
+                <div class="alert alert-warning">
+                    <h5 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle"></i> Warning
+                    </h5>
+                    <p>You are about to block the following user account:</p>
+                    <hr>
+                    <p class="mb-1"><strong>User ID:</strong> @Model.User.Id</p>
+                    <p class="mb-1"><strong>Name:</strong> @Model.User.FirstName @Model.User.LastName</p>
+                    <p class="mb-1"><strong>Email:</strong> @Model.User.Email</p>
+                    <p class="mb-0"><strong>Role:</strong> @Model.User.UserType</p>
+                </div>
+
+                <!-- Block Consequences -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> Blocking Consequences
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li>The user will be immediately logged out and unable to log in.</li>
+                            <li>All active sessions will be terminated.</li>
+                            @if (Model.User.UserType == MercatoApp.Models.UserType.Seller)
+                            {
+                                <li>Their store and product listings will be hidden from public view.</li>
+                                <li>Pending orders may need to be handled separately.</li>
+                            }
+                            <li>User data will be retained for legal and audit purposes.</li>
+                            <li>This action will be recorded in the admin audit log.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Block Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clipboard-check"></i> Block Details
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            <div class="mb-3">
+                                <label asp-for="Reason" class="form-label">
+                                    Reason for Blocking <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Reason" class="form-select">
+                                    <option value="">-- Select a reason --</option>
+                                    <option value="@MercatoApp.Models.BlockReason.Fraud">Fraud</option>
+                                    <option value="@MercatoApp.Models.BlockReason.Spam">Spam</option>
+                                    <option value="@MercatoApp.Models.BlockReason.PolicyViolation">Policy Violation</option>
+                                    <option value="@MercatoApp.Models.BlockReason.AbusiveBehavior">Abusive Behavior</option>
+                                    <option value="@MercatoApp.Models.BlockReason.Other">Other</option>
+                                </select>
+                                <span asp-validation-for="Reason" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Notes" class="form-label">
+                                    Additional Notes (Optional)
+                                </label>
+                                <textarea asp-for="Notes" class="form-control" rows="4" 
+                                          placeholder="Provide additional context about why this account is being blocked..."></textarea>
+                                <span asp-validation-for="Notes" class="text-danger"></span>
+                                <small class="text-muted">Maximum 1000 characters</small>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a asp-page="/Admin/Users/Details" asp-route-id="@Model.User.Id" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-ban"></i> Confirm and Block Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

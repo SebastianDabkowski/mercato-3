@@ -179,4 +179,27 @@ public class User
     /// Gets or sets the date and time when 2FA was enabled.
     /// </summary>
     public DateTime? TwoFactorEnabledAt { get; set; }
+
+    // Account Blocking Properties
+
+    /// <summary>
+    /// Gets or sets the ID of the admin user who blocked this account.
+    /// </summary>
+    public int? BlockedByUserId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when the account was blocked.
+    /// </summary>
+    public DateTime? BlockedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the reason why the account was blocked.
+    /// </summary>
+    public BlockReason? BlockReason { get; set; }
+
+    /// <summary>
+    /// Gets or sets additional notes about why the account was blocked.
+    /// </summary>
+    [MaxLength(1000)]
+    public string? BlockNotes { get; set; }
 }

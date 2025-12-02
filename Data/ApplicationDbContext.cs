@@ -338,6 +338,12 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the admin audit logs table.
+    /// Stores audit trail of admin actions on user accounts.
+    /// </summary>
+    public DbSet<AdminAuditLog> AdminAuditLogs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
