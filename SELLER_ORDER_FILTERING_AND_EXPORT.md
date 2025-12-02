@@ -65,12 +65,22 @@ New service interface for exporting seller orders:
 - Status
 - Buyer Name
 - Buyer Email
+- Buyer Phone
+- Address Line 1
+- Address Line 2
+- City
+- State/Province
+- Postal Code
+- Country Code
+- Delivery Instructions
 - Total Amount
 - Shipping Cost
 - Subtotal
 - Shipping Method
 - Tracking Number
+- Carrier Name
 - Items Count
+- Items Details (Product name, variant, quantity, price)
 
 ### Page Models
 
