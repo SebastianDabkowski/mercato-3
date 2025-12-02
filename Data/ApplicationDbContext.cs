@@ -1128,5 +1128,111 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Amount)
                 .HasPrecision(18, 2);
         });
+
+        modelBuilder.Entity<Settlement>(entity =>
+        {
+            // Index on settlement number for fast lookups
+            entity.HasIndex(e => e.SettlementNumber).IsUnique();
+
+            // Index on store ID for finding settlements by store
+            entity.HasIndex(e => e.StoreId);
+
+            // Composite index for finding current version settlements
+            entity.HasIndex(e => new { e.StoreId, e.IsCurrentVersion });
+
+            // Composite index for finding settlements by period
+            entity.HasIndex(e => new { e.StoreId, e.PeriodStartDate, e.PeriodEndDate });
+
+            // Configure relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with PreviousSettlement (optional, self-referencing)
+            entity.HasOne(e => e.PreviousSettlement)
+                .WithMany()
+                .HasForeignKey(e => e.PreviousSettlementId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure decimal precision
+            entity.Property(e => e.GrossSales).HasPrecision(18, 2);
+            entity.Property(e => e.Refunds).HasPrecision(18, 2);
+            entity.Property(e => e.Commission).HasPrecision(18, 2);
+            entity.Property(e => e.Adjustments).HasPrecision(18, 2);
+            entity.Property(e => e.NetAmount).HasPrecision(18, 2);
+            entity.Property(e => e.TotalPayouts).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<SettlementItem>(entity =>
+        {
+            // Index on settlement ID for finding items by settlement
+            entity.HasIndex(e => e.SettlementId);
+
+            // Index on order ID for finding items by order
+            entity.HasIndex(e => e.OrderId);
+
+            // Configure relationship with Settlement
+            entity.HasOne(e => e.Settlement)
+                .WithMany(s => s.Items)
+                .HasForeignKey(e => e.SettlementId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with Order
+            entity.HasOne(e => e.Order)
+                .WithMany()
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with SellerSubOrder (optional)
+            entity.HasOne(e => e.SellerSubOrder)
+                .WithMany()
+                .HasForeignKey(e => e.SellerSubOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with EscrowTransaction (optional)
+            entity.HasOne(e => e.EscrowTransaction)
+                .WithMany()
+                .HasForeignKey(e => e.EscrowTransactionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure decimal precision
+            entity.Property(e => e.GrossAmount).HasPrecision(18, 2);
+            entity.Property(e => e.RefundAmount).HasPrecision(18, 2);
+            entity.Property(e => e.CommissionAmount).HasPrecision(18, 2);
+            entity.Property(e => e.NetAmount).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<SettlementAdjustment>(entity =>
+        {
+            // Index on settlement ID for finding adjustments by settlement
+            entity.HasIndex(e => e.SettlementId);
+
+            // Configure relationship with Settlement
+            entity.HasOne(e => e.Settlement)
+                .WithMany(s => s.SettlementAdjustments)
+                .HasForeignKey(e => e.SettlementId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with RelatedSettlement (optional, for prior period adjustments)
+            entity.HasOne(e => e.RelatedSettlement)
+                .WithMany()
+                .HasForeignKey(e => e.RelatedSettlementId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with CreatedByUser (optional)
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure decimal precision
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<SettlementConfig>(entity =>
+        {
+            // No special indexes needed for global configuration
+        });
     }
 }
