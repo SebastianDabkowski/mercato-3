@@ -277,6 +277,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ShipmentStatusUpdate> ShipmentStatusUpdates { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the SLA configurations table.
+    /// </summary>
+    public DbSet<SLAConfig> SLAConfigs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

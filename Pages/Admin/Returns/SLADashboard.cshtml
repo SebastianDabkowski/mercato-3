@@ -1,0 +1,184 @@
+@page
+@model MercatoApp.Pages.Admin.Returns.SLADashboardModel
+@{
+    ViewData["Title"] = "SLA Dashboard";
+}
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>SLA Dashboard</h1>
+            <p class="text-muted">Service Level Agreement metrics for return and complaint cases</p>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="fromDate" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="fromDate" name="fromDate" 
+                                   value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label for="toDate" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="toDate" name="toDate" 
+                                   value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">Update Report</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform-Wide Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>Platform Overview</h3>
+            <p class="text-muted">Period: @Model.FromDate?.ToString("MMM dd, yyyy") - @Model.ToDate?.ToString("MMM dd, yyyy")</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Total Cases</h5>
+                    <p class="display-4">@Model.PlatformStatistics.TotalCases</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">SLA Compliance</h5>
+                    <p class="display-4 @(Model.PlatformStatistics.PercentageResolvedWithinSLA >= 80 ? "text-success" : "text-warning")">
+                        @Model.PlatformStatistics.PercentageResolvedWithinSLA%
+                    </p>
+                    <small class="text-muted">@Model.PlatformStatistics.CasesResolvedWithinSLA resolved within SLA</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Response SLA Breaches</h5>
+                    <p class="display-4 @(Model.PlatformStatistics.FirstResponseSLABreaches > 0 ? "text-danger" : "text-success")">
+                        @Model.PlatformStatistics.FirstResponseSLABreaches
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Resolution SLA Breaches</h5>
+                    <p class="display-4 @(Model.PlatformStatistics.ResolutionSLABreaches > 0 ? "text-danger" : "text-success")">
+                        @Model.PlatformStatistics.ResolutionSLABreaches
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Average Response Time</h5>
+                    <p class="display-6">@Model.PlatformStatistics.AverageResponseTimeHours.ToString("F1") hours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Average Resolution Time</h5>
+                    <p class="display-6">@Model.PlatformStatistics.AverageResolutionTimeHours.ToString("F1") hours</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-Seller Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>Seller Performance</h3>
+        </div>
+    </div>
+
+    @if (Model.SellerStatistics.Any())
+    {
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Seller</th>
+                                        <th class="text-center">Total Cases</th>
+                                        <th class="text-center">SLA Compliance</th>
+                                        <th class="text-center">Response Breaches</th>
+                                        <th class="text-center">Resolution Breaches</th>
+                                        <th class="text-center">Avg Response (hrs)</th>
+                                        <th class="text-center">Avg Resolution (hrs)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var seller in Model.SellerStatistics)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@seller.StoreName</strong>
+                                                <br />
+                                                <small class="text-muted">Store ID: @seller.StoreId</small>
+                                            </td>
+                                            <td class="text-center">@seller.TotalCases</td>
+                                            <td class="text-center">
+                                                <span class="badge @(seller.PercentageResolvedWithinSLA >= 80 ? "bg-success" : "bg-warning")">
+                                                    @seller.PercentageResolvedWithinSLA%
+                                                </span>
+                                                <br />
+                                                <small class="text-muted">@seller.CasesResolvedWithinSLA/@seller.TotalCases</small>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge @(seller.FirstResponseSLABreaches > 0 ? "bg-danger" : "bg-success")">
+                                                    @seller.FirstResponseSLABreaches
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge @(seller.ResolutionSLABreaches > 0 ? "bg-danger" : "bg-success")">
+                                                    @seller.ResolutionSLABreaches
+                                                </span>
+                                            </td>
+                                            <td class="text-center">@seller.AverageResponseTimeHours.ToString("F1")</td>
+                                            <td class="text-center">@seller.AverageResolutionTimeHours.ToString("F1")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No cases found for the selected period.
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -164,4 +164,29 @@ public class ReturnRequest
     /// Gets or sets the admin actions taken on this case (navigation property).
     /// </summary>
     public ICollection<ReturnRequestAdminAction> AdminActions { get; set; } = new List<ReturnRequestAdminAction>();
+
+    /// <summary>
+    /// Gets or sets the deadline for the seller's first response (calculated from SLA config).
+    /// </summary>
+    public DateTime? FirstResponseDeadline { get; set; }
+
+    /// <summary>
+    /// Gets or sets the deadline for case resolution (calculated from SLA config).
+    /// </summary>
+    public DateTime? ResolutionDeadline { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the first response SLA has been breached.
+    /// </summary>
+    public bool FirstResponseSLABreached { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the resolution SLA has been breached.
+    /// </summary>
+    public bool ResolutionSLABreached { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when the seller first responded (message, approval, or rejection).
+    /// </summary>
+    public DateTime? SellerFirstResponseAt { get; set; }
 }
