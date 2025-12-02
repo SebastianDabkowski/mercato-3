@@ -71,10 +71,8 @@ public class PayoutDetailsModel : PageModel
         EscrowTransactions = await _context.EscrowTransactions
             .Where(e => e.PayoutId == PayoutId)
             .Include(e => e.SellerSubOrder)
-                .ThenInclude(s => s.ParentOrder)
-                    .ThenInclude(o => o.User)
-            .Include(e => e.SellerSubOrder)
-                .ThenInclude(s => s.Items)
+                .ThenInclude(s => s.ParentOrder.User)
+            .Include(e => e.SellerSubOrder.Items)
             .OrderByDescending(e => e.CreatedAt)
             .ToListAsync();
 
