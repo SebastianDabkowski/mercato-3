@@ -10,15 +10,18 @@ public class StoreModel : PageModel
     private readonly IStoreProfileService _storeProfileService;
     private readonly IProductService _productService;
     private readonly ISellerRatingService _sellerRatingService;
+    private readonly ISellerReputationService _sellerReputationService;
 
     public StoreModel(
         IStoreProfileService storeProfileService, 
         IProductService productService,
-        ISellerRatingService sellerRatingService)
+        ISellerRatingService sellerRatingService,
+        ISellerReputationService sellerReputationService)
     {
         _storeProfileService = storeProfileService;
         _productService = productService;
         _sellerRatingService = sellerRatingService;
+        _sellerReputationService = sellerReputationService;
     }
 
     public Store? Store { get; set; }
@@ -42,6 +45,11 @@ public class StoreModel : PageModel
     /// Gets the total number of ratings for this store.
     /// </summary>
     public int RatingCount { get; set; }
+
+    /// <summary>
+    /// Gets the reputation score for this store (0-100).
+    /// </summary>
+    public decimal? ReputationScore { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether the store is publicly viewable (Active or LimitedActive).
@@ -71,6 +79,9 @@ public class StoreModel : PageModel
         // Load seller rating information
         AverageRating = await _sellerRatingService.GetAverageRatingAsync(Store.Id);
         RatingCount = await _sellerRatingService.GetRatingCountAsync(Store.Id);
+        
+        // Load reputation score
+        ReputationScore = Store.ReputationScore;
 
         // Handle stores that are not publicly viewable
         if (!IsStorePubliclyViewable)
