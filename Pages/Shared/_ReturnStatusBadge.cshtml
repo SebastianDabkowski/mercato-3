@@ -1,0 +1,25 @@
+@model MercatoApp.Models.ReturnStatus
+
+@switch (Model)
+{
+    case MercatoApp.Models.ReturnStatus.Requested:
+        <span class="badge bg-warning text-dark">
+            <i class="bi bi-hourglass-split"></i> Return Requested
+        </span>
+        break;
+    case MercatoApp.Models.ReturnStatus.Approved:
+        <span class="badge bg-info">
+            <i class="bi bi-check-circle"></i> Return Approved
+        </span>
+        break;
+    case MercatoApp.Models.ReturnStatus.Rejected:
+        <span class="badge bg-danger">
+            <i class="bi bi-x-circle"></i> Return Rejected
+        </span>
+        break;
+    case MercatoApp.Models.ReturnStatus.Completed:
+        <span class="badge bg-success">
+            <i class="bi bi-check-circle-fill"></i> Return Completed
+        </span>
+        break;
+}
