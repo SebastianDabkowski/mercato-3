@@ -100,7 +100,7 @@ public class IndexModel : PageModel
             // Apply order number filter if provided
             if (!string.IsNullOrEmpty(FilterOrderNumber))
             {
-                query = query.Where(o => o.OrderNumber.Contains(FilterOrderNumber));
+                query = query.Where(o => o.OrderNumber.Contains(FilterOrderNumber, StringComparison.OrdinalIgnoreCase));
             }
 
             // Get total count for pagination
