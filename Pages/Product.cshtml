@@ -332,13 +332,63 @@
                                             }
                                         </div>
                                     </div>
-                                    <small class="text-muted">@review.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                    <div class="text-end">
+                                        <small class="text-muted d-block">@review.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                        @if (User.Identity?.IsAuthenticated == true)
+                                        {
+                                            <button type="button" class="btn btn-link btn-sm text-muted p-0 mt-1" 
+                                                    data-bs-toggle="modal" data-bs-target="#flagReviewModal-@review.Id"
+                                                    title="Report this review">
+                                                <i class="bi bi-flag"></i> Report
+                                            </button>
+                                        }
+                                    </div>
                                 </div>
                                 @if (!string.IsNullOrEmpty(review.ReviewText))
                                 {
                                     <p class="mb-0">@review.ReviewText</p>
                                 }
                             </div>
+                            
+                            @* Flag Review Modal *@
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <div class="modal fade" id="flagReviewModal-@review.Id" tabindex="-1" aria-labelledby="flagReviewModalLabel-@review.Id" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="flagReviewModalLabel-@review.Id">Report Review</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Why are you reporting this review?</p>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Reason:</label>
+                                                    <select class="form-select" id="flagReason-@review.Id">
+                                                        <option value="InappropriateLanguage">Inappropriate Language</option>
+                                                        <option value="Spam">Spam or Fake</option>
+                                                        <option value="PersonalInformation">Contains Personal Information</option>
+                                                        <option value="OffTopic">Off-Topic</option>
+                                                        <option value="Harassment">Harassment or Threats</option>
+                                                        <option value="Fraudulent">Appears Fraudulent</option>
+                                                        <option value="Other">Other</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Additional Details (Optional):</label>
+                                                    <textarea class="form-control" id="flagDetails-@review.Id" rows="3" 
+                                                              placeholder="Please provide any additional information..."></textarea>
+                                                </div>
+                                                <div id="flagMessage-@review.Id" class="alert d-none"></div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="button" class="btn btn-danger" onclick="submitFlag(@review.Id)">Submit Report</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         }
                         
                         @* Pagination Controls *@
@@ -603,6 +653,53 @@ else
             urlParams.set('sort', sortValue);
             urlParams.set('page', '1'); // Reset to first page when sorting changes
             window.location.search = urlParams.toString();
+        }
+
+        // Function to submit review flag
+        async function submitFlag(reviewId) {
+            const reason = document.getElementById(`flagReason-${reviewId}`).value;
+            const details = document.getElementById(`flagDetails-${reviewId}`).value;
+            const messageDiv = document.getElementById(`flagMessage-${reviewId}`);
+            
+            try {
+                const response = await fetch('/Api/FlagReview', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({
+                        reviewId: reviewId,
+                        reason: reason,
+                        details: details
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    messageDiv.className = 'alert alert-success';
+                    messageDiv.textContent = 'Thank you for reporting this review. Our team will review it shortly.';
+                    messageDiv.classList.remove('d-none');
+                    
+                    // Close modal after 2 seconds
+                    setTimeout(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById(`flagReviewModal-${reviewId}`));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        messageDiv.classList.add('d-none');
+                    }, 2000);
+                } else {
+                    messageDiv.className = 'alert alert-danger';
+                    messageDiv.textContent = data.message || 'Failed to submit report. Please try again.';
+                    messageDiv.classList.remove('d-none');
+                }
+            } catch (error) {
+                messageDiv.className = 'alert alert-danger';
+                messageDiv.textContent = 'An error occurred. Please try again later.';
+                messageDiv.classList.remove('d-none');
+            }
         }
     </script>
 }
