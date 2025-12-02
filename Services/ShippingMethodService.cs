@@ -139,6 +139,22 @@ public class ShippingMethodService : IShippingMethodService
             throw new ArgumentException("Valid store ID is required.", nameof(shippingMethod));
         }
 
+        // Validate business rules
+        if (shippingMethod.BaseCost < 0)
+        {
+            throw new ArgumentException("Base cost cannot be negative.", nameof(shippingMethod));
+        }
+
+        if (shippingMethod.AdditionalItemCost < 0)
+        {
+            throw new ArgumentException("Additional item cost cannot be negative.", nameof(shippingMethod));
+        }
+
+        if (shippingMethod.FreeShippingThreshold.HasValue && shippingMethod.FreeShippingThreshold.Value < 0)
+        {
+            throw new ArgumentException("Free shipping threshold cannot be negative.", nameof(shippingMethod));
+        }
+
         shippingMethod.CreatedAt = DateTime.UtcNow;
         shippingMethod.UpdatedAt = DateTime.UtcNow;
 

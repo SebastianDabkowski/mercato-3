@@ -95,23 +95,36 @@ public class CreateModel : PageModel
             return Page();
         }
 
-        var shippingMethod = new ShippingMethod
+        try
         {
-            StoreId = Store.Id,
-            Name = Input.Name,
-            Description = Input.Description,
-            EstimatedDelivery = Input.EstimatedDelivery,
-            BaseCost = Input.BaseCost,
-            AdditionalItemCost = Input.AdditionalItemCost,
-            FreeShippingThreshold = Input.FreeShippingThreshold,
-            IsActive = Input.IsActive,
-            DisplayOrder = 0
-        };
+            var shippingMethod = new ShippingMethod
+            {
+                StoreId = Store.Id,
+                Name = Input.Name,
+                Description = Input.Description,
+                EstimatedDelivery = Input.EstimatedDelivery,
+                BaseCost = Input.BaseCost,
+                AdditionalItemCost = Input.AdditionalItemCost,
+                FreeShippingThreshold = Input.FreeShippingThreshold,
+                IsActive = Input.IsActive,
+                DisplayOrder = 0
+            };
 
-        await _shippingMethodService.CreateShippingMethodAsync(shippingMethod);
+            await _shippingMethodService.CreateShippingMethodAsync(shippingMethod);
 
-        TempData["SuccessMessage"] = "Shipping method created successfully.";
-        return RedirectToPage("Index");
+            TempData["SuccessMessage"] = "Shipping method created successfully.";
+            return RedirectToPage("Index");
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return Page();
+        }
+        catch (Exception)
+        {
+            ModelState.AddModelError(string.Empty, "An error occurred while creating the shipping method. Please try again.");
+            return Page();
+        }
     }
 
     private int? GetCurrentUserId()
