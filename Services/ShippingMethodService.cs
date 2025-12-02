@@ -31,6 +31,36 @@ public class ShippingMethodService : IShippingMethodService
     }
 
     /// <inheritdoc />
+    public async Task<List<ShippingMethod>> GetActiveShippingMethodsByCountryAsync(int storeId, string countryCode)
+    {
+        var methods = await GetActiveShippingMethodsAsync(storeId);
+        
+        // Filter by country if specified
+        if (string.IsNullOrWhiteSpace(countryCode))
+        {
+            return methods;
+        }
+
+        var filteredMethods = methods.Where(method =>
+        {
+            // If no countries specified, available everywhere
+            if (string.IsNullOrWhiteSpace(method.AllowedCountries))
+            {
+                return true;
+            }
+
+            // Check if country is in the allowed list
+            var allowedCountries = method.AllowedCountries
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(c => c.ToUpperInvariant());
+
+            return allowedCountries.Contains(countryCode.ToUpperInvariant());
+        }).ToList();
+
+        return filteredMethods;
+    }
+
+    /// <inheritdoc />
     public async Task<List<ShippingMethod>> GetOrCreateDefaultShippingMethodsAsync(int storeId)
     {
         var existingMethods = await GetActiveShippingMethodsAsync(storeId);
