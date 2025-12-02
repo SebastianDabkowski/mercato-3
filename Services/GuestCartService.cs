@@ -14,6 +14,12 @@ public interface IGuestCartService
     string GetOrCreateGuestCartId();
 
     /// <summary>
+    /// Gets the guest cart identifier from the request cookie if it exists.
+    /// </summary>
+    /// <returns>The guest cart identifier or null if not found.</returns>
+    string? GetGuestCartIdIfExists();
+
+    /// <summary>
     /// Clears the guest cart identifier cookie.
     /// </summary>
     void ClearGuestCartId();
@@ -63,6 +69,18 @@ public class GuestCartService : IGuestCartService
         }
 
         return guestCartId;
+    }
+
+    /// <inheritdoc />
+    public string? GetGuestCartIdIfExists()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext == null)
+        {
+            throw new InvalidOperationException("HttpContext is not available.");
+        }
+
+        return httpContext.Request.Cookies[GuestCartCookieName];
     }
 
     /// <inheritdoc />

@@ -229,7 +229,7 @@ public class ExternalLoginModel : PageModel
         // Merge guest cart into user cart after social login
         try
         {
-            var guestCartId = Request.Cookies["MercatoGuestCart"];
+            var guestCartId = _guestCartService.GetGuestCartIdIfExists();
             if (!string.IsNullOrEmpty(guestCartId))
             {
                 await _cartService.MergeCartsAsync(loginResult.User!.Id, guestCartId);

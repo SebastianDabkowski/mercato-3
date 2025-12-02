@@ -151,7 +151,7 @@ public class LoginModel : PageModel
         // Merge guest cart into user cart after login
         try
         {
-            var guestCartId = Request.Cookies["MercatoGuestCart"];
+            var guestCartId = _guestCartService.GetGuestCartIdIfExists();
             if (!string.IsNullOrEmpty(guestCartId))
             {
                 await _cartService.MergeCartsAsync(result.User!.Id, guestCartId);
