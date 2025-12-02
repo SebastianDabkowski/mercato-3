@@ -97,6 +97,9 @@ public class CartModel : PageModel
             }
         }
 
+        // Ensure session is loaded
+        _ = HttpContext.Session.GetString("_init");
+        
         // Use HTTP session ID for anonymous users
         var sessionId = HttpContext.Session.Id;
         if (string.IsNullOrEmpty(sessionId))

@@ -39,6 +39,8 @@ builder.Services.AddSession(options =>
     options.Cookie.Name = "MercatoSession";
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.IdleTimeout = TimeSpan.FromDays(7);
 });
 
