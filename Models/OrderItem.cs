@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MercatoApp.Validation;
 
 namespace MercatoApp.Models;
 
@@ -6,6 +7,7 @@ namespace MercatoApp.Models;
 /// Represents an item in an order.
 /// Captures the product details at the time of order.
 /// </summary>
+[ValidateOrderItemQuantities]
 public class OrderItem
 {
     /// <summary>

@@ -59,9 +59,8 @@
 
                         @if (Model.Items.Any())
                         {
-                            <form method="post">
+                            <form method="post" asp-route-subOrderId="@Model.SubOrder.Id">
                                 @Html.AntiForgeryToken()
-                                <input type="hidden" name="subOrderId" value="@Model.SubOrder.Id" />
 
                                 <div class="table-responsive">
                                     <table class="table table-hover">

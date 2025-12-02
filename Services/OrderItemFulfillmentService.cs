@@ -71,15 +71,14 @@ public class OrderItemFulfillmentService : IOrderItemFulfillmentService
         }
         else if (item.QuantityShipped > 0)
         {
-            // Partial shipment - keep in preparing/shipped state
-            if (item.Status == OrderItemStatus.New)
+            // Partial shipment - mark as shipped if preparing, otherwise mark as preparing
+            if (item.Status == OrderItemStatus.Preparing)
+            {
+                item.Status = OrderItemStatus.Shipped;
+            }
+            else if (item.Status == OrderItemStatus.New)
             {
                 item.Status = OrderItemStatus.Preparing;
-            }
-            else if (item.Status == OrderItemStatus.Preparing || item.QuantityShipped > 0)
-            {
-                // If we've started shipping, mark as shipped even if partial
-                item.Status = OrderItemStatus.Shipped;
             }
         }
 
