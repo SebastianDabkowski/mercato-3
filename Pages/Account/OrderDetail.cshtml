@@ -74,30 +74,7 @@
                             <div class="col-md-3">
                                 <h6 class="text-muted">Payment Status</h6>
                                 <p class="mb-3 mb-md-0">
-                                    @if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Completed)
-                                    {
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-check-circle-fill"></i> Paid
-                                        </span>
-                                    }
-                                    else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Authorized)
-                                    {
-                                        <span class="badge bg-info">
-                                            <i class="bi bi-clock-fill"></i> Authorized
-                                        </span>
-                                    }
-                                    else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Pending)
-                                    {
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="bi bi-hourglass-split"></i> Pending
-                                        </span>
-                                    }
-                                    else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Failed)
-                                    {
-                                        <span class="badge bg-danger">
-                                            <i class="bi bi-x-circle-fill"></i> Failed
-                                        </span>
-                                    }
+                                    <partial name="_PaymentStatusBadge" model="Model.Order.PaymentStatus" />
                                 </p>
                             </div>
                             <div class="col-md-3">
@@ -138,6 +115,52 @@
                     </div>
                 </div>
 
+                <!-- Payment Status Message -->
+                @if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Failed)
+                {
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-x-circle-fill"></i> Payment Failed
+                        </h6>
+                        <p class="mb-0">
+                            @MercatoApp.Services.PaymentStatusMapper.GetBuyerFriendlyMessage(Model.Order.PaymentStatus)
+                            @if (Model.Order.PaymentTransactions.Any())
+                            {
+                                var latestTransaction = Model.Order.PaymentTransactions
+                                    .OrderByDescending(t => t.UpdatedAt)
+                                    .FirstOrDefault();
+                                if (latestTransaction != null && !string.IsNullOrWhiteSpace(latestTransaction.ErrorMessage))
+                                {
+                                    <br/>
+                                    <small>@latestTransaction.ErrorMessage</small>
+                                }
+                            }
+                        </p>
+                    </div>
+                }
+                else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Pending)
+                {
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-hourglass-split"></i> Payment Processing
+                        </h6>
+                        <p class="mb-0">
+                            @MercatoApp.Services.PaymentStatusMapper.GetBuyerFriendlyMessage(Model.Order.PaymentStatus)
+                        </p>
+                    </div>
+                }
+                else if (Model.Order.PaymentStatus == MercatoApp.Models.PaymentStatus.Refunded)
+                {
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-arrow-counterclockwise"></i> Payment Refunded
+                        </h6>
+                        <p class="mb-0">
+                            @MercatoApp.Services.PaymentStatusMapper.GetBuyerFriendlyMessage(Model.Order.PaymentStatus)
+                        </p>
+                    </div>
+                }
+
                 <!-- Refunds/Cancellations Alert -->
                 @if (Model.HasRefunds || Model.HasCancellations)
                 {
@@ -148,7 +171,7 @@
                         @if (Model.Order.RefundedAmount > 0)
                         {
                             <p class="mb-1">
-                                <strong>Total Refunded:</strong> @Model.Order.RefundedAmount.ToString("C")
+                                <strong>Total Refunded Amount:</strong> @Model.Order.RefundedAmount.ToString("C")
                             </p>
                         }
                         @if (Model.HasCancellations)

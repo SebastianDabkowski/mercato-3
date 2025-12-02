@@ -1,0 +1,43 @@
+@model MercatoApp.Models.PaymentStatus
+@using MercatoApp.Models
+@using MercatoApp.Services
+
+@{
+    var statusMessage = PaymentStatusMapper.GetBuyerFriendlyMessage(Model);
+    var badgeClass = Model switch
+    {
+        PaymentStatus.Completed => "bg-success",
+        PaymentStatus.Authorized => "bg-info",
+        PaymentStatus.Pending => "bg-warning text-dark",
+        PaymentStatus.Failed => "bg-danger",
+        PaymentStatus.Cancelled => "bg-secondary",
+        PaymentStatus.Refunded => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    var iconClass = Model switch
+    {
+        PaymentStatus.Completed => "bi-check-circle-fill",
+        PaymentStatus.Authorized => "bi-shield-check",
+        PaymentStatus.Pending => "bi-hourglass-split",
+        PaymentStatus.Failed => "bi-x-circle-fill",
+        PaymentStatus.Cancelled => "bi-dash-circle",
+        PaymentStatus.Refunded => "bi-arrow-counterclockwise",
+        _ => "bi-question-circle"
+    };
+
+    var displayText = Model switch
+    {
+        PaymentStatus.Completed => "Paid",
+        PaymentStatus.Authorized => "Authorized",
+        PaymentStatus.Pending => "Pending",
+        PaymentStatus.Failed => "Failed",
+        PaymentStatus.Cancelled => "Cancelled",
+        PaymentStatus.Refunded => "Refunded",
+        _ => "Unknown"
+    };
+}
+
+<span class="badge @badgeClass" title="@statusMessage">
+    <i class="@iconClass"></i> @displayText
+</span>
