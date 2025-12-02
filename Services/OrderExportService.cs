@@ -70,12 +70,22 @@ public class OrderExportService : IOrderExportService
     private const string COL_STATUS = "Status";
     private const string COL_BUYER_NAME = "Buyer Name";
     private const string COL_BUYER_EMAIL = "Buyer Email";
+    private const string COL_BUYER_PHONE = "Buyer Phone";
+    private const string COL_ADDRESS_LINE1 = "Address Line 1";
+    private const string COL_ADDRESS_LINE2 = "Address Line 2";
+    private const string COL_CITY = "City";
+    private const string COL_STATE_PROVINCE = "State/Province";
+    private const string COL_POSTAL_CODE = "Postal Code";
+    private const string COL_COUNTRY_CODE = "Country Code";
+    private const string COL_DELIVERY_INSTRUCTIONS = "Delivery Instructions";
     private const string COL_TOTAL_AMOUNT = "Total Amount";
     private const string COL_SHIPPING_COST = "Shipping Cost";
     private const string COL_SUBTOTAL = "Subtotal";
     private const string COL_SHIPPING_METHOD = "Shipping Method";
     private const string COL_TRACKING_NUMBER = "Tracking Number";
+    private const string COL_CARRIER_NAME = "Carrier Name";
     private const string COL_ITEMS_COUNT = "Items Count";
+    private const string COL_ITEMS_DETAILS = "Items Details";
 
     public OrderExportService(
         ApplicationDbContext context,
@@ -115,12 +125,22 @@ public class OrderExportService : IOrderExportService
                 COL_STATUS,
                 COL_BUYER_NAME,
                 COL_BUYER_EMAIL,
+                COL_BUYER_PHONE,
+                COL_ADDRESS_LINE1,
+                COL_ADDRESS_LINE2,
+                COL_CITY,
+                COL_STATE_PROVINCE,
+                COL_POSTAL_CODE,
+                COL_COUNTRY_CODE,
+                COL_DELIVERY_INSTRUCTIONS,
                 COL_TOTAL_AMOUNT,
                 COL_SHIPPING_COST,
                 COL_SUBTOTAL,
                 COL_SHIPPING_METHOD,
                 COL_TRACKING_NUMBER,
-                COL_ITEMS_COUNT
+                COL_CARRIER_NAME,
+                COL_ITEMS_COUNT,
+                COL_ITEMS_DETAILS
             ));
 
             // Data rows
@@ -128,7 +148,10 @@ public class OrderExportService : IOrderExportService
             {
                 var buyerName = GetBuyerName(subOrder);
                 var buyerEmailValue = GetBuyerEmail(subOrder);
+                var buyerPhone = GetBuyerPhone(subOrder);
+                var address = subOrder.ParentOrder.DeliveryAddress;
                 var shippingMethod = subOrder.ShippingMethod?.Name ?? "N/A";
+                var itemsDetails = GetItemsDetails(subOrder);
 
                 csv.AppendLine(FormatCsvRow(
                     EscapeCsvValue(subOrder.SubOrderNumber),
@@ -137,12 +160,22 @@ public class OrderExportService : IOrderExportService
                     EscapeCsvValue(subOrder.Status.ToString()),
                     EscapeCsvValue(buyerName),
                     EscapeCsvValue(buyerEmailValue),
+                    EscapeCsvValue(buyerPhone),
+                    EscapeCsvValue(address.AddressLine1),
+                    EscapeCsvValue(address.AddressLine2 ?? string.Empty),
+                    EscapeCsvValue(address.City),
+                    EscapeCsvValue(address.StateProvince ?? string.Empty),
+                    EscapeCsvValue(address.PostalCode),
+                    EscapeCsvValue(address.CountryCode),
+                    EscapeCsvValue(address.DeliveryInstructions ?? string.Empty),
                     subOrder.TotalAmount.ToString("F2", CultureInfo.InvariantCulture),
                     subOrder.ShippingCost.ToString("F2", CultureInfo.InvariantCulture),
                     subOrder.Subtotal.ToString("F2", CultureInfo.InvariantCulture),
                     EscapeCsvValue(shippingMethod),
                     EscapeCsvValue(subOrder.TrackingNumber ?? string.Empty),
-                    subOrder.Items.Count.ToString()
+                    EscapeCsvValue(subOrder.CarrierName ?? string.Empty),
+                    subOrder.Items.Count.ToString(),
+                    EscapeCsvValue(itemsDetails)
                 ));
             }
 
@@ -193,15 +226,25 @@ public class OrderExportService : IOrderExportService
             worksheet.Cells[1, 4].Value = COL_STATUS;
             worksheet.Cells[1, 5].Value = COL_BUYER_NAME;
             worksheet.Cells[1, 6].Value = COL_BUYER_EMAIL;
-            worksheet.Cells[1, 7].Value = COL_TOTAL_AMOUNT;
-            worksheet.Cells[1, 8].Value = COL_SHIPPING_COST;
-            worksheet.Cells[1, 9].Value = COL_SUBTOTAL;
-            worksheet.Cells[1, 10].Value = COL_SHIPPING_METHOD;
-            worksheet.Cells[1, 11].Value = COL_TRACKING_NUMBER;
-            worksheet.Cells[1, 12].Value = COL_ITEMS_COUNT;
+            worksheet.Cells[1, 7].Value = COL_BUYER_PHONE;
+            worksheet.Cells[1, 8].Value = COL_ADDRESS_LINE1;
+            worksheet.Cells[1, 9].Value = COL_ADDRESS_LINE2;
+            worksheet.Cells[1, 10].Value = COL_CITY;
+            worksheet.Cells[1, 11].Value = COL_STATE_PROVINCE;
+            worksheet.Cells[1, 12].Value = COL_POSTAL_CODE;
+            worksheet.Cells[1, 13].Value = COL_COUNTRY_CODE;
+            worksheet.Cells[1, 14].Value = COL_DELIVERY_INSTRUCTIONS;
+            worksheet.Cells[1, 15].Value = COL_TOTAL_AMOUNT;
+            worksheet.Cells[1, 16].Value = COL_SHIPPING_COST;
+            worksheet.Cells[1, 17].Value = COL_SUBTOTAL;
+            worksheet.Cells[1, 18].Value = COL_SHIPPING_METHOD;
+            worksheet.Cells[1, 19].Value = COL_TRACKING_NUMBER;
+            worksheet.Cells[1, 20].Value = COL_CARRIER_NAME;
+            worksheet.Cells[1, 21].Value = COL_ITEMS_COUNT;
+            worksheet.Cells[1, 22].Value = COL_ITEMS_DETAILS;
 
             // Style header row
-            using (var range = worksheet.Cells[1, 1, 1, 12])
+            using (var range = worksheet.Cells[1, 1, 1, 22])
             {
                 range.Style.Font.Bold = true;
                 range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
@@ -214,7 +257,10 @@ public class OrderExportService : IOrderExportService
             {
                 var buyerName = GetBuyerName(subOrder);
                 var buyerEmailValue = GetBuyerEmail(subOrder);
+                var buyerPhone = GetBuyerPhone(subOrder);
+                var address = subOrder.ParentOrder.DeliveryAddress;
                 var shippingMethod = subOrder.ShippingMethod?.Name ?? "N/A";
+                var itemsDetails = GetItemsDetails(subOrder);
 
                 worksheet.Cells[row, 1].Value = subOrder.SubOrderNumber;
                 worksheet.Cells[row, 2].Value = subOrder.ParentOrder.OrderNumber;
@@ -222,19 +268,29 @@ public class OrderExportService : IOrderExportService
                 worksheet.Cells[row, 4].Value = subOrder.Status.ToString();
                 worksheet.Cells[row, 5].Value = buyerName;
                 worksheet.Cells[row, 6].Value = buyerEmailValue;
-                worksheet.Cells[row, 7].Value = subOrder.TotalAmount;
-                worksheet.Cells[row, 8].Value = subOrder.ShippingCost;
-                worksheet.Cells[row, 9].Value = subOrder.Subtotal;
-                worksheet.Cells[row, 10].Value = shippingMethod;
-                worksheet.Cells[row, 11].Value = subOrder.TrackingNumber ?? string.Empty;
-                worksheet.Cells[row, 12].Value = subOrder.Items.Count;
+                worksheet.Cells[row, 7].Value = buyerPhone;
+                worksheet.Cells[row, 8].Value = address.AddressLine1;
+                worksheet.Cells[row, 9].Value = address.AddressLine2 ?? string.Empty;
+                worksheet.Cells[row, 10].Value = address.City;
+                worksheet.Cells[row, 11].Value = address.StateProvince ?? string.Empty;
+                worksheet.Cells[row, 12].Value = address.PostalCode;
+                worksheet.Cells[row, 13].Value = address.CountryCode;
+                worksheet.Cells[row, 14].Value = address.DeliveryInstructions ?? string.Empty;
+                worksheet.Cells[row, 15].Value = subOrder.TotalAmount;
+                worksheet.Cells[row, 16].Value = subOrder.ShippingCost;
+                worksheet.Cells[row, 17].Value = subOrder.Subtotal;
+                worksheet.Cells[row, 18].Value = shippingMethod;
+                worksheet.Cells[row, 19].Value = subOrder.TrackingNumber ?? string.Empty;
+                worksheet.Cells[row, 20].Value = subOrder.CarrierName ?? string.Empty;
+                worksheet.Cells[row, 21].Value = subOrder.Items.Count;
+                worksheet.Cells[row, 22].Value = itemsDetails;
                 row++;
             }
 
             // Format currency columns
-            worksheet.Cells[2, 7, row - 1, 7].Style.Numberformat.Format = "$#,##0.00";
-            worksheet.Cells[2, 8, row - 1, 8].Style.Numberformat.Format = "$#,##0.00";
-            worksheet.Cells[2, 9, row - 1, 9].Style.Numberformat.Format = "$#,##0.00";
+            worksheet.Cells[2, 15, row - 1, 15].Style.Numberformat.Format = "$#,##0.00";
+            worksheet.Cells[2, 16, row - 1, 16].Style.Numberformat.Format = "$#,##0.00";
+            worksheet.Cells[2, 17, row - 1, 17].Style.Numberformat.Format = "$#,##0.00";
 
             // Auto-fit columns
             worksheet.Cells.AutoFitColumns();
@@ -269,6 +325,8 @@ public class OrderExportService : IOrderExportService
         var query = _context.SellerSubOrders
             .Include(so => so.ParentOrder)
                 .ThenInclude(o => o.User)
+            .Include(so => so.ParentOrder)
+                .ThenInclude(o => o.DeliveryAddress)
             .Include(so => so.Items)
             .Include(so => so.ShippingMethod)
             .Where(so => so.StoreId == storeId);
@@ -330,6 +388,48 @@ public class OrderExportService : IOrderExportService
             return subOrder.ParentOrder.GuestEmail;
         }
         return "N/A";
+    }
+
+    /// <summary>
+    /// Gets the buyer phone from a seller sub-order.
+    /// </summary>
+    private static string GetBuyerPhone(SellerSubOrder subOrder)
+    {
+        return subOrder.ParentOrder.DeliveryAddress?.PhoneNumber ?? "N/A";
+    }
+
+    /// <summary>
+    /// Gets the items details from a seller sub-order formatted for export.
+    /// Format: "SKU: {sku}, Product: {name}, Variant: {variant}, Qty: {qty}, Price: ${price}"
+    /// Multiple items are separated by semicolons.
+    /// </summary>
+    private static string GetItemsDetails(SellerSubOrder subOrder)
+    {
+        if (subOrder.Items == null || !subOrder.Items.Any())
+        {
+            return string.Empty;
+        }
+
+        var itemDescriptions = new List<string>();
+        foreach (var item in subOrder.Items)
+        {
+            var parts = new List<string>
+            {
+                $"Product: {item.ProductTitle}"
+            };
+
+            if (!string.IsNullOrWhiteSpace(item.VariantDescription))
+            {
+                parts.Add($"Variant: {item.VariantDescription}");
+            }
+
+            parts.Add($"Qty: {item.Quantity}");
+            parts.Add($"Price: ${item.UnitPrice:F2}");
+
+            itemDescriptions.Add(string.Join(", ", parts));
+        }
+
+        return string.Join("; ", itemDescriptions);
     }
 
     /// <summary>
