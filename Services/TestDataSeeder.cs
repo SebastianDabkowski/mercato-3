@@ -260,6 +260,36 @@ public static class TestDataSeeder
 
         context.CartItems.AddRange(cartItems);
         await context.SaveChangesAsync();
+
+        // Create shipping rules for both stores
+        var shippingRules = new[]
+        {
+            new ShippingRule
+            {
+                StoreId = store.Id,
+                Name = "Standard Shipping",
+                BaseCost = 5.99m,
+                AdditionalItemCost = 1.00m,
+                FreeShippingThreshold = 100.00m,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            },
+            new ShippingRule
+            {
+                StoreId = store2.Id,
+                Name = "Standard Shipping",
+                BaseCost = 4.99m,
+                AdditionalItemCost = 0.50m,
+                FreeShippingThreshold = 75.00m,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }
+        };
+
+        context.ShippingRules.AddRange(shippingRules);
+        await context.SaveChangesAsync();
     }
 
     private static string HashPassword(string password)
