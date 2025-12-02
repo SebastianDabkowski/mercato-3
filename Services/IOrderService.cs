@@ -103,4 +103,24 @@ public interface IOrderService
     /// <param name="subOrderId">The sub-order ID.</param>
     /// <returns>The seller sub-order, or null if not found.</returns>
     Task<SellerSubOrder?> GetSubOrderByIdAsync(int subOrderId);
+
+    /// <summary>
+    /// Gets filtered and paginated seller sub-orders for a specific store/seller.
+    /// </summary>
+    /// <param name="storeId">The store ID.</param>
+    /// <param name="statuses">Filter by order statuses (optional).</param>
+    /// <param name="fromDate">Filter by minimum order date (optional).</param>
+    /// <param name="toDate">Filter by maximum order date (optional).</param>
+    /// <param name="buyerEmail">Filter by buyer email (partial match, optional).</param>
+    /// <param name="page">Page number (1-based).</param>
+    /// <param name="pageSize">Number of sub-orders per page.</param>
+    /// <returns>A tuple containing the list of seller sub-orders and total count.</returns>
+    Task<(List<SellerSubOrder> SubOrders, int TotalCount)> GetSubOrdersFilteredAsync(
+        int storeId,
+        List<OrderStatus>? statuses = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? buyerEmail = null,
+        int page = 1,
+        int pageSize = 10);
 }

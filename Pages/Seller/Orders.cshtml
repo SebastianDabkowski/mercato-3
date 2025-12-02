@@ -14,14 +14,114 @@
                 Manage orders for @Model.CurrentStore?.StoreName
             </p>
         </div>
+        <div class="col-auto">
+            <a asp-page="/Seller/OrderExport" 
+               asp-route-SelectedStatuses="@(Model.SelectedStatuses != null ? string.Join(",", Model.SelectedStatuses.Select(s => (int)s)) : "")"
+               asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+               asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+               asp-route-BuyerEmail="@Model.BuyerEmail"
+               class="btn btn-success">
+                <i class="bi bi-download"></i> Export Orders
+            </a>
+        </div>
     </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel"></i> Filter Orders
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <!-- Status Filter -->
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="SelectedStatuses" class="form-select" multiple size="7">
+                        @{
+                            var isNewSelected = Model.SelectedStatuses?.Contains(MercatoApp.Models.OrderStatus.New) == true;
+                            var isPaidSelected = Model.SelectedStatuses?.Contains(MercatoApp.Models.OrderStatus.Paid) == true;
+                            var isPreparingSelected = Model.SelectedStatuses?.Contains(MercatoApp.Models.OrderStatus.Preparing) == true;
+                            var isShippedSelected = Model.SelectedStatuses?.Contains(MercatoApp.Models.OrderStatus.Shipped) == true;
+                            var isDeliveredSelected = Model.SelectedStatuses?.Contains(MercatoApp.Models.OrderStatus.Delivered) == true;
+                            var isCancelledSelected = Model.SelectedStatuses?.Contains(MercatoApp.Models.OrderStatus.Cancelled) == true;
+                            var isRefundedSelected = Model.SelectedStatuses?.Contains(MercatoApp.Models.OrderStatus.Refunded) == true;
+                        }
+                        <option value="@((int)MercatoApp.Models.OrderStatus.New)" selected="@isNewSelected">New</option>
+                        <option value="@((int)MercatoApp.Models.OrderStatus.Paid)" selected="@isPaidSelected">Paid</option>
+                        <option value="@((int)MercatoApp.Models.OrderStatus.Preparing)" selected="@isPreparingSelected">Preparing</option>
+                        <option value="@((int)MercatoApp.Models.OrderStatus.Shipped)" selected="@isShippedSelected">Shipped</option>
+                        <option value="@((int)MercatoApp.Models.OrderStatus.Delivered)" selected="@isDeliveredSelected">Delivered</option>
+                        <option value="@((int)MercatoApp.Models.OrderStatus.Cancelled)" selected="@isCancelledSelected">Cancelled</option>
+                        <option value="@((int)MercatoApp.Models.OrderStatus.Refunded)" selected="@isRefundedSelected">Refunded</option>
+                    </select>
+                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                </div>
+
+                <!-- Date Range -->
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="FromDate" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="FromDate" name="FromDate" 
+                            value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="ToDate" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="ToDate" name="ToDate" 
+                            value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+
+                <!-- Buyer Email Filter -->
+                <div class="col-md-4">
+                    <label for="BuyerEmail" class="form-label">Buyer Email</label>
+                    <input type="text" class="form-control" id="BuyerEmail" name="BuyerEmail" 
+                        value="@Model.BuyerEmail" placeholder="Search by email..." />
+                    <small class="form-text text-muted">Partial match supported</small>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Apply Filters
+                    </button>
+                    <a asp-page="/Seller/Orders" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Info -->
+    @if (Model.TotalCount > 0)
+    {
+        <div class="alert alert-info">
+            Showing @Model.SubOrders.Count of @Model.TotalCount sub-order(s)
+            @if (Model.CurrentPage > 1)
+            {
+                <span> - Page @Model.CurrentPage of @Model.TotalPages</span>
+            }
+        </div>
+    }
 
     @if (!Model.SubOrders.Any())
     {
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> You don't have any orders yet. 
-            Start by listing some products in your store!
-        </div>
+        @if (Model.SelectedStatuses != null || Model.FromDate != null || Model.ToDate != null || !string.IsNullOrEmpty(Model.BuyerEmail))
+        {
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> No orders found matching your filters. 
+                Try adjusting your search criteria.
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> You don't have any orders yet. 
+                Start by listing some products in your store!
+            </div>
+        }
     }
     else
     {
@@ -135,9 +235,59 @@
             </div>
         </div>
 
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <nav aria-label="Order pagination" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Button -->
+                    <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" 
+                           asp-page="/Seller/Orders" 
+                           asp-route-PageNumber="@(Model.CurrentPage - 1)"
+                           asp-route-SelectedStatuses="@(Model.SelectedStatuses != null ? string.Join(",", Model.SelectedStatuses.Select(s => (int)s)) : "")"
+                           asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                           asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                           asp-route-BuyerEmail="@Model.BuyerEmail">
+                            Previous
+                        </a>
+                    </li>
+
+                    <!-- Page Numbers -->
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(Model.CurrentPage == i ? "active" : "")">
+                            <a class="page-link" 
+                               asp-page="/Seller/Orders" 
+                               asp-route-PageNumber="@i"
+                               asp-route-SelectedStatuses="@(Model.SelectedStatuses != null ? string.Join(",", Model.SelectedStatuses.Select(s => (int)s)) : "")"
+                               asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                               asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                               asp-route-BuyerEmail="@Model.BuyerEmail">
+                                @i
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Next Button -->
+                    <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                        <a class="page-link" 
+                           asp-page="/Seller/Orders" 
+                           asp-route-PageNumber="@(Model.CurrentPage + 1)"
+                           asp-route-SelectedStatuses="@(Model.SelectedStatuses != null ? string.Join(",", Model.SelectedStatuses.Select(s => (int)s)) : "")"
+                           asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                           asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                           asp-route-BuyerEmail="@Model.BuyerEmail">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
+
         <div class="mt-3 text-muted small">
             <i class="bi bi-info-circle"></i> 
-            Showing @Model.SubOrders.Count order(s). Each sub-order represents your portion of a customer's order.
+            Each sub-order represents your portion of a customer's order.
         </div>
     }
 </div>
