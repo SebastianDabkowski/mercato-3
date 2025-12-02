@@ -220,6 +220,13 @@ public class CommissionService : ICommissionService
             return 0;
         }
 
+        // Guard against division by zero
+        if (originalCommission.GrossAmount <= 0)
+        {
+            _logger.LogWarning("Original gross amount is zero or negative for escrow {EscrowTransactionId}, cannot calculate refund ratio", escrowTransactionId);
+            return 0;
+        }
+
         // Calculate the refund ratio
         var refundRatio = refundAmount / originalCommission.GrossAmount;
 

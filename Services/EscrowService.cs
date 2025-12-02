@@ -14,11 +14,6 @@ public class EscrowService : IEscrowService
     private readonly ILogger<EscrowService> _logger;
 
     /// <summary>
-    /// Percentage divisor for commission calculations.
-    /// </summary>
-    private const decimal PercentageDivisor = 100m;
-
-    /// <summary>
     /// Default number of days after delivery before funds are eligible for payout.
     /// </summary>
     private const int DefaultPayoutEligibilityDays = 7;
@@ -70,8 +65,9 @@ public class EscrowService : IEscrowService
         }
 
         var escrowTransactions = new List<EscrowTransaction>();
+        var commissionDetails = new List<(EscrowTransaction Escrow, int? CategoryId, decimal Percentage, decimal FixedAmount, string Source)>();
 
-        // Create escrow allocation for each seller sub-order
+        // Create escrow allocations for each seller sub-order
         foreach (var subOrder in paymentTransaction.Order.SubOrders)
         {
             var grossAmount = subOrder.TotalAmount;
@@ -103,21 +99,27 @@ public class EscrowService : IEscrowService
             _context.EscrowTransactions.Add(escrowTransaction);
             escrowTransactions.Add(escrowTransaction);
 
-            // Save to get the escrow transaction ID
-            await _context.SaveChangesAsync();
+            // Store commission details for later recording
+            commissionDetails.Add((escrowTransaction, appliedCategoryId, percentage, fixedAmount, source));
+        }
 
-            // Record commission transaction for audit trail
+        // Save all escrow transactions in a single batch
+        await _context.SaveChangesAsync();
+
+        // Record commission transactions for audit trail (now that we have escrow IDs)
+        foreach (var (escrow, categoryId, percentage, fixedAmount, source) in commissionDetails)
+        {
             await _commissionService.RecordCommissionTransactionAsync(
-                escrowTransaction.Id,
-                subOrder.StoreId,
-                appliedCategoryId,
+                escrow.Id,
+                escrow.StoreId,
+                categoryId,
                 CommissionTransactionType.Initial,
-                grossAmount,
-                commissionAmount,
+                escrow.GrossAmount,
+                escrow.CommissionAmount,
                 percentage,
                 fixedAmount,
                 source,
-                $"Initial commission for sub-order {subOrder.SubOrderNumber}");
+                $"Initial commission for sub-order {escrow.SellerSubOrderId}");
         }
 
         _logger.LogInformation("Created {Count} escrow allocations for payment transaction {PaymentTransactionId}",
@@ -308,29 +310,6 @@ public class EscrowService : IEscrowService
             .Include(et => et.Store)
             .Include(et => et.PaymentTransaction)
             .FirstOrDefaultAsync(et => et.SellerSubOrderId == sellerSubOrderId);
-    }
-
-    /// <inheritdoc />
-    public async Task<decimal> CalculateCommissionAsync(decimal grossAmount)
-    {
-        var commissionConfig = await _context.CommissionConfigs
-            .Where(cc => cc.IsActive)
-            .OrderByDescending(cc => cc.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (commissionConfig == null)
-        {
-            _logger.LogWarning("No active commission configuration found, using 0% commission");
-            return 0;
-        }
-
-        // Calculate percentage-based commission
-        var percentageCommission = grossAmount * (commissionConfig.CommissionPercentage / PercentageDivisor);
-
-        // Add fixed commission amount
-        var totalCommission = percentageCommission + commissionConfig.FixedCommissionAmount;
-
-        return Math.Round(totalCommission, 2);
     }
 
     /// <inheritdoc />

@@ -64,13 +64,6 @@ public interface IEscrowService
     Task<EscrowTransaction?> GetEscrowTransactionBySubOrderAsync(int sellerSubOrderId);
 
     /// <summary>
-    /// Calculates the commission amount for a given gross amount based on active commission config.
-    /// </summary>
-    /// <param name="grossAmount">The gross amount (subtotal + shipping).</param>
-    /// <returns>The commission amount.</returns>
-    Task<decimal> CalculateCommissionAsync(decimal grossAmount);
-
-    /// <summary>
     /// Processes automatic escrow releases for all eligible transactions.
     /// Should be called periodically (e.g., daily background job).
     /// </summary>
