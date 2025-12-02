@@ -15,8 +15,9 @@ public interface ICartTotalsService
     /// <param name="userId">The user ID for authenticated users, null for anonymous users.</param>
     /// <param name="sessionId">The session ID for anonymous users, null for authenticated users.</param>
     /// <param name="includeCommission">Whether to include internal commission calculations (for admin/internal use only).</param>
+    /// <param name="promoCode">Optional promo code to apply to the cart.</param>
     /// <returns>The calculated cart totals.</returns>
-    Task<CartTotals> CalculateCartTotalsAsync(int? userId, string? sessionId, bool includeCommission = false);
+    Task<CartTotals> CalculateCartTotalsAsync(int? userId, string? sessionId, bool includeCommission = false, PromoCode? promoCode = null);
 
     /// <summary>
     /// Calculates shipping cost for a specific seller's items.
@@ -42,20 +43,23 @@ public class CartTotalsService : ICartTotalsService
 {
     private readonly ApplicationDbContext _context;
     private readonly ICartService _cartService;
+    private readonly IPromoCodeService _promoCodeService;
     private readonly ILogger<CartTotalsService> _logger;
 
     public CartTotalsService(
         ApplicationDbContext context,
         ICartService cartService,
+        IPromoCodeService promoCodeService,
         ILogger<CartTotalsService> logger)
     {
         _context = context;
         _cartService = cartService;
+        _promoCodeService = promoCodeService;
         _logger = logger;
     }
 
     /// <inheritdoc />
-    public async Task<CartTotals> CalculateCartTotalsAsync(int? userId, string? sessionId, bool includeCommission = false)
+    public async Task<CartTotals> CalculateCartTotalsAsync(int? userId, string? sessionId, bool includeCommission = false, PromoCode? promoCode = null)
     {
         var itemsBySeller = await _cartService.GetCartItemsBySellerAsync(userId, sessionId);
 
@@ -79,8 +83,21 @@ public class CartTotalsService : ICartTotalsService
             cartTotals.TotalShipping += sellerShipping.ShippingCost;
         }
 
-        // Calculate total amount payable by buyer
-        cartTotals.TotalAmount = cartTotals.ItemsSubtotal + cartTotals.TotalShipping;
+        // Apply promo code discount if provided
+        if (promoCode != null)
+        {
+            cartTotals.AppliedPromoCode = promoCode;
+            cartTotals.DiscountAmount = _promoCodeService.CalculateDiscount(promoCode, itemsBySeller, cartTotals.ItemsSubtotal);
+        }
+
+        // Calculate total amount payable by buyer (subtotal + shipping - discount)
+        cartTotals.TotalAmount = cartTotals.ItemsSubtotal + cartTotals.TotalShipping - cartTotals.DiscountAmount;
+
+        // Ensure total is not negative
+        if (cartTotals.TotalAmount < 0)
+        {
+            cartTotals.TotalAmount = 0;
+        }
 
         // Calculate internal commission if requested (not visible to buyers)
         if (includeCommission && cartTotals.ItemsSubtotal > 0)
@@ -88,8 +105,8 @@ public class CartTotalsService : ICartTotalsService
             cartTotals.InternalCommission = await CalculateCommissionAsync(cartTotals.ItemsSubtotal);
         }
 
-        _logger.LogDebug("Calculated cart totals: Items={ItemsSubtotal}, Shipping={TotalShipping}, Total={TotalAmount}",
-            cartTotals.ItemsSubtotal, cartTotals.TotalShipping, cartTotals.TotalAmount);
+        _logger.LogDebug("Calculated cart totals: Items={ItemsSubtotal}, Shipping={TotalShipping}, Discount={DiscountAmount}, Total={TotalAmount}",
+            cartTotals.ItemsSubtotal, cartTotals.TotalShipping, cartTotals.DiscountAmount, cartTotals.TotalAmount);
 
         return cartTotals;
     }

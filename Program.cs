@@ -74,6 +74,7 @@ builder.Services.AddScoped<IRecentlyViewedService, RecentlyViewedService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<ICartTotalsService, CartTotalsService>();
 builder.Services.AddScoped<IGuestCartService, GuestCartService>();
+builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();

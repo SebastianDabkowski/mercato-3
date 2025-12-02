@@ -216,6 +216,12 @@
                                     <dt class="col-6">Shipping:</dt>
                                     <dd class="col-6 text-end">@Model.TotalShipping.ToString("C")</dd>
 
+                                    @if (Model.DiscountAmount > 0 && Model.AppliedPromoCode != null)
+                                    {
+                                        <dt class="col-6 text-success">Discount (@Model.AppliedPromoCode.Code):</dt>
+                                        <dd class="col-6 text-end text-success">-@Model.DiscountAmount.ToString("C")</dd>
+                                    }
+
                                     <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
                                     <dd class="col-6 text-end border-top pt-2 mt-2">
                                         <strong class="text-primary h5">@Model.TotalAmount.ToString("C")</strong>
@@ -245,6 +251,12 @@
 
                             <dt class="col-6">Shipping:</dt>
                             <dd class="col-6 text-end">@Model.TotalShipping.ToString("C")</dd>
+
+                            @if (Model.DiscountAmount > 0 && Model.AppliedPromoCode != null)
+                            {
+                                <dt class="col-6 text-success">Discount (@Model.AppliedPromoCode.Code):</dt>
+                                <dd class="col-6 text-end text-success">-@Model.DiscountAmount.ToString("C")</dd>
+                            }
 
                             <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
                             <dd class="col-6 text-end border-top pt-2 mt-2">

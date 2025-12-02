@@ -17,6 +17,14 @@
         </div>
     }
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     @if (!Model.ItemsBySeller.Any())
     {
         <div class="text-center py-5">
@@ -159,11 +167,48 @@
                             <dt class="col-6">Shipping:</dt>
                             <dd class="col-6 text-end">@Model.CartTotals.TotalShipping.ToString("C")</dd>
 
+                            @if (Model.CartTotals.DiscountAmount > 0 && Model.CartTotals.AppliedPromoCode != null)
+                            {
+                                <dt class="col-6 text-success">Discount:</dt>
+                                <dd class="col-6 text-end text-success">-@Model.CartTotals.DiscountAmount.ToString("C")</dd>
+                            }
+
                             <dt class="col-6 border-top pt-2 mt-2"><strong>Total:</strong></dt>
                             <dd class="col-6 text-end border-top pt-2 mt-2">
                                 <strong class="text-primary h5">@Model.CartTotals.TotalAmount.ToString("C")</strong>
                             </dd>
                         </dl>
+
+                        @if (Model.IsPromoCodeFeatureEnabled)
+                        {
+                            <div class="border-top pt-3 mt-3">
+                                @if (string.IsNullOrEmpty(Model.AppliedPromoCodeString))
+                                {
+                                    <form method="post" asp-page-handler="ApplyPromoCode">
+                                        <label for="promoCodeInput" class="form-label small">Promo Code</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="promoCodeInput" 
+                                                   name="PromoCodeInput" placeholder="Enter code" 
+                                                   value="@Model.PromoCodeInput" />
+                                            <button type="submit" class="btn btn-outline-primary">Apply</button>
+                                        </div>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-success py-2 mb-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="bi bi-tag-fill"></i> <strong>@Model.AppliedPromoCodeString</strong> applied
+                                            </div>
+                                            <form method="post" asp-page-handler="RemovePromoCode" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
 
                         <a asp-page="/Checkout/Address" class="btn btn-primary w-100 mt-3">
                             <i class="bi bi-lock"></i> Proceed to Checkout
