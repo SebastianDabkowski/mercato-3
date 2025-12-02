@@ -15,6 +15,8 @@ public class ReviewModel : PageModel
     private readonly IShippingMethodService _shippingMethodService;
     private readonly IPaymentService _paymentService;
     private readonly IGuestCartService _guestCartService;
+    private readonly IPromoCodeService _promoCodeService;
+    private readonly IFeatureFlagService _featureFlagService;
     private readonly ILogger<ReviewModel> _logger;
 
     public ReviewModel(
@@ -24,6 +26,8 @@ public class ReviewModel : PageModel
         IShippingMethodService shippingMethodService,
         IPaymentService paymentService,
         IGuestCartService guestCartService,
+        IPromoCodeService promoCodeService,
+        IFeatureFlagService featureFlagService,
         ILogger<ReviewModel> logger)
     {
         _addressService = addressService;
@@ -32,6 +36,8 @@ public class ReviewModel : PageModel
         _shippingMethodService = shippingMethodService;
         _paymentService = paymentService;
         _guestCartService = guestCartService;
+        _promoCodeService = promoCodeService;
+        _featureFlagService = featureFlagService;
         _logger = logger;
     }
 
@@ -42,8 +48,10 @@ public class ReviewModel : PageModel
     public PaymentMethod? SelectedPaymentMethod { get; set; }
     public decimal ItemsSubtotal { get; set; }
     public decimal TotalShipping { get; set; }
+    public decimal DiscountAmount { get; set; }
     public decimal TotalAmount { get; set; }
     public string? GuestEmail { get; set; }
+    public PromoCode? AppliedPromoCode { get; set; }
 
     [BindProperty]
     public string? GuestEmailInput { get; set; }
@@ -126,7 +134,19 @@ public class ReviewModel : PageModel
 
         // Calculate totals
         ItemsSubtotal = ItemsBySeller.SelectMany(s => s.Value).Sum(i => i.PriceAtAdd * i.Quantity);
-        TotalAmount = ItemsSubtotal + TotalShipping;
+
+        // Apply promo code if available
+        var promoCodeFromSession = HttpContext.Session.GetString("AppliedPromoCode");
+        if (!string.IsNullOrEmpty(promoCodeFromSession))
+        {
+            AppliedPromoCode = await _promoCodeService.ValidatePromoCodeAsync(promoCodeFromSession, userId, sessionId);
+            if (AppliedPromoCode != null)
+            {
+                DiscountAmount = _promoCodeService.CalculateDiscount(AppliedPromoCode, ItemsBySeller, ItemsSubtotal);
+            }
+        }
+
+        TotalAmount = ItemsSubtotal + TotalShipping - DiscountAmount;
 
         // Get guest email if available
         if (!userId.HasValue)

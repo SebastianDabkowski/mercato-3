@@ -162,6 +162,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<PaymentTransaction> PaymentTransactions { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the promo codes table.
+    /// </summary>
+    public DbSet<PromoCode> PromoCodes { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -713,6 +718,34 @@ public class ApplicationDbContext : DbContext
                 .HasPrecision(5, 2);
 
             entity.Property(e => e.FixedCommissionAmount)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<PromoCode>(entity =>
+        {
+            // Index on code for fast lookups (unique, case-insensitive)
+            entity.HasIndex(e => e.Code).IsUnique();
+
+            // Index on store ID for finding seller-specific promo codes
+            entity.HasIndex(e => e.StoreId);
+
+            // Composite index for finding active promo codes
+            entity.HasIndex(e => new { e.IsActive, e.ExpirationDate });
+
+            // Configure optional relationship with Store
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure decimal precision
+            entity.Property(e => e.DiscountValue)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.MinimumOrderSubtotal)
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.MaximumDiscountAmount)
                 .HasPrecision(18, 2);
         });
     }

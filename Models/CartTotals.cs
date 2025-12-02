@@ -17,7 +17,17 @@ public class CartTotals
     public decimal TotalShipping { get; set; }
 
     /// <summary>
-    /// Gets or sets the total amount payable by the buyer (items + shipping).
+    /// Gets or sets the discount amount from applied promo code.
+    /// </summary>
+    public decimal DiscountAmount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the applied promo code (if any).
+    /// </summary>
+    public PromoCode? AppliedPromoCode { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total amount payable by the buyer (items + shipping - discount).
     /// </summary>
     public decimal TotalAmount { get; set; }
 

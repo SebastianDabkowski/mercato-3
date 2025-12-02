@@ -10,6 +10,12 @@ public interface IFeatureFlagService
     /// This is a Phase 2 feature and is disabled by default.
     /// </summary>
     bool IsSellerUserManagementEnabled { get; }
+
+    /// <summary>
+    /// Checks if the promo code feature is enabled.
+    /// This is a Phase 2 feature and is disabled by default.
+    /// </summary>
+    bool IsPromoCodeEnabled { get; }
 }
 
 /// <summary>
@@ -28,4 +34,8 @@ public class FeatureFlagService : IFeatureFlagService
     /// <inheritdoc />
     public bool IsSellerUserManagementEnabled =>
         _configuration.GetValue<bool>("FeatureFlags:SellerUserManagement", false);
+
+    /// <inheritdoc />
+    public bool IsPromoCodeEnabled =>
+        _configuration.GetValue<bool>("FeatureFlags:PromoCode", false);
 }
