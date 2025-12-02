@@ -90,12 +90,12 @@ builder.Services.AddScoped<IReturnRequestService, ReturnRequestService>();
 builder.Services.AddScoped<IShippingMethodService, ShippingMethodService>();
 builder.Services.AddScoped<IShippingProviderIntegrationService, ShippingProviderIntegrationService>();
 
-// Register shipping provider services
-builder.Services.AddScoped<IShippingProviderService>(sp => 
+// Register shipping provider services as singleton collection
+builder.Services.AddSingleton<IShippingProviderService>(sp => 
     new MockShippingProviderService(
         sp.GetRequiredService<ILogger<MockShippingProviderService>>(),
         "mock_standard"));
-builder.Services.AddScoped<IShippingProviderService>(sp => 
+builder.Services.AddSingleton<IShippingProviderService>(sp => 
     new MockShippingProviderService(
         sp.GetRequiredService<ILogger<MockShippingProviderService>>(),
         "mock_express"));

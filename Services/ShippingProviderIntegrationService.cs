@@ -80,10 +80,11 @@ public class ShippingProviderIntegrationService : IShippingProviderIntegrationSe
             return null;
         }
 
-        // Get ship-from address (store's address - simplified, could be from config metadata)
+        // Get ship-from address (store's address)
+        // TODO: Retrieve actual warehouse/pickup address from store configuration or provider config metadata
         var shipFromAddress = new Address
         {
-            AddressLine1 = "123 Seller Street", // TODO: Get from store/provider config
+            AddressLine1 = "123 Seller Street", // Placeholder - should come from config
             City = "Seller City",
             StateProvince = "ST",
             PostalCode = "12345",
@@ -351,6 +352,9 @@ public class ShippingProviderIntegrationService : IShippingProviderIntegrationSe
             return false;
         }
 
+        // Track previous status before updating
+        var previousStatus = shipment.Status;
+
         // Update shipment status
         shipment.Status = ShipmentStatus.Cancelled;
         shipment.UpdatedAt = DateTime.UtcNow;
@@ -359,7 +363,7 @@ public class ShippingProviderIntegrationService : IShippingProviderIntegrationSe
         var statusUpdate = new ShipmentStatusUpdate
         {
             ShipmentId = shipmentId,
-            PreviousStatus = ShipmentStatus.Created,
+            PreviousStatus = previousStatus,
             NewStatus = ShipmentStatus.Cancelled,
             Description = "Shipment cancelled",
             StatusChangedAt = DateTime.UtcNow,

@@ -64,6 +64,7 @@ public class ShippingProviderConfig
 
     /// <summary>
     /// Gets or sets whether to automatically create shipments when order is marked ready to ship.
+    /// Defaults to false to give sellers control over when shipments are created.
     /// </summary>
     public bool AutoCreateShipments { get; set; } = false;
 
