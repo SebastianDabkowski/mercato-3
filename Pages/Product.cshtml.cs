@@ -2,6 +2,7 @@ using MercatoApp.Models;
 using MercatoApp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Claims;
 
 namespace MercatoApp.Pages;
 
@@ -10,21 +11,30 @@ public class ProductModel : PageModel
     private readonly IProductService _productService;
     private readonly IProductVariantService _variantService;
     private readonly IRecentlyViewedService _recentlyViewedService;
+    private readonly ICartService _cartService;
 
     public ProductModel(
         IProductService productService,
         IProductVariantService variantService,
-        IRecentlyViewedService recentlyViewedService)
+        IRecentlyViewedService recentlyViewedService,
+        ICartService cartService)
     {
         _productService = productService;
         _variantService = variantService;
         _recentlyViewedService = recentlyViewedService;
+        _cartService = cartService;
     }
 
     public Product? Product { get; set; }
     public List<ProductVariantAttribute> VariantAttributes { get; set; } = new();
     public List<ProductVariant> Variants { get; set; } = new();
     public ProductVariant? SelectedVariant { get; set; }
+
+    [TempData]
+    public string? SuccessMessage { get; set; }
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether the product is publicly viewable (Active status).
@@ -99,5 +109,73 @@ public class ProductModel : PageModel
         }
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostAddToCartAsync(int id, int? variantId, int quantity = 1)
+    {
+        // Reload product data
+        await OnGetAsync(id, variantId);
+
+        if (Product == null || !IsProductAvailable)
+        {
+            ErrorMessage = "This product is not available.";
+            return Page();
+        }
+
+        // Validate stock
+        var hasStock = false;
+        if (Product.HasVariants && variantId.HasValue && SelectedVariant != null)
+        {
+            hasStock = SelectedVariant.Stock > 0 && SelectedVariant.IsEnabled;
+        }
+        else if (!Product.HasVariants)
+        {
+            hasStock = Product.Stock > 0;
+        }
+
+        if (!hasStock)
+        {
+            ErrorMessage = "This product is out of stock.";
+            return Page();
+        }
+
+        try
+        {
+            var (userId, sessionId) = GetUserOrSessionId();
+            await _cartService.AddToCartAsync(userId, sessionId, id, variantId, quantity);
+            SuccessMessage = "Item added to cart successfully!";
+            return RedirectToPage("/Cart");
+        }
+        catch (Exception)
+        {
+            ErrorMessage = "Failed to add item to cart. Please try again.";
+            return Page();
+        }
+    }
+
+    private (int? userId, string? sessionId) GetUserOrSessionId()
+    {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out var userId))
+            {
+                return (userId, null);
+            }
+        }
+
+        // Ensure session is loaded
+        _ = HttpContext.Session.GetString("_init");
+
+        // Use HTTP session ID for anonymous users
+        var sessionId = HttpContext.Session.Id;
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            // Create a session if it doesn't exist
+            HttpContext.Session.SetString("_init", "1");
+            sessionId = HttpContext.Session.Id;
+        }
+
+        return (null, sessionId);
     }
 }

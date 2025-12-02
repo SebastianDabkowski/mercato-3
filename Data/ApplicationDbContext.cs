@@ -107,6 +107,16 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ProductVariantOption> ProductVariantOptions { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the carts table.
+    /// </summary>
+    public DbSet<Cart> Carts { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the cart items table.
+    /// </summary>
+    public DbSet<CartItem> CartItems { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -474,6 +484,55 @@ public class ApplicationDbContext : DbContext
                 .WithMany(av => av.VariantOptions)
                 .HasForeignKey(e => e.AttributeValueId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Cart>(entity =>
+        {
+            // Index on user ID for finding cart by user
+            entity.HasIndex(e => e.UserId);
+
+            // Index on session ID for finding cart by anonymous session
+            entity.HasIndex(e => e.SessionId);
+
+            // Configure optional relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            // Index on cart ID for finding all items in a cart
+            entity.HasIndex(e => e.CartId);
+
+            // Index on product ID for finding carts containing a specific product
+            entity.HasIndex(e => e.ProductId);
+
+            // Composite index for finding a specific item in a cart
+            entity.HasIndex(e => new { e.CartId, e.ProductId, e.ProductVariantId });
+
+            // Configure relationship with Cart
+            entity.HasOne(e => e.Cart)
+                .WithMany(c => c.Items)
+                .HasForeignKey(e => e.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with Product
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with ProductVariant (optional)
+            entity.HasOne(e => e.ProductVariant)
+                .WithMany()
+                .HasForeignKey(e => e.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure PriceAtAdd precision
+            entity.Property(e => e.PriceAtAdd)
+                .HasPrecision(18, 2);
         });
     }
 }

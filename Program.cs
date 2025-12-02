@@ -32,6 +32,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add HTTP context accessor for cookie access
 builder.Services.AddHttpContextAccessor();
 
+// Add session support for anonymous cart
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.Name = "MercatoSession";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.IdleTimeout = TimeSpan.FromDays(7);
+});
+
 // Add application services
 builder.Services.AddScoped<IPasswordValidationService, PasswordValidationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -59,6 +71,7 @@ builder.Services.AddScoped<IBulkProductUpdateService, BulkProductUpdateService>(
 builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
 builder.Services.AddScoped<ISearchSuggestionService, SearchSuggestionService>();
 builder.Services.AddScoped<IRecentlyViewedService, RecentlyViewedService>();
+builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Configure role-based authorization policies
@@ -178,6 +191,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();
