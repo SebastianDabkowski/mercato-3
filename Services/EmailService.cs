@@ -39,6 +39,13 @@ public interface IEmailService
     /// <param name="invitationToken">The invitation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task SendStoreInvitationEmailAsync(string email, string storeName, string invitedByName, string roleName, string invitationToken);
+
+    /// <summary>
+    /// Sends an order confirmation email to the buyer.
+    /// </summary>
+    /// <param name="order">The order to send confirmation for.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SendOrderConfirmationEmailAsync(Models.Order order);
 }
 
 /// <summary>
@@ -104,6 +111,25 @@ public class EmailService : IEmailService
             invitedByName,
             roleName,
             invitationToken);
+
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task SendOrderConfirmationEmailAsync(Models.Order order)
+    {
+        // In production, this would send an actual email with order details
+        // For now, just log it
+        var recipientEmail = order.GuestEmail ?? order.User?.Email ?? "unknown";
+        
+        _logger.LogInformation(
+            "Order confirmation email would be sent to {Email} for order {OrderNumber} with total {TotalAmount:C}. " +
+            "Items: {ItemCount}, Delivery Address: {Address}",
+            recipientEmail,
+            order.OrderNumber,
+            order.TotalAmount,
+            order.Items?.Count ?? 0,
+            order.DeliveryAddress?.AddressLine1 ?? "N/A");
 
         return Task.CompletedTask;
     }

@@ -133,6 +133,16 @@ public class PaymentService : IPaymentService
             transaction.Status = PaymentStatus.Authorized;
             transaction.ProviderTransactionId = $"COD-{transaction.OrderId}-{transaction.Id}";
             transaction.UpdatedAt = DateTime.UtcNow;
+            
+            // Update order status to Processing for cash on delivery
+            var order = await _context.Orders.FindAsync(transaction.OrderId);
+            if (order != null && order.Status == OrderStatus.Pending)
+            {
+                order.Status = OrderStatus.Processing;
+                order.PaymentStatus = PaymentStatus.Authorized;
+                order.UpdatedAt = DateTime.UtcNow;
+            }
+            
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Payment transaction {TransactionId} authorized (cash on delivery)", transactionId);
@@ -168,10 +178,16 @@ public class PaymentService : IPaymentService
             transaction.ProviderTransactionId = providerTransactionId;
             transaction.CompletedAt = DateTime.UtcNow;
             
-            // Update order payment status
+            // Update order payment status and order status
             if (transaction.Order != null)
             {
                 transaction.Order.PaymentStatus = PaymentStatus.Completed;
+                // Update order status to Processing when payment is confirmed
+                if (transaction.Order.Status == OrderStatus.Pending)
+                {
+                    transaction.Order.Status = OrderStatus.Processing;
+                    transaction.Order.UpdatedAt = DateTime.UtcNow;
+                }
             }
 
             _logger.LogInformation("Payment transaction {TransactionId} completed successfully", transactionId);

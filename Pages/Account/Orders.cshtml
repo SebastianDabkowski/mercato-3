@@ -1,0 +1,126 @@
+@page
+@model MercatoApp.Pages.Account.OrdersModel
+@{
+    ViewData["Title"] = "My Orders";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <h1 class="mb-4">
+                <i class="bi bi-bag-check"></i> My Orders
+            </h1>
+
+            @if (!Model.Orders.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> You haven't placed any orders yet.
+                    <a asp-page="/Index" class="alert-link">Start shopping</a>
+                </div>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var order in Model.Orders)
+                    {
+                        <div class="list-group-item mb-3">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5 class="mb-2">
+                                        <a asp-page="/Checkout/Confirmation" asp-route-orderId="@order.Id" class="text-decoration-none">
+                                            Order #@order.OrderNumber
+                                        </a>
+                                    </h5>
+                                    <p class="text-muted mb-2">
+                                        <i class="bi bi-calendar"></i> Placed on @order.OrderedAt.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Status:</strong>
+                                        @if (order.Status == MercatoApp.Models.OrderStatus.Pending)
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-hourglass-split"></i> Pending
+                                            </span>
+                                        }
+                                        else if (order.Status == MercatoApp.Models.OrderStatus.Processing)
+                                        {
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-box-seam"></i> Processing
+                                            </span>
+                                        }
+                                        else if (order.Status == MercatoApp.Models.OrderStatus.Shipped)
+                                        {
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-truck"></i> Shipped
+                                            </span>
+                                        }
+                                        else if (order.Status == MercatoApp.Models.OrderStatus.Delivered)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Delivered
+                                            </span>
+                                        }
+                                        else if (order.Status == MercatoApp.Models.OrderStatus.Cancelled)
+                                        {
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-x-circle"></i> Cancelled
+                                            </span>
+                                        }
+                                        else if (order.Status == MercatoApp.Models.OrderStatus.Refunded)
+                                        {
+                                            <span class="badge bg-dark">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Refunded
+                                            </span>
+                                        }
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Payment:</strong>
+                                        @if (order.PaymentStatus == MercatoApp.Models.PaymentStatus.Completed)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill"></i> Paid
+                                            </span>
+                                        }
+                                        else if (order.PaymentStatus == MercatoApp.Models.PaymentStatus.Authorized)
+                                        {
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-clock-fill"></i> Authorized
+                                            </span>
+                                        }
+                                        else if (order.PaymentStatus == MercatoApp.Models.PaymentStatus.Pending)
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-hourglass-split"></i> Pending
+                                            </span>
+                                        }
+                                        else if (order.PaymentStatus == MercatoApp.Models.PaymentStatus.Failed)
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle-fill"></i> Failed
+                                            </span>
+                                        }
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <p class="h4 text-primary mb-2">@order.TotalAmount.ToString("C")</p>
+                                    <a asp-page="/Checkout/Confirmation" asp-route-orderId="@order.Id" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye"></i> View Details
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            @if (order.DeliveryAddress != null)
+                            {
+                                <hr class="my-2" />
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-geo-alt"></i> 
+                                    Delivering to: @order.DeliveryAddress.AddressLine1, @order.DeliveryAddress.City, @order.DeliveryAddress.CountryCode
+                                </p>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
