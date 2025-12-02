@@ -47,6 +47,17 @@
                                     <li><a class="dropdown-item" asp-page="/Account/Orders"><i class="bi bi-bag-check"></i> My Orders</a></li>
                                     <li><a class="dropdown-item" asp-page="/Account/ReturnRequests"><i class="bi bi-arrow-return-left"></i> Returns & Complaints</a></li>
                                     <li><a class="dropdown-item" asp-page="/Account/Addresses"><i class="bi bi-geo-alt"></i> Shipping Addresses</a></li>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><h6 class="dropdown-header">Admin Panel</h6></li>
+                                        <li><a class="dropdown-item" asp-page="/Admin/Returns/Index"><i class="bi bi-shield-check"></i> Returns & Disputes</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Admin/Orders/Index"><i class="bi bi-box-seam"></i> All Orders</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Admin/Categories/Index"><i class="bi bi-folder"></i> Categories</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Admin/Refunds/Index"><i class="bi bi-cash-coin"></i> Refunds</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Admin/CommissionInvoices/Index"><i class="bi bi-file-earmark-text"></i> Commission Invoices</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Admin/Settlements/Index"><i class="bi bi-calculator"></i> Settlements</a></li>
+                                    }
                                     @if (User.IsInRole("Seller") || User.IsInRole("Admin"))
                                     {
                                         <li><hr class="dropdown-divider"></li>

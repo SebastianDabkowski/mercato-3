@@ -48,6 +48,12 @@ public class IndexModel : PageModel
     public int? StoreFilter { get; set; }
 
     /// <summary>
+    /// Gets or sets the search query for case number, buyer name, or seller name.
+    /// </summary>
+    [BindProperty(SupportsGet = true)]
+    public string? SearchQuery { get; set; }
+
+    /// <summary>
     /// Gets or sets available stores for filtering.
     /// </summary>
     public List<Store> AvailableStores { get; set; } = new();
@@ -89,6 +95,17 @@ public class IndexModel : PageModel
         if (StoreFilter.HasValue)
         {
             query = query.Where(rr => rr.SubOrder.StoreId == StoreFilter.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            // Apply search filter - case insensitive comparison
+            query = query.Where(rr =>
+                EF.Functions.Like(rr.ReturnNumber, $"%{SearchQuery}%") ||
+                EF.Functions.Like(rr.Buyer.FirstName, $"%{SearchQuery}%") ||
+                EF.Functions.Like(rr.Buyer.LastName, $"%{SearchQuery}%") ||
+                EF.Functions.Like(rr.Buyer.Email, $"%{SearchQuery}%") ||
+                EF.Functions.Like(rr.SubOrder.Store.StoreName, $"%{SearchQuery}%"));
         }
 
         ReturnRequests = await query

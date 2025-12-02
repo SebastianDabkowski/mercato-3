@@ -203,6 +203,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<ReturnRequestMessage> ReturnRequestMessages { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the return request admin actions table.
+    /// </summary>
+    public DbSet<ReturnRequestAdminAction> ReturnRequestAdminActions { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the commission transactions table.
     /// </summary>
     public DbSet<CommissionTransaction> CommissionTransactions { get; set; } = null!;

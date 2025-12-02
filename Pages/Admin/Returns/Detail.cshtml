@@ -7,6 +7,21 @@
 }
 
 <div class="container-fluid my-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     @if (Model.ReturnRequest == null)
     {
         <div class="alert alert-danger">
@@ -23,7 +38,7 @@
             <div class="col">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a asp-page="/Admin/Returns/Index">Returns & Complaints</a></li>
+                        <li class="breadcrumb-item"><a asp-page="/Admin/Returns/Index">Returns & Disputes</a></li>
                         <li class="breadcrumb-item active" aria-current="page">@Model.ReturnRequest.ReturnNumber</li>
                     </ol>
                 </nav>
@@ -33,8 +48,46 @@
             </div>
             <div class="col-auto">
                 @await Html.PartialAsync("_ReturnStatusBadge", Model.ReturnRequest.Status)
+                @if (Model.ReturnRequest.EscalationReason != MercatoApp.Models.EscalationReason.None)
+                {
+                    <span class="badge bg-danger ms-2">
+                        <i class="bi bi-flag-fill"></i> Escalated
+                    </span>
+                }
             </div>
         </div>
+
+        <!-- Admin Action Buttons -->
+        @if (Model.ReturnRequest.Status != MercatoApp.Models.ReturnStatus.Completed)
+        {
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-tools"></i> Admin Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        @if (Model.ReturnRequest.Status != MercatoApp.Models.ReturnStatus.UnderAdminReview)
+                        {
+                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#escalateModal">
+                                <i class="bi bi-arrow-up-circle"></i> Escalate Case
+                            </button>
+                        }
+                        @if (Model.ReturnRequest.Status == MercatoApp.Models.ReturnStatus.UnderAdminReview)
+                        {
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enforceRefundModal">
+                                <i class="bi bi-cash-coin"></i> Enforce Refund
+                            </button>
+                            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#approveSellerModal">
+                                <i class="bi bi-check-circle"></i> Approve Seller Decision
+                            </button>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#closeWithoutActionModal">
+                                <i class="bi bi-x-circle"></i> Close Without Action
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
 
         <div class="row">
             <!-- Main Content -->
@@ -100,6 +153,40 @@
                         }
                     </div>
                 </div>
+
+                <!-- Escalation Information -->
+                @if (Model.ReturnRequest.EscalationReason != MercatoApp.Models.EscalationReason.None)
+                {
+                    <div class="card mb-4 border-danger">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-flag-fill"></i> Escalation Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-md-6">
+                                    <strong>Escalation Reason:</strong><br />
+                                    @Model.ReturnRequest.EscalationReason.ToString()
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Escalated At:</strong><br />
+                                    @Model.ReturnRequest.EscalatedAt?.ToString("MMM dd, yyyy HH:mm")
+                                </div>
+                            </div>
+                            @if (Model.ReturnRequest.EscalatedByUser != null)
+                            {
+                                <div class="row">
+                                    <div class="col-12">
+                                        <strong>Escalated By:</strong><br />
+                                        @Model.ReturnRequest.EscalatedByUser.FirstName @Model.ReturnRequest.EscalatedByUser.LastName
+                                        (@Model.ReturnRequest.EscalatedByUser.Email)
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
 
                 <!-- Items -->
                 <div class="card mb-4">
@@ -243,6 +330,53 @@
                         }
                     </div>
                 </div>
+
+                <!-- Admin Action History -->
+                @if (Model.AdminActions.Any())
+                {
+                    <div class="card mb-4 border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clipboard-check"></i> Admin Action History
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                @foreach (var action in Model.AdminActions)
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <strong>@action.ActionType.ToString()</strong>
+                                                @if (action.PreviousStatus.HasValue && action.NewStatus.HasValue)
+                                                {
+                                                    <br /><small class="text-muted">
+                                                        Status: @action.PreviousStatus.Value.ToString() → @action.NewStatus.Value.ToString()
+                                                    </small>
+                                                }
+                                            </div>
+                                            <small class="text-muted">
+                                                @action.ActionTakenAt.ToString("MMM dd, yyyy 'at' h:mm tt")
+                                            </small>
+                                        </div>
+                                        <p class="mb-2"><strong>Admin:</strong> @action.AdminUser.FirstName @action.AdminUser.LastName</p>
+                                        <p class="mb-0 p-2 bg-light border rounded">@action.Notes</p>
+                                        @if (action.ResolutionType.HasValue)
+                                        {
+                                            <p class="mb-0 mt-2">
+                                                <strong>Resolution:</strong> @action.ResolutionType.Value.ToString()
+                                                @if (action.ResolutionAmount.HasValue)
+                                                {
+                                                    <text> - @action.ResolutionAmount.Value.ToString("C")</text>
+                                                }
+                                            </p>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
 
             <!-- Sidebar -->
@@ -346,6 +480,148 @@
     }
 </div>
 
+<!-- Escalate Modal -->
+<div class="modal fade" id="escalateModal" tabindex="-1" aria-labelledby="escalateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Escalate">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="escalateModalLabel"><i class="bi bi-arrow-up-circle"></i> Escalate Case</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="EscalationInput.ReturnRequestId" value="@Model.ReturnRequest?.Id" />
+                    
+                    <div class="mb-3">
+                        <label for="escalationReason" class="form-label">Escalation Reason</label>
+                        <select class="form-select" id="escalationReason" name="EscalationInput.EscalationReason" required>
+                            <option value="">Select reason...</option>
+                            <option value="@((int)MercatoApp.Models.EscalationReason.BuyerRequested)">Buyer Requested</option>
+                            <option value="@((int)MercatoApp.Models.EscalationReason.SLABreach)">SLA Breach</option>
+                            <option value="@((int)MercatoApp.Models.EscalationReason.AdminManualFlag)">Admin Manual Flag</option>
+                            <option value="@((int)MercatoApp.Models.EscalationReason.PolicyViolation)">Policy Violation</option>
+                            <option value="@((int)MercatoApp.Models.EscalationReason.CannotReachAgreement)">Cannot Reach Agreement</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="escalationNotes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="escalationNotes" name="EscalationInput.Notes" rows="3" maxlength="2000"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Escalate Case</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Enforce Refund Modal -->
+<div class="modal fade" id="enforceRefundModal" tabindex="-1" aria-labelledby="enforceRefundModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="RecordDecision">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="enforceRefundModalLabel"><i class="bi bi-cash-coin"></i> Enforce Refund</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="DecisionInput.ReturnRequestId" value="@Model.ReturnRequest?.Id" />
+                    <input type="hidden" name="DecisionInput.ActionType" value="@((int)MercatoApp.Models.AdminActionType.EnforceRefund)" />
+                    
+                    <div class="mb-3">
+                        <label for="refundType" class="form-label">Refund Type</label>
+                        <select class="form-select" id="refundType" name="DecisionInput.ResolutionType" required>
+                            <option value="">Select type...</option>
+                            <option value="@((int)MercatoApp.Models.ResolutionType.FullRefund)">Full Refund (@Model.ReturnRequest?.RefundAmount.ToString("C"))</option>
+                            <option value="@((int)MercatoApp.Models.ResolutionType.PartialRefund)">Partial Refund (specify amount)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="partialRefundAmountDiv" style="display:none;">
+                        <label for="refundAmount" class="form-label">Refund Amount</label>
+                        <input type="number" class="form-control" id="refundAmount" name="DecisionInput.ResolutionAmount" step="0.01" min="0.01" max="@Model.ReturnRequest?.RefundAmount" />
+                        <small class="text-muted">Maximum: @Model.ReturnRequest?.RefundAmount.ToString("C")</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="refundNotes" class="form-label">Decision Notes (Required)</label>
+                        <textarea class="form-control" id="refundNotes" name="DecisionInput.Notes" rows="3" maxlength="2000" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Enforce Refund</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Seller Decision Modal -->
+<div class="modal fade" id="approveSellerModal" tabindex="-1" aria-labelledby="approveSellerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="RecordDecision">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="approveSellerModalLabel"><i class="bi bi-check-circle"></i> Approve Seller Decision</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="DecisionInput.ReturnRequestId" value="@Model.ReturnRequest?.Id" />
+                    <input type="hidden" name="DecisionInput.ActionType" value="@((int)MercatoApp.Models.AdminActionType.ApprovedSellerDecision)" />
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> This will approve the seller's decision and close the escalation.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="approveNotes" class="form-label">Notes (Required)</label>
+                        <textarea class="form-control" id="approveNotes" name="DecisionInput.Notes" rows="3" maxlength="2000" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info">Approve Decision</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Close Without Action Modal -->
+<div class="modal fade" id="closeWithoutActionModal" tabindex="-1" aria-labelledby="closeWithoutActionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="RecordDecision">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="closeWithoutActionModalLabel"><i class="bi bi-x-circle"></i> Close Without Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="DecisionInput.ReturnRequestId" value="@Model.ReturnRequest?.Id" />
+                    <input type="hidden" name="DecisionInput.ActionType" value="@((int)MercatoApp.Models.AdminActionType.CloseWithoutAction)" />
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> This will close the case without any refund or further action.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="closeNotes" class="form-label">Reason for Closure (Required)</label>
+                        <textarea class="form-control" id="closeNotes" name="DecisionInput.Notes" rows="3" maxlength="2000" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Close Case</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <style>
         .timeline {
@@ -361,4 +637,19 @@
             top: 2px;
         }
     </style>
+    
+    <script>
+        // Show/hide partial refund amount field based on selection
+        document.getElementById('refundType')?.addEventListener('change', function() {
+            const partialRefundDiv = document.getElementById('partialRefundAmountDiv');
+            const refundAmountInput = document.getElementById('refundAmount');
+            if (this.value === '@((int)MercatoApp.Models.ResolutionType.PartialRefund)') {
+                partialRefundDiv.style.display = 'block';
+                refundAmountInput.required = true;
+            } else {
+                partialRefundDiv.style.display = 'none';
+                refundAmountInput.required = false;
+            }
+        });
+    </script>
 }
