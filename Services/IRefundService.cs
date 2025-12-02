@@ -33,6 +33,7 @@ public interface IRefundService
     /// <param name="reason">The reason for the refund.</param>
     /// <param name="initiatedByUserId">The user ID who initiated the refund (admin or seller).</param>
     /// <param name="notes">Optional notes about the refund.</param>
+    /// <param name="returnRequestId">Optional return request ID if this refund is linked to a return/complaint case.</param>
     /// <returns>The created refund transaction.</returns>
     Task<RefundTransaction> ProcessPartialRefundAsync(
         int orderId,
@@ -40,7 +41,8 @@ public interface IRefundService
         decimal refundAmount,
         string reason,
         int initiatedByUserId,
-        string? notes = null);
+        string? notes = null,
+        int? returnRequestId = null);
 
     /// <summary>
     /// Validates whether a refund can be processed for the given order.

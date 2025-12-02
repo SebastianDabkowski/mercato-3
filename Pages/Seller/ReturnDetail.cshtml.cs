@@ -243,4 +243,78 @@ public class ReturnDetailModel : PageModel
         TempData["SuccessMessage"] = "Message sent successfully.";
         return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
     }
+
+    /// <summary>
+    /// Handles POST request to resolve a return/complaint case.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="resolutionType">The type of resolution.</param>
+    /// <param name="resolutionNotes">Required resolution notes.</param>
+    /// <param name="resolutionAmount">The refund amount (for partial refunds).</param>
+    /// <returns>The page result.</returns>
+    public async Task<IActionResult> OnPostResolveAsync(
+        int returnRequestId,
+        ResolutionType resolutionType,
+        string resolutionNotes,
+        decimal? resolutionAmount)
+    {
+        // Get the seller's store
+        CurrentStore = await GetCurrentStoreAsync();
+
+        if (CurrentStore == null)
+        {
+            TempData["ErrorMessage"] = "Store not found.";
+            return RedirectToPage("/Index");
+        }
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("User ID claim not found or invalid");
+            return RedirectToPage("/Account/Login");
+        }
+
+        // Validate resolution notes
+        if (string.IsNullOrWhiteSpace(resolutionNotes))
+        {
+            TempData["ErrorMessage"] = "Resolution notes are required. Please provide a clear explanation of your decision.";
+            return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
+        }
+
+        // Resolve the case
+        var (success, errorMessage, returnRequest) = await _returnRequestService.ResolveReturnCaseAsync(
+            returnRequestId,
+            CurrentStore.Id,
+            resolutionType,
+            resolutionNotes,
+            resolutionAmount,
+            userId);
+
+        if (!success)
+        {
+            TempData["ErrorMessage"] = errorMessage ?? "Failed to resolve case. Please try again.";
+            return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
+        }
+
+        // Set success message based on resolution type
+        var resolutionTypeText = resolutionType switch
+        {
+            ResolutionType.FullRefund => "full refund",
+            ResolutionType.PartialRefund => "partial refund",
+            ResolutionType.Replacement => "replacement",
+            ResolutionType.Repair => "repair",
+            ResolutionType.NoRefund => "no refund",
+            _ => "resolution"
+        };
+
+        var successMsg = $"Case resolved with {resolutionTypeText}.";
+        if (resolutionType == ResolutionType.FullRefund || resolutionType == ResolutionType.PartialRefund)
+        {
+            successMsg += " Refund has been initiated.";
+        }
+        successMsg += " The buyer has been notified.";
+
+        TempData["SuccessMessage"] = successMsg;
+        return RedirectToPage("/Seller/ReturnDetail", new { id = returnRequestId });
+    }
 }

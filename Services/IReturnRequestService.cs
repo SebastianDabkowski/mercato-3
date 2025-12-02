@@ -108,4 +108,29 @@ public interface IReturnRequestService
     /// <param name="isSellerViewing">Whether the viewer is the seller.</param>
     /// <returns>The count of unread messages sent by the other party.</returns>
     Task<int> GetUnreadMessageCountAsync(int returnRequestId, int userId, bool isSellerViewing);
+
+    /// <summary>
+    /// Resolves a return/complaint case with a specific resolution type.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <param name="storeId">The store ID (for authorization).</param>
+    /// <param name="resolutionType">The type of resolution.</param>
+    /// <param name="resolutionNotes">Required notes explaining the resolution decision.</param>
+    /// <param name="resolutionAmount">The refund amount (required for partial refunds).</param>
+    /// <param name="initiatedByUserId">The user ID who is resolving the case.</param>
+    /// <returns>A tuple indicating success and the return request with refund if created.</returns>
+    Task<(bool Success, string? ErrorMessage, ReturnRequest? ReturnRequest)> ResolveReturnCaseAsync(
+        int returnRequestId,
+        int storeId,
+        ResolutionType resolutionType,
+        string resolutionNotes,
+        decimal? resolutionAmount,
+        int initiatedByUserId);
+
+    /// <summary>
+    /// Validates whether a case resolution can be changed.
+    /// </summary>
+    /// <param name="returnRequestId">The return request ID.</param>
+    /// <returns>A tuple indicating if the resolution can be changed and an error message if not.</returns>
+    Task<(bool CanChange, string? ErrorMessage)> CanChangeResolutionAsync(int returnRequestId);
 }
