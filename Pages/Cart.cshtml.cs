@@ -10,15 +10,18 @@ public class CartModel : PageModel
 {
     private readonly ICartService _cartService;
     private readonly ICartTotalsService _cartTotalsService;
+    private readonly IGuestCartService _guestCartService;
     private readonly ILogger<CartModel> _logger;
 
     public CartModel(
         ICartService cartService,
         ICartTotalsService cartTotalsService,
+        IGuestCartService guestCartService,
         ILogger<CartModel> logger)
     {
         _cartService = cartService;
         _cartTotalsService = cartTotalsService;
+        _guestCartService = guestCartService;
         _logger = logger;
     }
 
@@ -109,18 +112,8 @@ public class CartModel : PageModel
             }
         }
 
-        // Ensure session is loaded
-        _ = HttpContext.Session.GetString("_init");
-        
-        // Use HTTP session ID for anonymous users
-        var sessionId = HttpContext.Session.Id;
-        if (string.IsNullOrEmpty(sessionId))
-        {
-            // Create a session if it doesn't exist
-            HttpContext.Session.SetString("_init", "1");
-            sessionId = HttpContext.Session.Id;
-        }
-
-        return (null, sessionId);
+        // Use persistent guest cart ID for anonymous users
+        var guestCartId = _guestCartService.GetOrCreateGuestCartId();
+        return (null, guestCartId);
     }
 }
