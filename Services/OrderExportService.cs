@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MercatoApp.Services;
 
@@ -453,11 +454,8 @@ public class OrderExportService : IOrderExportService
                      .Replace('\n', ' ')
                      .Replace('\r', ' ');
 
-        // Collapse multiple spaces into single space
-        while (value.Contains("  "))
-        {
-            value = value.Replace("  ", " ");
-        }
+        // Collapse multiple spaces into single space using regex for efficiency
+        value = Regex.Replace(value, @"\s+", " ");
 
         return value.Trim();
     }
