@@ -459,4 +459,17 @@ public class ReturnRequestService : IReturnRequestService
 
         return messagesToMarkAsRead.Count;
     }
+
+    /// <inheritdoc />
+    public async Task<int> GetUnreadMessageCountAsync(int returnRequestId, bool isSellerViewing)
+    {
+        // Get unread messages that were sent by the other party
+        var unreadCount = await _context.ReturnRequestMessages
+            .Where(m => m.ReturnRequestId == returnRequestId)
+            .Where(m => !m.IsRead)
+            .Where(m => m.IsFromSeller != isSellerViewing) // Count messages from the other party
+            .CountAsync();
+
+        return unreadCount;
+    }
 }

@@ -58,6 +58,12 @@ public class ReturnsModel : PageModel
     public string? BuyerEmail { get; set; }
 
     /// <summary>
+    /// Gets or sets the unread message counts for each return request.
+    /// Key is return request ID, value is unread count.
+    /// </summary>
+    public Dictionary<int, int> UnreadMessageCounts { get; set; } = new();
+
+    /// <summary>
     /// Handles GET request to display all return requests for the seller's store.
     /// </summary>
     /// <returns>The page result.</returns>
@@ -98,6 +104,13 @@ public class ReturnsModel : PageModel
         {
             ReturnRequests = ReturnRequests.Where(r => 
                 r.Buyer.Email.Contains(BuyerEmail, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        // Get unread message counts for each return request
+        foreach (var request in ReturnRequests)
+        {
+            var unreadCount = await _returnRequestService.GetUnreadMessageCountAsync(request.Id, isSellerViewing: true);
+            UnreadMessageCounts[request.Id] = unreadCount;
         }
 
         return Page();
