@@ -40,6 +40,26 @@ public interface IOrderService
     Task<List<Order>> GetUserOrdersAsync(int userId);
 
     /// <summary>
+    /// Gets filtered and paginated orders for a user.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="statuses">Filter by order statuses (optional).</param>
+    /// <param name="fromDate">Filter by minimum order date (optional).</param>
+    /// <param name="toDate">Filter by maximum order date (optional).</param>
+    /// <param name="sellerId">Filter by seller/store ID (optional).</param>
+    /// <param name="page">Page number (1-based).</param>
+    /// <param name="pageSize">Number of orders per page.</param>
+    /// <returns>A tuple containing the list of orders and total count.</returns>
+    Task<(List<Order> Orders, int TotalCount)> GetUserOrdersFilteredAsync(
+        int userId, 
+        List<OrderStatus>? statuses = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int? sellerId = null,
+        int page = 1,
+        int pageSize = 10);
+
+    /// <summary>
     /// Validates if items in the cart can be shipped to the delivery address.
     /// </summary>
     /// <param name="userId">The user ID (null for guest).</param>

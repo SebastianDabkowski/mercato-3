@@ -312,6 +312,60 @@ public class OrderService : IOrderService
     }
 
     /// <inheritdoc />
+    public async Task<(List<Order> Orders, int TotalCount)> GetUserOrdersFilteredAsync(
+        int userId, 
+        List<OrderStatus>? statuses = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int? sellerId = null,
+        int page = 1,
+        int pageSize = 10)
+    {
+        // Build the query
+        var query = _context.Orders
+            .Include(o => o.DeliveryAddress)
+            .Include(o => o.SubOrders)
+                .ThenInclude(so => so.Store)
+            .Where(o => o.UserId == userId);
+
+        // Apply status filter
+        if (statuses != null && statuses.Any())
+        {
+            query = query.Where(o => statuses.Contains(o.Status));
+        }
+
+        // Apply date range filter
+        if (fromDate.HasValue)
+        {
+            query = query.Where(o => o.OrderedAt >= fromDate.Value);
+        }
+        if (toDate.HasValue)
+        {
+            // Include the entire day for toDate
+            var endOfDay = toDate.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(o => o.OrderedAt <= endOfDay);
+        }
+
+        // Apply seller filter - filter orders that have sub-orders from this seller
+        if (sellerId.HasValue)
+        {
+            query = query.Where(o => o.SubOrders.Any(so => so.StoreId == sellerId.Value));
+        }
+
+        // Get total count before pagination
+        var totalCount = await query.CountAsync();
+
+        // Apply sorting and pagination
+        var orders = await query
+            .OrderByDescending(o => o.OrderedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (orders, totalCount);
+    }
+
+    /// <inheritdoc />
     public async Task<(bool IsValid, string? ErrorMessage)> ValidateShippingForCartAsync(int? userId, string? sessionId, string countryCode)
     {
         // Check if shipping is allowed to this country
