@@ -122,11 +122,13 @@ public class ProductReviewService : IProductReviewService
     {
         if (page < 1)
         {
+            _logger.LogWarning("Invalid page number {Page} provided, defaulting to 1", page);
             page = 1;
         }
 
         if (pageSize < 1 || pageSize > 100)
         {
+            _logger.LogWarning("Invalid page size {PageSize} provided, defaulting to 10", pageSize);
             pageSize = 10;
         }
 
