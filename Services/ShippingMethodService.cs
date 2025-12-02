@@ -128,6 +128,17 @@ public class ShippingMethodService : IShippingMethodService
     /// <inheritdoc />
     public async Task<ShippingMethod> CreateShippingMethodAsync(ShippingMethod shippingMethod)
     {
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(shippingMethod.Name))
+        {
+            throw new ArgumentException("Shipping method name is required.", nameof(shippingMethod));
+        }
+
+        if (shippingMethod.StoreId <= 0)
+        {
+            throw new ArgumentException("Valid store ID is required.", nameof(shippingMethod));
+        }
+
         shippingMethod.CreatedAt = DateTime.UtcNow;
         shippingMethod.UpdatedAt = DateTime.UtcNow;
 
@@ -141,11 +152,19 @@ public class ShippingMethodService : IShippingMethodService
     }
 
     /// <inheritdoc />
-    public async Task<bool> UpdateShippingMethodAsync(ShippingMethod shippingMethod)
+    public async Task<bool> UpdateShippingMethodAsync(ShippingMethod shippingMethod, int storeId)
     {
         var existingMethod = await GetShippingMethodByIdAsync(shippingMethod.Id);
         if (existingMethod == null)
         {
+            return false;
+        }
+
+        // Authorization check: verify the shipping method belongs to the store
+        if (existingMethod.StoreId != storeId)
+        {
+            _logger.LogWarning("Unauthorized attempt to update shipping method {MethodId} by store {StoreId}", 
+                shippingMethod.Id, storeId);
             return false;
         }
 
@@ -167,11 +186,19 @@ public class ShippingMethodService : IShippingMethodService
     }
 
     /// <inheritdoc />
-    public async Task<bool> DeleteShippingMethodAsync(int id)
+    public async Task<bool> DeleteShippingMethodAsync(int id, int storeId)
     {
         var shippingMethod = await GetShippingMethodByIdAsync(id);
         if (shippingMethod == null)
         {
+            return false;
+        }
+
+        // Authorization check: verify the shipping method belongs to the store
+        if (shippingMethod.StoreId != storeId)
+        {
+            _logger.LogWarning("Unauthorized attempt to delete shipping method {MethodId} by store {StoreId}", 
+                id, storeId);
             return false;
         }
 

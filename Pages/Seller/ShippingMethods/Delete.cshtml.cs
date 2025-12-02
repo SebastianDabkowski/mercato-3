@@ -79,7 +79,7 @@ public class DeleteModel : PageModel
             return RedirectToPage("Index");
         }
 
-        var success = await _shippingMethodService.DeleteShippingMethodAsync(Id);
+        var success = await _shippingMethodService.DeleteShippingMethodAsync(Id, Store.Id);
 
         if (!success)
         {

@@ -131,7 +131,7 @@ public class EditModel : PageModel
         ShippingMethod.FreeShippingThreshold = Input.FreeShippingThreshold;
         ShippingMethod.IsActive = Input.IsActive;
 
-        var success = await _shippingMethodService.UpdateShippingMethodAsync(ShippingMethod);
+        var success = await _shippingMethodService.UpdateShippingMethodAsync(ShippingMethod, Store.Id);
 
         if (!success)
         {

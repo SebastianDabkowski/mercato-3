@@ -55,13 +55,15 @@ public interface IShippingMethodService
     /// Updates an existing shipping method.
     /// </summary>
     /// <param name="shippingMethod">The shipping method with updated values.</param>
+    /// <param name="storeId">The store ID to verify ownership.</param>
     /// <returns>True if successful, false otherwise.</returns>
-    Task<bool> UpdateShippingMethodAsync(ShippingMethod shippingMethod);
+    Task<bool> UpdateShippingMethodAsync(ShippingMethod shippingMethod, int storeId);
 
     /// <summary>
     /// Deletes (soft delete by setting IsActive to false) a shipping method.
     /// </summary>
     /// <param name="id">The shipping method ID.</param>
+    /// <param name="storeId">The store ID to verify ownership.</param>
     /// <returns>True if successful, false otherwise.</returns>
-    Task<bool> DeleteShippingMethodAsync(int id);
+    Task<bool> DeleteShippingMethodAsync(int id, int storeId);
 }
