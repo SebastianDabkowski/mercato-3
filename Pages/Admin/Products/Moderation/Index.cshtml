@@ -1,0 +1,369 @@
+@page
+@model MercatoApp.Pages.Admin.Products.Moderation.IndexModel
+@{
+    ViewData["Title"] = "Product Moderation";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>Product Moderation</h2>
+            <p class="text-muted">Review and moderate products submitted by sellers.</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Pending</h5>
+                    <h2 class="mb-0">@Model.Stats.GetValueOrDefault("Pending", 0)</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Approved</h5>
+                    <h2 class="mb-0">@Model.Stats.GetValueOrDefault("Approved", 0)</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Rejected</h5>
+                    <h2 class="mb-0">@Model.Stats.GetValueOrDefault("Rejected", 0)</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Products</h5>
+                    <h2 class="mb-0">@Model.Stats.GetValueOrDefault("Total", 0)</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Actions -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="get" class="row g-2">
+                <div class="col-auto">
+                    <label class="col-form-label">Category:</label>
+                </div>
+                <div class="col-auto">
+                    <select name="categoryId" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Categories</option>
+                        @foreach (var category in Model.Categories)
+                        {
+                            <option value="@category.Id" selected="@(Model.SelectedCategoryId == category.Id)">
+                                @category.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <input type="hidden" name="tab" value="@Model.CurrentTab" />
+            </form>
+        </div>
+        <div class="col-md-6 text-end">
+            @if (Model.Products.Any())
+            {
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
+                    <i class="bi bi-check-circle"></i> Bulk Approve
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#bulkRejectModal">
+                    <i class="bi bi-x-circle"></i> Bulk Reject
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="productTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "pending" ? "active" : "")" 
+               href="?tab=pending@(Model.SelectedCategoryId.HasValue ? $"&categoryId={Model.SelectedCategoryId}" : "")" role="tab">
+                Pending
+                @if (Model.Stats.GetValueOrDefault("Pending", 0) > 0)
+                {
+                    <span class="badge bg-warning text-dark">@Model.Stats.GetValueOrDefault("Pending", 0)</span>
+                }
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "approved" ? "active" : "")" 
+               href="?tab=approved@(Model.SelectedCategoryId.HasValue ? $"&categoryId={Model.SelectedCategoryId}" : "")" role="tab">
+                Approved
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "rejected" ? "active" : "")" 
+               href="?tab=rejected@(Model.SelectedCategoryId.HasValue ? $"&categoryId={Model.SelectedCategoryId}" : "")" role="tab">
+                Rejected
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link @(Model.CurrentTab == "all" ? "active" : "")" 
+               href="?tab=all@(Model.SelectedCategoryId.HasValue ? $"&categoryId={Model.SelectedCategoryId}" : "")" role="tab">
+                All Products
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-4" id="productTabsContent">
+        <div class="tab-pane fade show active">
+            @if (Model.Products.Any())
+            {
+                <form id="productSelectionForm">
+                    @foreach (var product in Model.Products)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="form-check">
+                                    <input class="form-check-input product-checkbox" type="checkbox" 
+                                           value="@product.Id" id="product-@product.Id" name="selectedProducts">
+                                    <label class="form-check-label" for="product-@product.Id">
+                                        <strong>@product.Title</strong>
+                                        <small class="text-muted ms-2">ID: @product.Id</small>
+                                    </label>
+                                </div>
+                                <div>
+                                    <span class="badge @(product.ModerationStatus == MercatoApp.Models.ProductModerationStatus.Approved ? "bg-success" : 
+                                                          product.ModerationStatus == MercatoApp.Models.ProductModerationStatus.Rejected ? "bg-danger" : "bg-warning text-dark")">
+                                        @product.ModerationStatus
+                                    </span>
+                                    <span class="badge @(product.Status == MercatoApp.Models.ProductStatus.Active ? "bg-primary" : 
+                                                          product.Status == MercatoApp.Models.ProductStatus.Draft ? "bg-secondary" : "bg-dark")">
+                                        @product.Status
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-2">
+                                        @if (!string.IsNullOrEmpty(product.ImageUrls))
+                                        {
+                                            var firstImage = product.ImageUrls.Split(',').FirstOrDefault()?.Trim();
+                                            <img src="@firstImage" class="img-fluid rounded" alt="@product.Title" />
+                                        }
+                                        else
+                                        {
+                                            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                                                <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Seller: @product.Store.StoreName</h6>
+                                        <p class="mb-2"><strong>Category:</strong> @product.Category</p>
+                                        <p class="mb-2"><strong>Price:</strong> @product.Price.ToString("C")</p>
+                                        <p class="mb-2"><strong>Stock:</strong> @product.Stock</p>
+                                        <p class="mb-2"><strong>Condition:</strong> @product.Condition</p>
+                                        <p class="mb-2"><strong>Description:</strong></p>
+                                        <div class="bg-light p-2 rounded" style="max-height: 100px; overflow-y: auto;">
+                                            @(product.Description ?? "(No description)")
+                                        </div>
+                                        <p class="mt-2 mb-0">
+                                            <small class="text-muted">
+                                                Created on @product.CreatedAt.ToString("MMM d, yyyy h:mm tt")
+                                            </small>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-grid gap-2">
+                                            @if (product.ModerationStatus != MercatoApp.Models.ProductModerationStatus.Approved)
+                                            {
+                                                <form method="post" asp-page-handler="Approve" class="d-inline">
+                                                    <input type="hidden" name="productId" value="@product.Id" />
+                                                    <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
+                                                    <input type="hidden" name="categoryId" value="@Model.SelectedCategoryId" />
+                                                    <button type="submit" class="btn btn-success w-100">
+                                                        <i class="bi bi-check-circle"></i> Approve
+                                                    </button>
+                                                </form>
+                                            }
+                                            
+                                            @if (product.ModerationStatus != MercatoApp.Models.ProductModerationStatus.Rejected)
+                                            {
+                                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal-@product.Id">
+                                                    <i class="bi bi-x-circle"></i> Reject
+                                                </button>
+                                            }
+                                            
+                                            <a href="/Admin/Products/Moderation/Details?productId=@product.Id" class="btn btn-outline-secondary w-100">
+                                                <i class="bi bi-info-circle"></i> View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reject Modal -->
+                        <div class="modal fade" id="rejectModal-@product.Id" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="post" asp-page-handler="Reject">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reject Product</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <input type="hidden" name="productId" value="@product.Id" />
+                                            <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
+                                            <input type="hidden" name="categoryId" value="@Model.SelectedCategoryId" />
+                                            <div class="mb-3">
+                                                <label class="form-label">Reason for rejection:</label>
+                                                <textarea name="reason" class="form-control" rows="3" required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-danger">Reject Product</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No products found for the selected criteria.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Approve Modal -->
+<div class="modal fade" id="bulkApproveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="BulkApprove" id="bulkApproveForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bulk Approve Products</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
+                    <input type="hidden" name="categoryId" value="@Model.SelectedCategoryId" />
+                    <p>Are you sure you want to approve the selected products?</p>
+                    <p class="text-muted"><span id="selectedCount">0</span> product(s) selected</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Approve Selected</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Reject Modal -->
+<div class="modal fade" id="bulkRejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="BulkReject" id="bulkRejectForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bulk Reject Products</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
+                    <input type="hidden" name="categoryId" value="@Model.SelectedCategoryId" />
+                    <p class="text-muted"><span id="selectedCountReject">0</span> product(s) selected</p>
+                    <div class="mb-3">
+                        <label class="form-label">Reason for rejection:</label>
+                        <textarea name="reason" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Selected</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Handle bulk selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectedCountReject = document.getElementById('selectedCountReject');
+            const bulkApproveForm = document.getElementById('bulkApproveForm');
+            const bulkRejectForm = document.getElementById('bulkRejectForm');
+            
+            function updateSelectedCount() {
+                const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
+                const count = checkedBoxes.length;
+                selectedCount.textContent = count;
+                selectedCountReject.textContent = count;
+                return checkedBoxes.map(cb => cb.value);
+            }
+            
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateSelectedCount);
+            });
+            
+            bulkApproveForm.addEventListener('submit', function(e) {
+                const selectedIds = updateSelectedCount();
+                if (selectedIds.length === 0) {
+                    e.preventDefault();
+                    alert('Please select at least one product to approve.');
+                    return;
+                }
+                // Add selected IDs to the form
+                selectedIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'SelectedProductIds';
+                    input.value = id;
+                    bulkApproveForm.appendChild(input);
+                });
+            });
+            
+            bulkRejectForm.addEventListener('submit', function(e) {
+                const selectedIds = updateSelectedCount();
+                if (selectedIds.length === 0) {
+                    e.preventDefault();
+                    alert('Please select at least one product to reject.');
+                    return;
+                }
+                // Add selected IDs to the form
+                selectedIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'SelectedProductIds';
+                    input.value = id;
+                    bulkRejectForm.appendChild(input);
+                });
+            });
+        });
+    </script>
+}

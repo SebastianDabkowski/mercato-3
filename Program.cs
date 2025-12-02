@@ -93,6 +93,7 @@ builder.Services.AddScoped<IShippingLabelService, ShippingLabelService>();
 builder.Services.AddScoped<IShippingProviderIntegrationService, ShippingProviderIntegrationService>();
 builder.Services.AddScoped<IProductReviewService, ProductReviewService>();
 builder.Services.AddScoped<IReviewModerationService, ReviewModerationService>();
+builder.Services.AddScoped<IProductModerationService, ProductModerationService>();
 builder.Services.AddScoped<ISellerRatingService, SellerRatingService>();
 builder.Services.AddScoped<ISellerReputationService, SellerReputationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();

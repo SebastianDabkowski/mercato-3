@@ -83,6 +83,12 @@ public class Product
     public ProductStatus Status { get; set; } = ProductStatus.Draft;
 
     /// <summary>
+    /// Gets or sets the product moderation status.
+    /// New products default to Pending moderation.
+    /// </summary>
+    public ProductModerationStatus ModerationStatus { get; set; } = ProductModerationStatus.Pending;
+
+    /// <summary>
     /// Gets or sets the product condition.
     /// Defaults to New for new products.
     /// </summary>
