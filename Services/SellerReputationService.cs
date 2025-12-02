@@ -187,8 +187,10 @@ public class SellerReputationService : ISellerReputationService
             metrics.TotalCompletedOrders = orderStats.TotalCompleted;
         }
 
-        // Count disputed orders - optimized to work with both in-memory and SQL databases
-        // Get sub-order IDs first, then use Contains (EF Core translates this efficiently to SQL IN clause)
+        // Count disputed orders
+        // NOTE: This loads sub-order IDs into memory first for compatibility with in-memory database used in tests.
+        // For production SQL databases, Entity Framework Core translates the Contains() to an efficient SQL IN clause.
+        // Alternative for pure SQL optimization: Use a subquery pattern, but this may not work with in-memory provider.
         var storeSubOrderIds = await _context.SellerSubOrders
             .Where(so => so.StoreId == storeId)
             .Select(so => so.Id)
