@@ -1,0 +1,199 @@
+@page "{id:int}"
+@model MercatoApp.Pages.Admin.Refunds.DetailsModel
+@{
+    ViewData["Title"] = "Refund Details";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Refund Details</h2>
+        <a asp-page="/Admin/Refunds/Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Refunds
+        </a>
+    </div>
+
+    @if (Model.Refund == null)
+    {
+        <div class="alert alert-danger">
+            Refund transaction not found.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Refund Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Refund Number:</strong></p>
+                                <p>@Model.Refund.RefundNumber</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Status:</strong></p>
+                                <p>
+                                    @switch (Model.Refund.Status)
+                                    {
+                                        case MercatoApp.Models.RefundStatus.Requested:
+                                            <span class="badge bg-info">Requested</span>
+                                            break;
+                                        case MercatoApp.Models.RefundStatus.Processing:
+                                            <span class="badge bg-primary">Processing</span>
+                                            break;
+                                        case MercatoApp.Models.RefundStatus.Completed:
+                                            <span class="badge bg-success">Completed</span>
+                                            break;
+                                        case MercatoApp.Models.RefundStatus.Failed:
+                                            <span class="badge bg-danger">Failed</span>
+                                            break;
+                                    }
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Refund Type:</strong></p>
+                                <p>
+                                    @if (Model.Refund.RefundType == MercatoApp.Models.RefundType.Full)
+                                    {
+                                        <span class="badge bg-danger">Full Refund</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">Partial Refund</span>
+                                    }
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Refund Amount:</strong></p>
+                                <p class="h5">@Model.Refund.RefundAmount.ToString("C")</p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Order Number:</strong></p>
+                                <p>
+                                    <a asp-page="/Buyer/OrderDetails" asp-route-id="@Model.Refund.OrderId">
+                                        @Model.Refund.Order.OrderNumber
+                                    </a>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Payment Transaction ID:</strong></p>
+                                <p>@Model.Refund.PaymentTransactionId</p>
+                            </div>
+                        </div>
+
+                        @if (Model.Refund.SellerSubOrderId.HasValue && Model.Refund.SellerSubOrder != null)
+                        {
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Seller Sub-Order:</strong></p>
+                                    <p>@Model.Refund.SellerSubOrder.SubOrderNumber</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Store:</strong></p>
+                                    <p>@Model.Refund.SellerSubOrder.Store?.StoreName</p>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <p class="mb-2"><strong>Reason:</strong></p>
+                            <p>@Model.Refund.Reason</p>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.Refund.Notes))
+                        {
+                            <div class="mb-3">
+                                <p class="mb-2"><strong>Notes:</strong></p>
+                                <p>@Model.Refund.Notes</p>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Refund.ErrorMessage))
+                        {
+                            <div class="alert alert-danger">
+                                <strong>Error:</strong> @Model.Refund.ErrorMessage
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Timeline</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="mb-3">
+                                <p class="mb-1"><strong>Requested At:</strong></p>
+                                <p>@Model.Refund.RequestedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                                <p class="mb-0 text-muted">By: @Model.Refund.InitiatedBy.Email</p>
+                            </div>
+
+                            @if (Model.Refund.CompletedAt.HasValue)
+                            {
+                                <div class="mb-3">
+                                    <p class="mb-1"><strong>Completed At:</strong></p>
+                                    <p>@Model.Refund.CompletedAt.Value.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                                </div>
+                            }
+
+                            <div class="mb-0">
+                                <p class="mb-1"><strong>Last Updated:</strong></p>
+                                <p>@Model.Refund.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Payment Provider Details</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.Refund.ProviderRefundId))
+                        {
+                            <p class="mb-2"><strong>Provider Refund ID:</strong></p>
+                            <p class="small">@Model.Refund.ProviderRefundId</p>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No provider refund ID available.</p>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Refund.ProviderMetadata))
+                        {
+                            <p class="mb-2 mt-3"><strong>Provider Metadata:</strong></p>
+                            <pre class="small bg-light p-2">@Model.Refund.ProviderMetadata</pre>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.Refund.Status == MercatoApp.Models.RefundStatus.Failed)
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" asp-page-handler="Retry" onsubmit="return confirm('Retry this refund?');">
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="bi bi-arrow-clockwise"></i> Retry Refund
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

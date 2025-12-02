@@ -1,0 +1,154 @@
+@page
+@model MercatoApp.Pages.Admin.Refunds.ProcessRefundModel
+@{
+    ViewData["Title"] = "Process Refund";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Process Refund</h2>
+        <a asp-page="/Admin/Refunds/Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Refunds
+        </a>
+    </div>
+
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Refund Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="mb-3">
+                            <label asp-for="OrderId" class="form-label">Order ID</label>
+                            <input asp-for="OrderId" class="form-control" placeholder="Enter order ID" />
+                            <span asp-validation-for="OrderId" class="text-danger"></span>
+                        </div>
+
+                        @if (Model.Order != null)
+                        {
+                            <div class="alert alert-info">
+                                <h6>Order Details:</h6>
+                                <p class="mb-1"><strong>Order Number:</strong> @Model.Order.OrderNumber</p>
+                                <p class="mb-1"><strong>Total Amount:</strong> @Model.Order.TotalAmount.ToString("C")</p>
+                                <p class="mb-1"><strong>Refunded Amount:</strong> @Model.Order.RefundedAmount.ToString("C")</p>
+                                <p class="mb-0"><strong>Available to Refund:</strong> @((Model.Order.TotalAmount - Model.Order.RefundedAmount).ToString("C"))</p>
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label asp-for="RefundType" class="form-label">Refund Type</label>
+                            <select asp-for="RefundType" class="form-select" onchange="toggleRefundFields()">
+                                <option value="">-- Select Refund Type --</option>
+                                <option value="Full">Full Refund</option>
+                                <option value="Partial">Partial Refund</option>
+                            </select>
+                            <span asp-validation-for="RefundType" class="text-danger"></span>
+                        </div>
+
+                        <div id="partialRefundFields" style="display: none;">
+                            <div class="mb-3">
+                                <label asp-for="SellerSubOrderId" class="form-label">Seller Sub-Order ID (Optional for Partial Refund)</label>
+                                <input asp-for="SellerSubOrderId" class="form-control" placeholder="Leave empty for order-level partial refund" />
+                                <span asp-validation-for="SellerSubOrderId" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    For partial refunds, specify the sub-order ID if refunding a specific seller's items.
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="RefundAmount" class="form-label">Refund Amount</label>
+                                <input asp-for="RefundAmount" class="form-control" type="number" step="0.01" min="0.01" placeholder="0.00" />
+                                <span asp-validation-for="RefundAmount" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Reason" class="form-label">Reason for Refund</label>
+                            <textarea asp-for="Reason" class="form-control" rows="3" placeholder="Enter reason for refund"></textarea>
+                            <span asp-validation-for="Reason" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">Additional Notes (Optional)</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Enter any additional notes"></textarea>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Warning:</strong> Processing a refund will immediately return funds to the buyer, 
+                            adjust escrow balances, and recalculate commissions. This action cannot be undone.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-page="/Admin/Refunds/Index" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to process this refund?');">
+                                <i class="bi bi-arrow-return-left"></i> Process Refund
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Refund Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Full Refund</h6>
+                    <ul class="small">
+                        <li>Refunds the entire order amount</li>
+                        <li>Returns all escrow to buyer</li>
+                        <li>Reverses all commission calculations</li>
+                    </ul>
+
+                    <h6>Partial Refund</h6>
+                    <ul class="small">
+                        <li>Refunds a specific amount</li>
+                        <li>Can be order-level or seller-specific</li>
+                        <li>Proportionally adjusts escrow and commission</li>
+                        <li>Prevents negative balances</li>
+                    </ul>
+
+                    <h6>Business Rules</h6>
+                    <ul class="small">
+                        <li>Order must have a completed payment</li>
+                        <li>Refund amount cannot exceed available balance</li>
+                        <li>Escrow must not be already released to seller</li>
+                        <li>All refunds are logged for audit trail</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleRefundFields() {
+            const refundType = document.getElementById('RefundType').value;
+            const partialFields = document.getElementById('partialRefundFields');
+            
+            if (refundType === 'Partial') {
+                partialFields.style.display = 'block';
+            } else {
+                partialFields.style.display = 'none';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', toggleRefundFields);
+    </script>
+}
