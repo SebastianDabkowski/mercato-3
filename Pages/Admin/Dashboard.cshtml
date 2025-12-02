@@ -35,10 +35,10 @@
                         <div class="col-md-6">
                             <label for="DateRange" class="form-label">Date Range Preset</label>
                             <select name="DateRange" id="DateRange" class="form-select" onchange="toggleCustomDates()">
-                                <option value="today" selected="@(Model.DateRange == "today")">Today</option>
-                                <option value="last7days" selected="@(Model.DateRange == "last7days")">Last 7 Days</option>
-                                <option value="last30days" selected="@(Model.DateRange == "last30days")">Last 30 Days</option>
-                                <option value="custom" selected="@(Model.DateRange == "custom")">Custom Range</option>
+                                <option value="today" selected="@(Model.DateRange == "today" ? "selected" : null)">Today</option>
+                                <option value="last7days" selected="@(Model.DateRange == "last7days" ? "selected" : null)">Last 7 Days</option>
+                                <option value="last30days" selected="@(Model.DateRange == "last30days" ? "selected" : null)">Last 30 Days</option>
+                                <option value="custom" selected="@(Model.DateRange == "custom" ? "selected" : null)">Custom Range</option>
                             </select>
                         </div>
 

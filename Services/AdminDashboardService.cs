@@ -46,8 +46,10 @@ public class AdminDashboardService : IAdminDashboardService
                 .Distinct()
                 .ToListAsync();
 
-            var storesWithOrders = await _context.SellerSubOrders
-                .Where(so => so.CreatedAt >= startDateTime && so.CreatedAt <= endDateTime)
+            // Get stores with orders in the period by checking parent order dates
+            var storesWithOrders = await _context.Orders
+                .Where(o => o.OrderedAt >= startDateTime && o.OrderedAt <= endDateTime)
+                .SelectMany(o => o.SubOrders)
                 .Select(so => so.StoreId)
                 .Distinct()
                 .ToListAsync();
