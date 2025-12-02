@@ -141,7 +141,7 @@ public class SettlementService : ISettlementService
                 GrossAmount = escrow?.GrossAmount ?? 0,
                 RefundAmount = escrow?.RefundedAmount ?? 0,
                 CommissionAmount = escrow?.CommissionAmount ?? 0,
-                NetAmount = (escrow?.NetAmount ?? 0) - (escrow?.RefundedAmount ?? 0),
+                NetAmount = (escrow?.GrossAmount ?? 0) - (escrow?.RefundedAmount ?? 0) - (escrow?.CommissionAmount ?? 0),
                 CreatedAt = now
             };
 
@@ -179,7 +179,7 @@ public class SettlementService : ISettlementService
 
         // Calculate period dates
         var periodStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var periodEnd = periodStart.AddMonths(1).AddSeconds(-1);
+        var periodEnd = periodStart.AddMonths(1).AddTicks(-1);
 
         var generatedCount = 0;
 
@@ -274,7 +274,7 @@ public class SettlementService : ISettlementService
                 SettlementId = newSettlement.Id,
                 Type = adj.Type,
                 Amount = adj.Amount,
-                Description = adj.Description + " (Copied from previous version)",
+                Description = adj.Description,
                 RelatedSettlementId = adj.RelatedSettlementId,
                 IsPriorPeriodAdjustment = adj.IsPriorPeriodAdjustment,
                 CreatedAt = DateTime.UtcNow,
@@ -565,6 +565,7 @@ public class SettlementService : ISettlementService
     private static string GenerateSettlementNumber(int storeId, DateTime periodStart)
     {
         var yearMonth = periodStart.ToString("yyyyMM");
-        return $"STL-{storeId:D6}-{yearMonth}";
+        var random = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+        return $"STL-{storeId:D6}-{yearMonth}-{random}";
     }
 }

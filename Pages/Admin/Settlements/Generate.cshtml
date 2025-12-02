@@ -60,7 +60,8 @@
                                     <select name="month" id="month" class="form-select" required>
                                         @for (int m = 1; m <= 12; m++)
                                         {
-                                            <option value="@m" selected="@(m == DateTime.Now.Month - 1)">
+                                            var previousMonth = DateTime.Now.Month == 1 ? 12 : DateTime.Now.Month - 1;
+                                            <option value="@m" selected="@(m == previousMonth)">
                                                 @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
                                             </option>
                                         }

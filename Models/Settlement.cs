@@ -123,12 +123,12 @@ public class Settlement
     /// <summary>
     /// Gets or sets the collection of settlement items (order details).
     /// </summary>
-    public List<SettlementItem> Items { get; set; } = new();
+    public ICollection<SettlementItem> Items { get; set; } = new List<SettlementItem>();
 
     /// <summary>
     /// Gets or sets the collection of settlement adjustments.
     /// </summary>
-    public List<SettlementAdjustment> SettlementAdjustments { get; set; } = new();
+    public ICollection<SettlementAdjustment> SettlementAdjustments { get; set; } = new List<SettlementAdjustment>();
 
     /// <summary>
     /// Gets or sets the date and time when the settlement was created.
