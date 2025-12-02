@@ -2,8 +2,8 @@ using MercatoApp.Authorization;
 using MercatoApp.Data;
 using MercatoApp.Models;
 using MercatoApp.Services;
-using MercatoApp;
 using Microsoft.AspNetCore.Authentication;
+using MercatoApp; // For CommissionInvoiceTestScenario class
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Facebook;
