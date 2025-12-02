@@ -82,11 +82,16 @@ public interface ICartService
 public class CartService : ICartService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAnalyticsEventService _analyticsService;
     private readonly ILogger<CartService> _logger;
 
-    public CartService(ApplicationDbContext context, ILogger<CartService> logger)
+    public CartService(
+        ApplicationDbContext context,
+        IAnalyticsEventService analyticsService,
+        ILogger<CartService> logger)
     {
         _context = context;
+        _analyticsService = analyticsService;
         _logger = logger;
     }
 
@@ -204,7 +209,32 @@ public class CartService : ICartService
         _logger.LogInformation("Added product {ProductId} (variant: {VariantId}) to cart for user {UserId} / session {SessionId}", 
             productId, variantId, userId, sessionId);
 
+        // Track add-to-cart event (fire-and-forget)
+        _ = TrackAddToCartEventAsync(userId, sessionId, existingItem, quantity);
+
         return existingItem;
+    }
+
+    private async Task TrackAddToCartEventAsync(int? userId, string? sessionId, CartItem item, int quantity)
+    {
+        try
+        {
+            await _analyticsService.TrackEventAsync(new AnalyticsEventData
+            {
+                EventType = AnalyticsEventType.AddToCart,
+                UserId = userId,
+                SessionId = sessionId,
+                ProductId = item.ProductId,
+                ProductVariantId = item.ProductVariantId,
+                StoreId = item.Product?.StoreId,
+                Quantity = quantity,
+                Value = item.PriceAtAdd * quantity
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error tracking add-to-cart event");
+        }
     }
 
     /// <inheritdoc />

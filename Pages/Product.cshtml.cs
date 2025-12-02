@@ -16,6 +16,8 @@ public class ProductModel : PageModel
     private readonly IGuestCartService _guestCartService;
     private readonly IProductReviewService _reviewService;
     private readonly IProductQuestionService _questionService;
+    private readonly IAnalyticsEventService _analyticsService;
+    private readonly ILogger<ProductModel> _logger;
 
     public ProductModel(
         IProductService productService,
@@ -24,7 +26,9 @@ public class ProductModel : PageModel
         ICartService cartService,
         IGuestCartService guestCartService,
         IProductReviewService reviewService,
-        IProductQuestionService questionService)
+        IProductQuestionService questionService,
+        IAnalyticsEventService analyticsService,
+        ILogger<ProductModel> logger)
     {
         _productService = productService;
         _variantService = variantService;
@@ -33,6 +37,8 @@ public class ProductModel : PageModel
         _guestCartService = guestCartService;
         _reviewService = reviewService;
         _questionService = questionService;
+        _analyticsService = analyticsService;
+        _logger = logger;
     }
 
     public Product? Product { get; set; }
@@ -134,6 +140,9 @@ public class ProductModel : PageModel
             // Track the product view only if the product is available
             _recentlyViewedService.TrackProductView(id);
             
+            // Track analytics event (fire-and-forget)
+            _ = TrackProductViewEventAsync(Product);
+            
             // Load reviews for available products with pagination and sorting
             TotalReviewCount = await _reviewService.GetApprovedReviewCountAsync(id);
             Reviews = await _reviewService.GetApprovedReviewsForProductAsync(id, SortOption, CurrentPage, PageSize);
@@ -157,6 +166,36 @@ public class ProductModel : PageModel
         }
 
         return Page();
+    }
+
+    private async Task TrackProductViewEventAsync(Product product)
+    {
+        try
+        {
+            var userId = User.Identity?.IsAuthenticated == true
+                ? int.Parse(User.FindFirst("UserId")?.Value ?? "0")
+                : (int?)null;
+
+            var sessionId = HttpContext.Session.Id;
+
+            await _analyticsService.TrackEventAsync(new AnalyticsEventData
+            {
+                EventType = AnalyticsEventType.ProductView,
+                UserId = userId > 0 ? userId : null,
+                SessionId = sessionId,
+                ProductId = product.Id,
+                CategoryId = product.CategoryId,
+                StoreId = product.StoreId,
+                Value = product.Price,
+                UserAgent = Request.Headers.UserAgent.ToString(),
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Referrer = Request.Headers.Referer.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error tracking product view event");
+        }
     }
 
     public async Task<IActionResult> OnPostAskQuestionAsync(int id)
