@@ -1,0 +1,257 @@
+@page
+@model MercatoApp.Pages.Seller.RevenueReportModel
+@{
+    ViewData["Title"] = "Revenue Report";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Revenue Report</h1>
+            @if (Model.CurrentStore != null)
+            {
+                <p class="text-muted">Store: @Model.CurrentStore.StoreName</p>
+            }
+        </div>
+        <div class="col-auto">
+            <form method="post" asp-page-handler="ExportCsv">
+                <input type="hidden" name="SelectedStatuses" value="@(Model.SelectedStatuses != null ? string.Join(",", Model.SelectedStatuses.Select(s => (int)s)) : "")" />
+                <input type="hidden" name="FromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="ToDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-download"></i> Export CSV
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.ErrorMessages.Count > 0)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error</strong>
+            <ul class="mb-0">
+                @foreach (var error in Model.ErrorMessages)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filters Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <button class="btn btn-link text-decoration-none text-dark w-100 text-start" type="button" 
+                        data-bs-toggle="collapse" data-bs-target="#filterCollapse" 
+                        aria-expanded="true" aria-controls="filterCollapse">
+                    <i class="bi bi-funnel"></i> Filters
+                    @if (Model.HasActiveFilters)
+                    {
+                        <span class="badge bg-primary ms-2">Active</span>
+                    }
+                </button>
+            </h5>
+        </div>
+        <div id="filterCollapse" class="collapse show">
+            <div class="card-body">
+                <form method="get" asp-page="RevenueReport">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Order Status</label>
+                            <select class="form-select" name="SelectedStatuses" multiple size="7">
+                                <option value="@((int)OrderStatus.New)" selected="@(Model.SelectedStatuses?.Contains(OrderStatus.New) ?? false)">New</option>
+                                <option value="@((int)OrderStatus.Paid)" selected="@(Model.SelectedStatuses?.Contains(OrderStatus.Paid) ?? false)">Paid</option>
+                                <option value="@((int)OrderStatus.Preparing)" selected="@(Model.SelectedStatuses?.Contains(OrderStatus.Preparing) ?? false)">Preparing</option>
+                                <option value="@((int)OrderStatus.Shipped)" selected="@(Model.SelectedStatuses?.Contains(OrderStatus.Shipped) ?? false)">Shipped</option>
+                                <option value="@((int)OrderStatus.Delivered)" selected="@(Model.SelectedStatuses?.Contains(OrderStatus.Delivered) ?? false)">Delivered</option>
+                                <option value="@((int)OrderStatus.Cancelled)" selected="@(Model.SelectedStatuses?.Contains(OrderStatus.Cancelled) ?? false)">Cancelled</option>
+                                <option value="@((int)OrderStatus.Refunded)" selected="@(Model.SelectedStatuses?.Contains(OrderStatus.Refunded) ?? false)">Refunded</option>
+                            </select>
+                            <small class="text-muted">Hold Ctrl (Cmd on Mac) to select multiple</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fromDate" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="fromDate" name="FromDate" 
+                                   value="@Model.FromDate?.ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="toDate" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="toDate" name="ToDate" 
+                                   value="@Model.ToDate?.ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                        <a href="@Url.Page("RevenueReport")" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear Filters
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Card -->
+    @if (Model.Summary != null)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-muted small">Total Orders</div>
+                        <div class="h4">@Model.Summary.TotalOrders</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-muted small">Total Order Value</div>
+                        <div class="h4">$@Model.Summary.TotalOrderValue.ToString("N2")</div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-muted small">Commission Charged</div>
+                        <div class="h4 text-danger">$@Model.Summary.TotalCommissionCharged.ToString("N2")</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-muted small">Net Amount to Seller</div>
+                        <div class="h4 text-success">$@Model.Summary.TotalNetAmountToSeller.ToString("N2")</div>
+                    </div>
+                    <div class="col-md-1">
+                        <div class="text-muted small">Refunded</div>
+                        <div class="h5 text-warning">$@Model.Summary.TotalRefundedAmount.ToString("N2")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Report Table -->
+    @if (Model.ReportItems.Count > 0)
+    {
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Order Details</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sub-Order</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Buyer</th>
+                                <th class="text-end">Order Value</th>
+                                <th class="text-end">Commission</th>
+                                <th class="text-end">Net to Seller</th>
+                                <th class="text-end">Refunded</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.ReportItems)
+                            {
+                                <tr>
+                                    <td>
+                                        <a asp-page="OrderDetails" asp-route-id="@item.SubOrderNumber">
+                                            @item.SubOrderNumber
+                                        </a>
+                                        <br />
+                                        <small class="text-muted">Parent: @item.ParentOrderNumber</small>
+                                    </td>
+                                    <td>
+                                        @item.CreatedAt.ToString("MMM dd, yyyy")
+                                        <br />
+                                        <small class="text-muted">@item.CreatedAt.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        @switch (item.Status)
+                                        {
+                                            case OrderStatus.New:
+                                                <span class="badge bg-secondary">New</span>
+                                                break;
+                                            case OrderStatus.Paid:
+                                                <span class="badge bg-info">Paid</span>
+                                                break;
+                                            case OrderStatus.Preparing:
+                                                <span class="badge bg-primary">Preparing</span>
+                                                break;
+                                            case OrderStatus.Shipped:
+                                                <span class="badge bg-warning">Shipped</span>
+                                                break;
+                                            case OrderStatus.Delivered:
+                                                <span class="badge bg-success">Delivered</span>
+                                                break;
+                                            case OrderStatus.Cancelled:
+                                                <span class="badge bg-dark">Cancelled</span>
+                                                break;
+                                            case OrderStatus.Refunded:
+                                                <span class="badge bg-danger">Refunded</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        @item.BuyerName
+                                        <br />
+                                        <small class="text-muted">@item.BuyerEmail</small>
+                                    </td>
+                                    <td class="text-end">$@item.OrderValue.ToString("N2")</td>
+                                    <td class="text-end text-danger">$@item.CommissionCharged.ToString("N2")</td>
+                                    <td class="text-end text-success fw-bold">$@item.NetAmountToSeller.ToString("N2")</td>
+                                    <td class="text-end">
+                                        @if (item.RefundedAmount > 0)
+                                        {
+                                            <span class="text-warning">$@item.RefundedAmount.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h4 class="mt-3">No Orders Found</h4>
+                @if (Model.HasActiveFilters)
+                {
+                    <p class="text-muted">No orders match your current filters. Try adjusting your filter criteria.</p>
+                    <a href="@Url.Page("RevenueReport")" class="btn btn-outline-primary">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </a>
+                }
+                else
+                {
+                    <p class="text-muted">You don't have any orders yet. Orders will appear here once customers start purchasing from your store.</p>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="mt-4">
+        <a asp-page="Dashboard" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-submit form when date inputs change for better UX
+        document.getElementById('fromDate')?.addEventListener('change', function() {
+            // Optional: auto-submit on date change
+        });
+    </script>
+}
