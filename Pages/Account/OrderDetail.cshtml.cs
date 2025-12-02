@@ -89,6 +89,7 @@ public class OrderDetailModel : PageModel
     /// </summary>
     /// <param name="subOrderId">The sub-order ID to return.</param>
     /// <param name="orderId">The parent order ID for redirect.</param>
+    /// <param name="requestType">The type of request (return or complaint).</param>
     /// <param name="reason">The return reason.</param>
     /// <param name="description">Optional description from buyer.</param>
     /// <param name="isFullReturn">Whether to return all items.</param>
@@ -96,6 +97,7 @@ public class OrderDetailModel : PageModel
     public async Task<IActionResult> OnPostInitiateReturnAsync(
         int subOrderId,
         int orderId,
+        ReturnRequestType requestType,
         ReturnReason reason, 
         string? description, 
         bool isFullReturn = true)
@@ -113,11 +115,13 @@ public class OrderDetailModel : PageModel
             var returnRequest = await _returnRequestService.CreateReturnRequestAsync(
                 subOrderId,
                 userId,
+                requestType,
                 reason,
                 description,
                 isFullReturn);
 
-            TempData["SuccessMessage"] = $"Return request {returnRequest.ReturnNumber} has been submitted successfully. The seller will review it shortly.";
+            var requestTypeLabel = requestType == ReturnRequestType.Complaint ? "Complaint" : "Return";
+            TempData["SuccessMessage"] = $"{requestTypeLabel} request {returnRequest.ReturnNumber} has been submitted successfully. The seller will review it shortly.";
             
             // Redirect back to order detail to show the return status
             return RedirectToPage(new { orderId });

@@ -87,6 +87,7 @@ public class ReturnRequestService : IReturnRequestService
     public async Task<ReturnRequest> CreateReturnRequestAsync(
         int subOrderId,
         int buyerId,
+        ReturnRequestType requestType,
         ReturnReason reason,
         string? description,
         bool isFullReturn,
@@ -157,7 +158,8 @@ public class ReturnRequestService : IReturnRequestService
 
         // Generate return number
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
-        var returnNumber = $"RTN-{timestamp}-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
+        var prefix = requestType == ReturnRequestType.Complaint ? "CMP" : "RTN";
+        var returnNumber = $"{prefix}-{timestamp}-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
 
         // Create return request
         var returnRequest = new ReturnRequest
@@ -165,6 +167,7 @@ public class ReturnRequestService : IReturnRequestService
             ReturnNumber = returnNumber,
             SubOrderId = subOrderId,
             BuyerId = buyerId,
+            RequestType = requestType,
             Reason = reason,
             Description = description,
             Status = ReturnStatus.Requested,

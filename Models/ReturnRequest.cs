@@ -41,6 +41,11 @@ public class ReturnRequest
     public User Buyer { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the type of request (return or complaint).
+    /// </summary>
+    public ReturnRequestType RequestType { get; set; } = ReturnRequestType.Return;
+
+    /// <summary>
     /// Gets or sets the reason for the return.
     /// </summary>
     public ReturnReason Reason { get; set; }

@@ -20,6 +20,7 @@ public interface IReturnRequestService
     /// </summary>
     /// <param name="subOrderId">The sub-order ID.</param>
     /// <param name="buyerId">The buyer ID requesting the return.</param>
+    /// <param name="requestType">The type of request (return or complaint).</param>
     /// <param name="reason">The reason for the return.</param>
     /// <param name="description">Optional description from the buyer.</param>
     /// <param name="isFullReturn">True if all items are being returned, false for partial return.</param>
@@ -28,6 +29,7 @@ public interface IReturnRequestService
     Task<ReturnRequest> CreateReturnRequestAsync(
         int subOrderId,
         int buyerId,
+        ReturnRequestType requestType,
         ReturnReason reason,
         string? description,
         bool isFullReturn,
