@@ -1,0 +1,114 @@
+@page
+@model MercatoApp.Pages.Admin.CommissionInvoices.GenerateModel
+@{
+    ViewData["Title"] = "Generate Commission Invoices - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/CommissionInvoices">Commission Invoices</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Generate</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-receipt-cutoff"></i> Generate Commission Invoices
+            </h1>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Generate Monthly Invoices -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-calendar-month"></i> Generate Monthly Invoices
+            </h5>
+        </div>
+        <div class="card-body">
+            <p>Generate commission invoices for all active stores for a specific month.</p>
+            <form method="post" asp-page-handler="GenerateMonthly">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="Year" class="form-label">Year</label>
+                        <input type="number" class="form-control" id="Year" name="Year" 
+                            value="@DateTime.UtcNow.Year" min="2020" max="2100" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="Month" class="form-label">Month</label>
+                        <select name="Month" id="Month" class="form-select" required>
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i" selected="@(i == DateTime.UtcNow.Month)">@(new DateTime(2000, i, 1).ToString("MMMM"))</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Generate Monthly Invoices
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Generate for Specific Store -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-shop"></i> Generate Invoice for Specific Store
+            </h5>
+        </div>
+        <div class="card-body">
+            <p>Generate a commission invoice for a specific store and custom period.</p>
+            <form method="post" asp-page-handler="GenerateForStore">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="StoreId" class="form-label">Store ID</label>
+                        <input type="number" class="form-control" id="StoreId" name="StoreId" 
+                            placeholder="Enter Store ID" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="PeriodStartDate" class="form-label">Period Start Date</label>
+                        <input type="date" class="form-control" id="PeriodStartDate" name="PeriodStartDate" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="PeriodEndDate" class="form-label">Period End Date</label>
+                        <input type="date" class="form-control" id="PeriodEndDate" name="PeriodEndDate" required />
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="bi bi-plus-circle"></i> Generate Invoice
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="/Admin/CommissionInvoices" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Invoices
+        </a>
+    </div>
+</div>

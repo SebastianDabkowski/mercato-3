@@ -1,0 +1,243 @@
+@page
+@model MercatoApp.Pages.Admin.CommissionInvoices.DetailsModel
+@{
+    ViewData["Title"] = $"Invoice {Model.Invoice?.InvoiceNumber} - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/CommissionInvoices">Commission Invoices</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.Invoice?.InvoiceNumber</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-receipt"></i> Invoice Details
+            </h1>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model.Invoice == null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Invoice not found.
+        </div>
+        return;
+    }
+
+    <!-- Invoice Header -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="row">
+                <div class="col">
+                    <h4 class="mb-0">
+                        @if (Model.Invoice.IsCreditNote)
+                        {
+                            <span>CREDIT NOTE</span>
+                        }
+                        else
+                        {
+                            <span>INVOICE</span>
+                        }
+                    </h4>
+                </div>
+                <div class="col text-end">
+                    <h4 class="mb-0">@Model.Invoice.InvoiceNumber</h4>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>From:</h5>
+                    <p>
+                        <strong>@Model.Config?.CompanyName</strong><br />
+                        @if (!string.IsNullOrEmpty(Model.Config?.CompanyAddress))
+                        {
+                            @Model.Config.CompanyAddress
+                            <br />
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Config?.CompanyTaxId))
+                        {
+                            <text>Tax ID: @Model.Config.CompanyTaxId</text>
+                        }
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Bill To:</h5>
+                    <p>
+                        <strong>@Model.Invoice.Store.StoreName</strong><br />
+                        Store ID: @Model.Invoice.StoreId
+                    </p>
+                </div>
+            </div>
+            <hr />
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Issue Date:</strong><br />
+                    @Model.Invoice.IssueDate.ToString("MMMM dd, yyyy")
+                </div>
+                <div class="col-md-3">
+                    <strong>Due Date:</strong><br />
+                    @Model.Invoice.DueDate.ToString("MMMM dd, yyyy")
+                </div>
+                <div class="col-md-3">
+                    <strong>Period:</strong><br />
+                    @Model.Invoice.PeriodStartDate.ToString("MMM yyyy")
+                </div>
+                <div class="col-md-3">
+                    <strong>Status:</strong><br />
+                    @switch (Model.Invoice.Status)
+                    {
+                        case MercatoApp.Models.CommissionInvoiceStatus.Draft:
+                            <span class="badge bg-secondary">Draft</span>
+                            break;
+                        case MercatoApp.Models.CommissionInvoiceStatus.Issued:
+                            <span class="badge bg-primary">Issued</span>
+                            break;
+                        case MercatoApp.Models.CommissionInvoiceStatus.Paid:
+                            <span class="badge bg-success">Paid</span>
+                            break;
+                        case MercatoApp.Models.CommissionInvoiceStatus.Cancelled:
+                            <span class="badge bg-danger">Cancelled</span>
+                            break;
+                        case MercatoApp.Models.CommissionInvoiceStatus.Superseded:
+                            <span class="badge bg-warning text-dark">Superseded</span>
+                            break;
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Items -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-list-ul"></i> Line Items
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Invoice.Items)
+                        {
+                            <tr>
+                                <td>@item.Description</td>
+                                <td class="text-end">@item.Amount.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Totals -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8"></div>
+                <div class="col-md-4">
+                    <table class="table">
+                        <tr>
+                            <td><strong>Subtotal:</strong></td>
+                            <td class="text-end">@Model.Invoice.Subtotal.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tax (@Model.Invoice.TaxPercentage%):</strong></td>
+                            <td class="text-end">@Model.Invoice.TaxAmount.ToString("C")</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>Total Amount:</strong></td>
+                            <td class="text-end"><strong>@Model.Invoice.TotalAmount.ToString("C") @Model.Invoice.Currency</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-tools"></i> Actions
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                @if (Model.Invoice.Status == MercatoApp.Models.CommissionInvoiceStatus.Draft)
+                {
+                    <div class="col-auto">
+                        <form method="post" asp-page-handler="Issue">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Invoice.Id" />
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Issue Invoice
+                            </button>
+                        </form>
+                    </div>
+                }
+
+                @if (Model.Invoice.Status == MercatoApp.Models.CommissionInvoiceStatus.Issued)
+                {
+                    <div class="col-auto">
+                        <form method="post" asp-page-handler="MarkAsPaid">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Invoice.Id" />
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Mark as Paid
+                            </button>
+                        </form>
+                    </div>
+                }
+
+                @if (Model.Invoice.Status != MercatoApp.Models.CommissionInvoiceStatus.Paid && 
+                     Model.Invoice.Status != MercatoApp.Models.CommissionInvoiceStatus.Cancelled)
+                {
+                    <div class="col-auto">
+                        <form method="post" asp-page-handler="Cancel">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Invoice.Id" />
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this invoice?');">
+                                <i class="bi bi-x-circle"></i> Cancel Invoice
+                            </button>
+                        </form>
+                    </div>
+                }
+
+                <div class="col-auto">
+                    <a href="/Admin/CommissionInvoices" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
