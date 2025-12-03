@@ -592,7 +592,7 @@ public class ProductImageService : IProductImageService
         }
 
         return await query
-            .Where(i => i.ProductId == productId)
+            .Where(i => i.ProductId == productId && !i.IsRemoved)
             .OrderBy(i => i.DisplayOrder)
             .ToListAsync();
     }
@@ -601,7 +601,7 @@ public class ProductImageService : IProductImageService
     public async Task<ProductImage?> GetMainImageAsync(int productId)
     {
         return await _context.ProductImages
-            .Where(i => i.ProductId == productId && i.IsMain)
+            .Where(i => i.ProductId == productId && i.IsMain && !i.IsRemoved)
             .FirstOrDefaultAsync();
     }
 
@@ -610,7 +610,7 @@ public class ProductImageService : IProductImageService
     {
         var productIdList = productIds.ToList();
         var mainImages = await _context.ProductImages
-            .Where(i => productIdList.Contains(i.ProductId) && i.IsMain)
+            .Where(i => productIdList.Contains(i.ProductId) && i.IsMain && !i.IsRemoved)
             .ToListAsync();
 
         var result = new Dictionary<int, ProductImage?>();
