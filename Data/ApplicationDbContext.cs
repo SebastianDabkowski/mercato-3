@@ -128,6 +128,12 @@ public class ApplicationDbContext : DbContext
     public DbSet<CommissionConfig> CommissionConfigs { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the commission rules table.
+    /// Supports effective dates, applicability criteria, and versioning.
+    /// </summary>
+    public DbSet<CommissionRule> CommissionRules { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the addresses table.
     /// </summary>
     public DbSet<Address> Addresses { get; set; } = null!;
@@ -999,6 +1005,43 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.FixedCommissionAmount)
                 .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<CommissionRule>(entity =>
+        {
+            // Indexes for efficient rule lookup
+            entity.HasIndex(e => new { e.IsActive, e.EffectiveStartDate, e.EffectiveEndDate });
+            entity.HasIndex(e => new { e.ApplicabilityType, e.CategoryId });
+            entity.HasIndex(e => new { e.ApplicabilityType, e.StoreId });
+            entity.HasIndex(e => e.SellerTier);
+
+            // Configure decimal precision
+            entity.Property(e => e.CommissionPercentage)
+                .HasPrecision(5, 2);
+
+            entity.Property(e => e.FixedCommissionAmount)
+                .HasPrecision(18, 2);
+
+            // Configure relationships
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Category)
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Store)
+                .WithMany()
+                .HasForeignKey(e => e.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<PromoCode>(entity =>
