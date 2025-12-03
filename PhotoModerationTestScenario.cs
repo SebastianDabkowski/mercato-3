@@ -33,9 +33,11 @@ public class PhotoModerationTestScenario
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         var serviceLogger = loggerFactory.CreateLogger<PhotoModerationService>();
         var emailLogger = loggerFactory.CreateLogger<EmailService>();
+        var consentLogger = loggerFactory.CreateLogger<ConsentManagementService>();
         
         // Create services
-        var emailService = new EmailService(context, emailLogger);
+        var consentService = new ConsentManagementService(context, consentLogger);
+        var emailService = new EmailService(context, emailLogger, consentService);
         var photoModerationService = new PhotoModerationService(context, emailService, serviceLogger);
 
         Console.WriteLine("=== Photo Moderation Test Scenario ===\n");

@@ -112,6 +112,26 @@ public interface IEmailService
     /// <param name="reason">The reason for the removal.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task SendPhotoRemovedNotificationToSellerAsync(ProductImage photo, string reason);
+
+    /// <summary>
+    /// Sends a newsletter email to users who have consented to receive newsletters.
+    /// Automatically checks for active newsletter consent before sending.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="subject">The newsletter subject.</param>
+    /// <param name="body">The newsletter body content.</param>
+    /// <returns>True if email was sent, false if user doesn't have consent.</returns>
+    Task<bool> SendNewsletterEmailAsync(int userId, string subject, string body);
+
+    /// <summary>
+    /// Sends a marketing email to users who have consented to receive marketing communications.
+    /// Automatically checks for active marketing consent before sending.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="subject">The marketing email subject.</param>
+    /// <param name="body">The marketing email body content.</param>
+    /// <returns>True if email was sent, false if user doesn't have consent.</returns>
+    Task<bool> SendMarketingEmailAsync(int userId, string subject, string body);
 }
 
 /// <summary>
@@ -121,11 +141,16 @@ public class EmailService : IEmailService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<EmailService> _logger;
+    private readonly IConsentManagementService _consentService;
 
-    public EmailService(ApplicationDbContext context, ILogger<EmailService> logger)
+    public EmailService(
+        ApplicationDbContext context, 
+        ILogger<EmailService> logger,
+        IConsentManagementService consentService)
     {
         _context = context;
         _logger = logger;
+        _consentService = consentService;
     }
 
     /// <inheritdoc />
@@ -607,5 +632,77 @@ public class EmailService : IEmailService
             EmailStatus.Sent,
             userId: photo.Product.Store.UserId,
             productId: photo.ProductId);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendNewsletterEmailAsync(int userId, string subject, string body)
+    {
+        // Check if user has active consent for newsletters
+        var hasConsent = await _consentService.IsEligibleForCommunicationAsync(userId, ConsentType.Newsletter);
+        
+        if (!hasConsent)
+        {
+            _logger.LogInformation(
+                "Newsletter email not sent to user {UserId} - no active consent",
+                userId);
+            return false;
+        }
+
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            _logger.LogWarning("User {UserId} not found", userId);
+            return false;
+        }
+
+        _logger.LogInformation(
+            "Sending newsletter email to {Email}: {Subject}",
+            user.Email,
+            subject);
+
+        await LogEmailAsync(
+            EmailType.Newsletter,
+            user.Email,
+            subject,
+            EmailStatus.Sent,
+            userId: userId);
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> SendMarketingEmailAsync(int userId, string subject, string body)
+    {
+        // Check if user has active consent for marketing communications
+        var hasConsent = await _consentService.IsEligibleForCommunicationAsync(userId, ConsentType.Marketing);
+        
+        if (!hasConsent)
+        {
+            _logger.LogInformation(
+                "Marketing email not sent to user {UserId} - no active consent",
+                userId);
+            return false;
+        }
+
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            _logger.LogWarning("User {UserId} not found", userId);
+            return false;
+        }
+
+        _logger.LogInformation(
+            "Sending marketing email to {Email}: {Subject}",
+            user.Email,
+            subject);
+
+        await LogEmailAsync(
+            EmailType.Marketing,
+            user.Email,
+            subject,
+            EmailStatus.Sent,
+            userId: userId);
+
+        return true;
     }
 }

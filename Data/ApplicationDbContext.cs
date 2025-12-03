@@ -2089,11 +2089,17 @@ public class ApplicationDbContext : DbContext
             // Index on user ID for finding all consents for a user
             entity.HasIndex(e => e.UserId);
 
-            // Index on legal document ID for finding all consents for a document
-            entity.HasIndex(e => e.LegalDocumentId);
+            // Index on consent type for filtering by type
+            entity.HasIndex(e => e.ConsentType);
 
-            // Composite index for checking if a user has consented to a specific document
-            entity.HasIndex(e => new { e.UserId, e.LegalDocumentId });
+            // Composite index for finding current consents by user and type
+            entity.HasIndex(e => new { e.UserId, e.ConsentType, e.SupersededAt });
+
+            // Composite index for checking active consents
+            entity.HasIndex(e => new { e.UserId, e.ConsentType, e.IsGranted, e.SupersededAt });
+
+            // Index on legal document ID for finding all consents for a document (optional)
+            entity.HasIndex(e => e.LegalDocumentId);
 
             // Index on consent date for audit queries
             entity.HasIndex(e => e.ConsentedAt);
@@ -2104,7 +2110,7 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Configure relationship with LegalDocument
+            // Configure optional relationship with LegalDocument
             entity.HasOne(e => e.LegalDocument)
                 .WithMany()
                 .HasForeignKey(e => e.LegalDocumentId)

@@ -42,7 +42,9 @@ public static class PayoutServiceManualTest
         
         // Create a mock email service for testing
         var emailLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<EmailService>();
-        var emailService = new EmailService(context, emailLogger);
+        var consentLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<ConsentManagementService>();
+        var consentService = new ConsentManagementService(context, consentLogger);
+        var emailService = new EmailService(context, emailLogger, consentService);
         
         // Create a mock notification service for testing
         var notificationLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<NotificationService>();

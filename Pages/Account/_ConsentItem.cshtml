@@ -1,0 +1,60 @@
+@using MercatoApp.Models
+@using MercatoApp.Pages.Account
+@model dynamic
+
+@{
+    var type = (ConsentType)Model.Type;
+    var title = (string)Model.Title;
+    var description = (string)Model.Description;
+    var status = (PrivacySettingsModel.ConsentStatus?)Model.Status;
+
+    var isGranted = status?.IsGranted ?? false;
+    var consentedAt = status?.ConsentedAt;
+    var version = status?.Version;
+}
+
+<div class="mb-3 p-3 border rounded">
+    <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+            <h6 class="mb-1">@title</h6>
+            <p class="text-muted small mb-2">@description</p>
+            
+            @if (consentedAt != null)
+            {
+                <small class="text-muted">
+                    @if (isGranted)
+                    {
+                        <span>Granted on: @consentedAt.Value.ToString("MMMM dd, yyyy 'at' HH:mm") UTC</span>
+                    }
+                    else
+                    {
+                        <span>Withdrawn on: @consentedAt.Value.ToString("MMMM dd, yyyy 'at' HH:mm") UTC</span>
+                    }
+                    @if (!string.IsNullOrEmpty(version))
+                    {
+                        <span> | Version: @version</span>
+                    }
+                </small>
+            }
+        </div>
+        <div class="ms-3">
+            <form method="post" asp-page-handler="UpdateConsent" class="d-inline">
+                <input type="hidden" name="consentType" value="@type" />
+                @if (isGranted)
+                {
+                    <input type="hidden" name="granted" value="false" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-x-circle"></i> Withdraw
+                    </button>
+                }
+                else
+                {
+                    <input type="hidden" name="granted" value="true" />
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-check-circle"></i> Grant
+                    </button>
+                }
+            </form>
+        </div>
+    </div>
+</div>
