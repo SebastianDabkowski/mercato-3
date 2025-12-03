@@ -45,6 +45,30 @@ public class SecurityIncidentService : ISecurityIncidentService
             CreatedAt = DateTime.UtcNow
         };
 
+        // Set alert information before saving if alert should be sent
+        if (ShouldSendAlert(incident.Severity))
+        {
+            var securityContacts = _configuration
+                .GetSection("Security:AlertRecipients")
+                .Get<string[]>() ?? Array.Empty<string>();
+
+            if (securityContacts.Length > 0)
+            {
+                incident.AlertSent = true;
+                incident.AlertSentAt = DateTime.UtcNow;
+                incident.AlertRecipients = string.Join(", ", securityContacts);
+
+                _logger.LogWarning(
+                    "Security incident alert: {IncidentNumber}, Type={Type}, Severity={Severity}, " +
+                    "Source={Source}, Recipients={Recipients}",
+                    incident.IncidentNumber,
+                    incident.IncidentType,
+                    incident.Severity,
+                    incident.Source,
+                    incident.AlertRecipients);
+            }
+        }
+
         _context.SecurityIncidents.Add(incident);
         await _context.SaveChangesAsync();
 
@@ -54,12 +78,6 @@ public class SecurityIncidentService : ISecurityIncidentService
             incident.IncidentType,
             incident.Severity,
             incident.Source);
-
-        // Send alert for high-severity incidents
-        if (ShouldSendAlert(incident.Severity))
-        {
-            await SendIncidentAlertAsync(incident);
-        }
 
         return incident;
     }

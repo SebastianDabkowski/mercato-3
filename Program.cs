@@ -348,6 +348,16 @@ if (app.Environment.IsDevelopment())
     await EncryptionTest.RunTestAsync();
 }
 
+// Run security incident test scenario in a separate scope to avoid tracking conflicts
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var securityIncidentService = scope.ServiceProvider.GetRequiredService<ISecurityIncidentService>();
+    var loginEventService = scope.ServiceProvider.GetRequiredService<ILoginEventService>();
+    await SecurityIncidentTestScenario.RunTestAsync(context, securityIncidentService, loginEventService);
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
