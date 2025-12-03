@@ -1,0 +1,202 @@
+@page "{categoryId:int}"
+@model MercatoApp.Pages.Admin.Categories.Attributes.CreateModel
+@{
+    ViewData["Title"] = $"Add Attribute - {Model.Category?.Name}";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-page="/Admin/Dashboard">Admin</a></li>
+                <li class="breadcrumb-item"><a asp-page="/Admin/Categories/Index">Categories</a></li>
+                <li class="breadcrumb-item"><a asp-page="Index" asp-route-categoryId="@Model.CategoryId">@Model.Category?.Name Attributes</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Add Attribute</li>
+            </ol>
+        </nav>
+
+        <h1 class="mb-4">Add Attribute</h1>
+
+        @if (Model.Errors.Count > 0)
+        {
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach (var error in Model.Errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form method="post">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Attribute Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.Name" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input asp-for="Input.Name" class="form-control" placeholder="e.g., Brand, Size, Color" />
+                        <div class="form-text">Internal name for the attribute (used in database)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.DisplayLabel" class="form-label">Display Label</label>
+                        <input asp-for="Input.DisplayLabel" class="form-control" placeholder="e.g., Product Brand" />
+                        <div class="form-text">Optional: Label shown to sellers. If blank, the name will be used.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Description" class="form-label">Description</label>
+                        <textarea asp-for="Input.Description" class="form-control" rows="2" 
+                                  placeholder="Help text or instructions for sellers"></textarea>
+                        <div class="form-text">Optional: Help text shown to sellers when filling this field</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.AttributeType" class="form-label">Type <span class="text-danger">*</span></label>
+                        <select asp-for="Input.AttributeType" class="form-select" id="attributeTypeSelect">
+                            <option value="">-- Select Type --</option>
+                            <option value="Text">Text (Single line)</option>
+                            <option value="TextArea">Text Area (Multiple lines)</option>
+                            <option value="Number">Number</option>
+                            <option value="Boolean">Boolean (Yes/No)</option>
+                            <option value="Date">Date</option>
+                            <option value="SingleSelect">Single Select (Dropdown)</option>
+                            <option value="MultiSelect">Multi Select (Checkboxes)</option>
+                        </select>
+                        <div class="form-text">The data type for this attribute</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label asp-for="Input.DisplayOrder" class="form-label">Display Order</label>
+                                <input asp-for="Input.DisplayOrder" type="number" class="form-control" />
+                                <div class="form-text">Lower values appear first</div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label d-block">Options</label>
+                                <div class="form-check form-check-inline">
+                                    <input asp-for="Input.IsRequired" class="form-check-input" />
+                                    <label asp-for="Input.IsRequired" class="form-check-label">Required</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input asp-for="Input.IsFilterable" class="form-check-input" />
+                                    <label asp-for="Input.IsFilterable" class="form-check-label">Filterable</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input asp-for="Input.IsSearchable" class="form-check-input" />
+                                    <label asp-for="Input.IsSearchable" class="form-check-label">Searchable</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Number-specific options -->
+            <div class="card mt-3" id="numberOptions" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Number Options</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label asp-for="Input.MinValue" class="form-label">Minimum Value</label>
+                                <input asp-for="Input.MinValue" type="number" step="0.0001" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label asp-for="Input.MaxValue" class="form-label">Maximum Value</label>
+                                <input asp-for="Input.MaxValue" type="number" step="0.0001" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label asp-for="Input.Unit" class="form-label">Unit</label>
+                                <input asp-for="Input.Unit" class="form-control" placeholder="e.g., cm, kg, %" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text validation options -->
+            <div class="card mt-3" id="textOptions" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Text Validation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.ValidationPattern" class="form-label">Validation Pattern (Regex)</label>
+                        <input asp-for="Input.ValidationPattern" class="form-control" placeholder="e.g., ^[A-Z]{3}$" />
+                        <div class="form-text">Optional regular expression to validate input</div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Input.ValidationMessage" class="form-label">Validation Message</label>
+                        <input asp-for="Input.ValidationMessage" class="form-control" 
+                               placeholder="Error message shown when validation fails" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Select options -->
+            <div class="card mt-3" id="selectOptions" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Select Options</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Options (one per line) <span class="text-danger">*</span></label>
+                        <textarea asp-for="Input.OptionsText" class="form-control" rows="8" 
+                                  placeholder="Red&#10;Blue&#10;Green&#10;Yellow"></textarea>
+                        <div class="form-text">Enter each option on a new line</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Create Attribute
+                </button>
+                <a asp-page="Index" asp-route-categoryId="@Model.CategoryId" class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('attributeTypeSelect').addEventListener('change', function() {
+            const selectedType = this.value;
+            const numberOptions = document.getElementById('numberOptions');
+            const textOptions = document.getElementById('textOptions');
+            const selectOptions = document.getElementById('selectOptions');
+            
+            // Hide all option sections
+            numberOptions.style.display = 'none';
+            textOptions.style.display = 'none';
+            selectOptions.style.display = 'none';
+            
+            // Show relevant section based on type
+            if (selectedType === 'Number') {
+                numberOptions.style.display = 'block';
+            } else if (selectedType === 'Text' || selectedType === 'TextArea') {
+                textOptions.style.display = 'block';
+            } else if (selectedType === 'SingleSelect' || selectedType === 'MultiSelect') {
+                selectOptions.style.display = 'block';
+            }
+        });
+        
+        // Trigger change on page load if value is set
+        document.getElementById('attributeTypeSelect').dispatchEvent(new Event('change'));
+    </script>
+}

@@ -37,7 +37,10 @@
             }
         </td>
         <td class="text-end">
-            <a asp-page="Edit" asp-route-id="@category.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+            <a asp-page="Attributes/Index" asp-route-categoryId="@category.Id" class="btn btn-sm btn-outline-secondary" title="Attributes">
+                <i class="bi bi-tags"></i> Attributes
+            </a>
+            <a asp-page="Edit" asp-route-id="@category.Id" class="btn btn-sm btn-outline-primary ms-1" title="Edit">
                 <i class="bi bi-pencil"></i> Edit
             </a>
             <a asp-page="Delete" asp-route-id="@category.Id" class="btn btn-sm btn-outline-danger ms-1" title="Delete">

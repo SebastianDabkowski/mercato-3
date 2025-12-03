@@ -73,6 +73,21 @@ public class ApplicationDbContext : DbContext
     public DbSet<Category> Categories { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the category attributes table.
+    /// </summary>
+    public DbSet<CategoryAttribute> CategoryAttributes { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the category attribute options table.
+    /// </summary>
+    public DbSet<CategoryAttributeOption> CategoryAttributeOptions { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the product attribute values table.
+    /// </summary>
+    public DbSet<ProductAttributeValue> ProductAttributeValues { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the product images table.
     /// </summary>
     public DbSet<ProductImage> ProductImages { get; set; } = null!;
@@ -634,6 +649,86 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.FixedCommissionAmountOverride)
                 .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<CategoryAttribute>(entity =>
+        {
+            // Index on category ID for finding all attributes for a category
+            entity.HasIndex(e => e.CategoryId);
+
+            // Composite index for ordering attributes within a category
+            entity.HasIndex(e => new { e.CategoryId, e.DisplayOrder });
+
+            // Composite index for finding non-deprecated attributes
+            entity.HasIndex(e => new { e.CategoryId, e.IsDeprecated });
+
+            // Index for filterable attributes
+            entity.HasIndex(e => new { e.CategoryId, e.IsFilterable });
+
+            // Configure relationship with Category
+            entity.HasOne(e => e.Category)
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure decimal precision for min/max values
+            entity.Property(e => e.MinValue)
+                .HasPrecision(18, 4);
+
+            entity.Property(e => e.MaxValue)
+                .HasPrecision(18, 4);
+        });
+
+        modelBuilder.Entity<CategoryAttributeOption>(entity =>
+        {
+            // Index on category attribute ID for finding all options for an attribute
+            entity.HasIndex(e => e.CategoryAttributeId);
+
+            // Composite index for ordering options within an attribute
+            entity.HasIndex(e => new { e.CategoryAttributeId, e.DisplayOrder });
+
+            // Composite index for finding active options
+            entity.HasIndex(e => new { e.CategoryAttributeId, e.IsActive });
+
+            // Configure relationship with CategoryAttribute
+            entity.HasOne(e => e.CategoryAttribute)
+                .WithMany(a => a.Options)
+                .HasForeignKey(e => e.CategoryAttributeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductAttributeValue>(entity =>
+        {
+            // Index on product ID for finding all attribute values for a product
+            entity.HasIndex(e => e.ProductId);
+
+            // Composite unique index - one value per attribute per product
+            entity.HasIndex(e => new { e.ProductId, e.CategoryAttributeId }).IsUnique();
+
+            // Index on category attribute ID for attribute-based queries
+            entity.HasIndex(e => e.CategoryAttributeId);
+
+            // Configure relationship with Product
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.AttributeValues)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with CategoryAttribute
+            entity.HasOne(e => e.CategoryAttribute)
+                .WithMany()
+                .HasForeignKey(e => e.CategoryAttributeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with SelectedOption (optional)
+            entity.HasOne(e => e.SelectedOption)
+                .WithMany()
+                .HasForeignKey(e => e.SelectedOptionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure decimal precision for numeric value
+            entity.Property(e => e.NumericValue)
+                .HasPrecision(18, 4);
         });
 
         modelBuilder.Entity<ProductImage>(entity =>

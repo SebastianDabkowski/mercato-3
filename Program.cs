@@ -70,6 +70,7 @@ builder.Services.AddScoped<IInternalUserManagementService, InternalUserManagemen
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductWorkflowService, ProductWorkflowService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICategoryAttributeService, CategoryAttributeService>();
 builder.Services.AddScoped<IProductImageService, ProductImageService>();
 builder.Services.AddScoped<IProductImportService, ProductImportService>();
 builder.Services.AddScoped<IProductExportService, ProductExportService>();

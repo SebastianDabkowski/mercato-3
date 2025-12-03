@@ -169,4 +169,10 @@ public class Product
     /// Only used when HasVariants is true.
     /// </summary>
     public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
+
+    /// <summary>
+    /// Gets or sets the category attribute values for this product (navigation property).
+    /// Stores structured attribute data based on the product's category template.
+    /// </summary>
+    public ICollection<ProductAttributeValue> AttributeValues { get; set; } = new List<ProductAttributeValue>();
 }
