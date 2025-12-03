@@ -32,13 +32,21 @@ public static class PayoutServiceManualTest
         var configData = new Dictionary<string, string?>
         {
             { "Payout:MaxRetryAttempts", "3" },
-            { "Payout:RetryDelayHours", "24" }
+            { "Payout:RetryDelayHours", "24" },
+            { "Encryption:MasterKey", "dGVzdF9rZXlfZm9yX3VuaXRfdGVzdHNfb25seV9kb19ub3RfdXNlX2luX3Byb2R1Y3Rpb25fMTIzNDU2Nzg5MA==" },
+            { "Encryption:CurrentKeyVersion", "1" }
         };
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(configData)
             .Build();
         
-        var payoutSettingsService = new PayoutSettingsService(context, settingsLogger);
+        var keyManagementLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<KeyManagementService>();
+        var keyManagementService = new KeyManagementService(configuration, keyManagementLogger);
+        
+        var encryptionLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<DataEncryptionService>();
+        var encryptionService = new DataEncryptionService(keyManagementService, encryptionLogger);
+        
+        var payoutSettingsService = new PayoutSettingsService(context, settingsLogger, encryptionService);
         
         // Create a mock email service for testing
         var emailLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<EmailService>();

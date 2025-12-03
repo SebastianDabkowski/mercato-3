@@ -12,6 +12,17 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure HSTS for production
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.AddHsts(options =>
+    {
+        options.MaxAge = TimeSpan.FromDays(365); // 1 year
+        options.IncludeSubDomains = true;
+        options.Preload = true;
+    });
+}
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 
@@ -21,8 +32,10 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-CSRF-TOKEN";
     options.Cookie.Name = "MercatoAntiForgery";
     options.Cookie.HttpOnly = true;
-    // Use SameAsRequest to work in both development (HTTP) and production (HTTPS)
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    // Enforce HTTPS in production, allow HTTP in development
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
+        ? CookieSecurePolicy.SameAsRequest 
+        : CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
 });
 
@@ -45,10 +58,17 @@ builder.Services.AddSession(options =>
     options.Cookie.Name = "MercatoSession";
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
+    // Enforce HTTPS in production, allow HTTP in development
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
+        ? CookieSecurePolicy.None 
+        : CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.IdleTimeout = TimeSpan.FromDays(7);
 });
+
+// Add encryption and key management services
+builder.Services.AddSingleton<IKeyManagementService, KeyManagementService>();
+builder.Services.AddScoped<IDataEncryptionService, DataEncryptionService>();
 
 // Add application services
 builder.Services.AddScoped<IPasswordValidationService, PasswordValidationService>();
@@ -307,10 +327,13 @@ if (app.Environment.IsDevelopment())
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // Configure HSTS with a longer max-age for production (1 year)
+    // Include subdomains and allow preload for enhanced security
     app.UseHsts();
 }
 
+// Always redirect HTTP to HTTPS for security
+// In production, this ensures all traffic is encrypted in transit
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
