@@ -57,19 +57,12 @@ public class PartialFulfillmentModel : PageModel
             return RedirectToPage("/Index");
         }
 
-        // Get the sub-order
-        SubOrder = await _orderService.GetSubOrderByIdAsync(subOrderId);
+        // Get the sub-order with authorization check
+        SubOrder = await _orderService.GetSubOrderByIdForSellerAsync(subOrderId, userId);
 
         if (SubOrder == null)
         {
-            TempData["ErrorMessage"] = "Order not found.";
-            return RedirectToPage("/Seller/Orders");
-        }
-
-        // Verify that this sub-order belongs to the current seller's store
-        if (SubOrder.StoreId != CurrentStore.Id)
-        {
-            TempData["ErrorMessage"] = "You don't have permission to view this order.";
+            TempData["ErrorMessage"] = "Order not found or you don't have permission to view it.";
             return RedirectToPage("/Seller/Orders");
         }
 
@@ -104,12 +97,12 @@ public class PartialFulfillmentModel : PageModel
             return RedirectToPage("/Index");
         }
 
-        // Get the sub-order
-        SubOrder = await _orderService.GetSubOrderByIdAsync(subOrderId);
+        // Get the sub-order with authorization check
+        SubOrder = await _orderService.GetSubOrderByIdForSellerAsync(subOrderId, userId);
 
-        if (SubOrder == null || SubOrder.StoreId != CurrentStore.Id)
+        if (SubOrder == null)
         {
-            TempData["ErrorMessage"] = "Order not found or unauthorized.";
+            TempData["ErrorMessage"] = "Order not found or you don't have permission to access it.";
             return RedirectToPage("/Seller/Orders");
         }
 
@@ -169,12 +162,12 @@ public class PartialFulfillmentModel : PageModel
             return RedirectToPage("/Index");
         }
 
-        // Get the sub-order
-        SubOrder = await _orderService.GetSubOrderByIdAsync(subOrderId);
+        // Get the sub-order with authorization check
+        SubOrder = await _orderService.GetSubOrderByIdForSellerAsync(subOrderId, userId);
 
-        if (SubOrder == null || SubOrder.StoreId != CurrentStore.Id)
+        if (SubOrder == null)
         {
-            TempData["ErrorMessage"] = "Order not found or unauthorized.";
+            TempData["ErrorMessage"] = "Order not found or you don't have permission to access it.";
             return RedirectToPage("/Seller/Orders");
         }
 

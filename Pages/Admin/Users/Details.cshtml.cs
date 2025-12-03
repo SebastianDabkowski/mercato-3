@@ -4,6 +4,7 @@ using MercatoApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Claims;
 
 namespace MercatoApp.Pages.Admin.Users;
 
@@ -14,13 +15,16 @@ namespace MercatoApp.Pages.Admin.Users;
 public class DetailsModel : PageModel
 {
     private readonly IUserManagementService _userManagementService;
+    private readonly IAdminAuditLogService _auditLogService;
     private readonly ILogger<DetailsModel> _logger;
 
     public DetailsModel(
         IUserManagementService userManagementService,
+        IAdminAuditLogService auditLogService,
         ILogger<DetailsModel> logger)
     {
         _userManagementService = userManagementService;
+        _auditLogService = auditLogService;
         _logger = logger;
     }
 
@@ -79,6 +83,18 @@ public class DetailsModel : PageModel
             if (User.Status == AccountStatus.Blocked && User.BlockedByUserId.HasValue)
             {
                 BlockedByAdmin = await _userManagementService.GetUserDetailsAsync(User.BlockedByUserId.Value);
+            }
+
+            // Log sensitive access to user profile
+            var adminUserIdClaim = base.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(adminUserIdClaim, out var adminUserId))
+            {
+                await _auditLogService.LogSensitiveAccessAsync(
+                    adminUserId,
+                    "UserProfile",
+                    id,
+                    User.Email,
+                    id);
             }
 
             return Page();
