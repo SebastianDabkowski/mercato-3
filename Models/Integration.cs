@@ -41,8 +41,9 @@ public class Integration
     public string? ApiEndpoint { get; set; }
 
     /// <summary>
-    /// Gets or sets the encrypted API key or secret.
-    /// Should never be displayed in full to users.
+    /// Gets or sets the API key or secret.
+    /// Should never be displayed in full to users. Use MaskApiKey() to display masked version.
+    /// Note: In production, consider encrypting this field at rest.
     /// </summary>
     public string? ApiKey { get; set; }
 
