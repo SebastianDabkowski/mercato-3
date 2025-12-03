@@ -2065,5 +2065,43 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.LegalDocumentId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        modelBuilder.Entity<AdminAuditLog>(entity =>
+        {
+            // Index on admin user ID for finding all actions by an admin
+            entity.HasIndex(e => e.AdminUserId);
+
+            // Index on target user ID for finding all actions on a user (optional)
+            // Note: When migrating to SQL Server or PostgreSQL, consider using a filtered index
+            // to exclude null values: .HasFilter("TargetUserId IS NOT NULL")
+            entity.HasIndex(e => e.TargetUserId);
+
+            // Index on entity type for filtering by entity
+            entity.HasIndex(e => e.EntityType);
+
+            // Index on action timestamp for time-based queries
+            entity.HasIndex(e => e.ActionTimestamp);
+
+            // Composite index for filtering by entity type and entity ID
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+
+            // Composite index for filtering by action and timestamp
+            entity.HasIndex(e => new { e.Action, e.ActionTimestamp });
+
+            // Composite index for filtering by entity and admin user
+            entity.HasIndex(e => new { e.EntityType, e.AdminUserId, e.ActionTimestamp });
+
+            // Configure relationship with AdminUser
+            entity.HasOne(e => e.AdminUser)
+                .WithMany()
+                .HasForeignKey(e => e.AdminUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure optional relationship with TargetUser
+            entity.HasOne(e => e.TargetUser)
+                .WithMany()
+                .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
     }
 }
