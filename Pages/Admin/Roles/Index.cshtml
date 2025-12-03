@@ -1,0 +1,108 @@
+@page
+@model MercatoApp.Pages.Admin.Roles.IndexModel
+@{
+    ViewData["Title"] = "Role-Based Access Control";
+}
+
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-3">Role-Based Access Control (RBAC)</h1>
+            <p class="text-muted">View and manage role permissions for the marketplace platform.</p>
+        </div>
+    </div>
+
+    @if (!Model.RolesWithPermissions.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No roles found in the system.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var roleWithPerms in Model.RolesWithPermissions)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-shield-check"></i> @roleWithPerms.Role.Name
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(roleWithPerms.Role.Description))
+                            {
+                                <p class="text-muted small mb-3">@roleWithPerms.Role.Description</p>
+                            }
+
+                            <h6 class="mb-2">Permissions (@roleWithPerms.Permissions.Count)</h6>
+                            
+                            @if (!roleWithPerms.Permissions.Any())
+                            {
+                                <p class="text-muted small">No permissions assigned</p>
+                            }
+                            else
+                            {
+                                <div class="permission-list" style="max-height: 300px; overflow-y: auto;">
+                                    @foreach (var module in roleWithPerms.Permissions.GroupBy(p => p.Module).OrderBy(g => g.Key))
+                                    {
+                                        <div class="mb-2">
+                                            <strong class="text-primary small">@module.Key</strong>
+                                            <ul class="list-unstyled ms-3 small">
+                                                @foreach (var permission in module.OrderBy(p => p.Name))
+                                                {
+                                                    <li>
+                                                        <i class="bi bi-check-circle text-success"></i>
+                                                        @permission.Name
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <a asp-page="./Manage" asp-route-roleId="@roleWithPerms.Role.Id" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-gear"></i> Manage Permissions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> About RBAC
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Role-Based Access Control (RBAC)</strong> ensures that access to platform modules and actions is restricted according to user responsibilities.</p>
+                    
+                    <h6 class="mt-3">Platform Roles:</h6>
+                    <ul>
+                        <li><strong>Buyer:</strong> Can browse products, make purchases, and manage their cart and orders.</li>
+                        <li><strong>Seller:</strong> Can manage their store, products, and fulfill orders.</li>
+                        <li><strong>Admin:</strong> Has full system access to manage all aspects of the platform.</li>
+                        <li><strong>Support:</strong> Can assist users, manage support tickets, and moderate content.</li>
+                        <li><strong>Compliance:</strong> Can review compliance reports, audit logs, and moderate content.</li>
+                    </ul>
+
+                    <h6 class="mt-3">Key Features:</h6>
+                    <ul>
+                        <li>Permissions are enforced consistently on backend APIs and UI</li>
+                        <li>When a user's role changes, their effective permissions are recalculated immediately</li>
+                        <li>Unauthorized access attempts are denied with appropriate error messages</li>
+                        <li>All permission changes are logged for audit purposes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

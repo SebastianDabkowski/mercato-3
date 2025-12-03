@@ -61,6 +61,7 @@ builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<ILoginEventService, LoginEventService>();
 builder.Services.AddScoped<IRoleAuthorizationService, RoleAuthorizationService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IAuthorizationHandler, RoleAuthorizationHandler>();
 builder.Services.AddScoped<ISellerOnboardingService, SellerOnboardingService>();
 builder.Services.AddScoped<IStoreProfileService, StoreProfileService>();
@@ -154,11 +155,20 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PolicyNames.AdminOnly, policy =>
         policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Admin)));
 
+    options.AddPolicy(PolicyNames.SupportOnly, policy =>
+        policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Support)));
+
+    options.AddPolicy(PolicyNames.ComplianceOnly, policy =>
+        policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Compliance)));
+
     options.AddPolicy(PolicyNames.BuyerOrSeller, policy =>
         policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Buyer, Role.RoleNames.Seller)));
 
     options.AddPolicy(PolicyNames.SellerOrAdmin, policy =>
         policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Seller, Role.RoleNames.Admin)));
+
+    options.AddPolicy(PolicyNames.AdminOrSupportOrCompliance, policy =>
+        policy.Requirements.Add(new RoleRequirement(Role.RoleNames.Admin, Role.RoleNames.Support, Role.RoleNames.Compliance)));
 });
 
 // Configure authentication with cookie and external OAuth providers

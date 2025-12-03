@@ -31,6 +31,21 @@ public class ApplicationDbContext : DbContext
     public DbSet<LoginEvent> LoginEvents { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the roles table for extensible RBAC.
+    /// </summary>
+    public DbSet<Role> Roles { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the permissions table for granular access control.
+    /// </summary>
+    public DbSet<Permission> Permissions { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the role-permission mappings table.
+    /// </summary>
+    public DbSet<RolePermission> RolePermissions { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the stores table.
     /// </summary>
     public DbSet<Store> Stores { get; set; } = null!;
