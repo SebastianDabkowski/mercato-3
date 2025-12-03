@@ -172,13 +172,40 @@
             </div>
 
             <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Terms &amp; Consents</h5>
+                </div>
                 <div class="card-body">
-                    <div class="form-check">
+                    <div class="form-check mb-3">
                         <input class="form-check-input" asp-for="Input.AcceptTerms" aria-required="true" />
                         <label class="form-check-label" asp-for="Input.AcceptTerms">
-                            I accept the <a href="/Privacy" target="_blank">terms and conditions</a> and <a href="/Privacy" target="_blank">privacy policy</a>
+                            I accept the <a href="/Privacy" target="_blank">terms and conditions</a> and <a href="/Privacy" target="_blank">privacy policy</a> <span class="text-danger">*</span>
                         </label>
                         <span asp-validation-for="Input.AcceptTerms" class="text-danger d-block"></span>
+                    </div>
+
+                    <hr />
+                    <p class="text-muted small mb-3">Optional: You can change these preferences at any time in your privacy settings.</p>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" asp-for="Input.AcceptNewsletter" />
+                        <label class="form-check-label" asp-for="Input.AcceptNewsletter">
+                            I want to receive newsletters with platform updates and marketplace news
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" asp-for="Input.AcceptMarketing" />
+                        <label class="form-check-label" asp-for="Input.AcceptMarketing">
+                            I want to receive marketing communications and promotional offers
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="Input.AcceptProfiling" />
+                        <label class="form-check-label" asp-for="Input.AcceptProfiling">
+                            I consent to personalization and profiling for better product recommendations
+                        </label>
                     </div>
                 </div>
             </div>

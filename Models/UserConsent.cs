@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace MercatoApp.Models;
 
 /// <summary>
-/// Represents a user's acceptance of a specific version of a legal document.
-/// Used for compliance and audit purposes.
+/// Represents a user's acceptance or withdrawal of a specific consent type.
+/// Used for GDPR compliance and audit purposes.
 /// </summary>
 public class UserConsent
 {
@@ -25,21 +25,52 @@ public class UserConsent
     public User User { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets the legal document ID that was accepted.
+    /// Gets or sets the type of consent.
     /// </summary>
     [Required]
-    public int LegalDocumentId { get; set; }
+    public ConsentType ConsentType { get; set; }
 
     /// <summary>
-    /// Gets or sets the legal document that was accepted.
+    /// Gets or sets the legal document ID that was accepted (optional for non-document consents).
     /// </summary>
-    public LegalDocument LegalDocument { get; set; } = null!;
+    public int? LegalDocumentId { get; set; }
 
     /// <summary>
-    /// Gets or sets when the consent was given.
+    /// Gets or sets the legal document that was accepted (optional).
+    /// </summary>
+    public LegalDocument? LegalDocument { get; set; }
+
+    /// <summary>
+    /// Gets or sets the version of the consent text when it was granted.
+    /// Stored separately from LegalDocument to track consent for non-document types.
+    /// </summary>
+    [MaxLength(20)]
+    public string? ConsentVersion { get; set; }
+
+    /// <summary>
+    /// Gets or sets the consent text that was presented to the user.
+    /// Stored for audit trail.
+    /// </summary>
+    [MaxLength(2000)]
+    public string? ConsentText { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether consent is granted (true) or withdrawn (false).
+    /// </summary>
+    [Required]
+    public bool IsGranted { get; set; }
+
+    /// <summary>
+    /// Gets or sets when the consent was given or withdrawn.
     /// </summary>
     [Required]
     public DateTime ConsentedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets when this consent record was superseded by a newer version.
+    /// Null if this is the current active consent record for the user and type.
+    /// </summary>
+    public DateTime? SupersededAt { get; set; }
 
     /// <summary>
     /// Gets or sets the IP address from which consent was given.
@@ -56,7 +87,7 @@ public class UserConsent
     public string? UserAgent { get; set; }
 
     /// <summary>
-    /// Gets or sets the context in which consent was given (e.g., "registration", "checkout").
+    /// Gets or sets the context in which consent was given (e.g., "registration", "checkout", "privacy_settings").
     /// </summary>
     [MaxLength(50)]
     public string? ConsentContext { get; set; }

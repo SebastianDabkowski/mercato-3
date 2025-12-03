@@ -12,15 +12,21 @@ public class RegisterModel : PageModel
     private readonly IUserRegistrationService _registrationService;
     private readonly IPasswordValidationService _passwordValidation;
     private readonly IConfiguration _configuration;
+    private readonly IConsentManagementService _consentService;
+    private readonly ILegalDocumentService _legalDocumentService;
 
     public RegisterModel(
         IUserRegistrationService registrationService,
         IPasswordValidationService passwordValidation,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IConsentManagementService consentService,
+        ILegalDocumentService legalDocumentService)
     {
         _registrationService = registrationService;
         _passwordValidation = passwordValidation;
         _configuration = configuration;
+        _consentService = consentService;
+        _legalDocumentService = legalDocumentService;
     }
 
     [BindProperty]
@@ -89,6 +95,15 @@ public class RegisterModel : PageModel
         [MustBeTrue(ErrorMessage = "You must accept the terms and conditions.")]
         [Display(Name = "I accept the terms and conditions")]
         public bool AcceptTerms { get; set; }
+
+        [Display(Name = "I want to receive newsletters")]
+        public bool AcceptNewsletter { get; set; }
+
+        [Display(Name = "I want to receive marketing communications")]
+        public bool AcceptMarketing { get; set; }
+
+        [Display(Name = "I consent to personalization and profiling")]
+        public bool AcceptProfiling { get; set; }
     }
 
     public void OnGet()
@@ -140,6 +155,81 @@ public class RegisterModel : PageModel
                 ModelState.AddModelError(string.Empty, error);
             }
             return Page();
+        }
+
+        // Record consents for the newly registered user
+        if (result.User != null)
+        {
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = HttpContext.Request.Headers.UserAgent.ToString();
+
+            // Record required consents (Terms of Service and Privacy Policy)
+            var tosDocument = await _legalDocumentService.GetActiveDocumentAsync(LegalDocumentType.TermsOfService);
+            if (tosDocument != null)
+            {
+                await _consentService.RecordConsentAsync(
+                    result.User.Id,
+                    ConsentType.TermsOfService,
+                    isGranted: true,
+                    version: tosDocument.Version,
+                    consentText: "I accept the Terms of Service",
+                    ipAddress,
+                    userAgent,
+                    context: "registration",
+                    legalDocumentId: tosDocument.Id);
+            }
+
+            var ppDocument = await _legalDocumentService.GetActiveDocumentAsync(LegalDocumentType.PrivacyPolicy);
+            if (ppDocument != null)
+            {
+                await _consentService.RecordConsentAsync(
+                    result.User.Id,
+                    ConsentType.PrivacyPolicy,
+                    isGranted: true,
+                    version: ppDocument.Version,
+                    consentText: "I accept the Privacy Policy",
+                    ipAddress,
+                    userAgent,
+                    context: "registration",
+                    legalDocumentId: ppDocument.Id);
+            }
+
+            // Record optional consents
+            if (Input.AcceptNewsletter)
+            {
+                await _consentService.GrantConsentAsync(
+                    result.User.Id,
+                    ConsentType.Newsletter,
+                    version: "1.0",
+                    consentText: "I agree to receive newsletters and general updates from Mercato.",
+                    ipAddress,
+                    userAgent,
+                    context: "registration");
+            }
+
+            if (Input.AcceptMarketing)
+            {
+                await _consentService.GrantConsentAsync(
+                    result.User.Id,
+                    ConsentType.Marketing,
+                    version: "1.0",
+                    consentText: "I agree to receive marketing communications and promotional offers from Mercato.",
+                    ipAddress,
+                    userAgent,
+                    context: "registration");
+            }
+
+            if (Input.AcceptProfiling)
+            {
+                await _consentService.GrantConsentAsync(
+                    result.User.Id,
+                    ConsentType.Profiling,
+                    version: "1.0",
+                    consentText: "I agree to allow Mercato to analyze my behavior and provide personalized recommendations.",
+                    ipAddress,
+                    userAgent,
+                    context: "registration");
+            }
         }
 
         return RedirectToPage("RegisterConfirmation");

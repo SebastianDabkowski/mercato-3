@@ -1,0 +1,153 @@
+@page
+@model MercatoApp.Pages.Account.PrivacySettingsModel
+@{
+    ViewData["Title"] = "Privacy Settings";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <h2>Privacy & Consent Settings</h2>
+            <p class="text-muted">
+                Manage your data processing and communication preferences. You can grant or withdraw consent at any time.
+            </p>
+
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @Model.SuccessMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Communication Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Control which types of communications you'd like to receive from us.</p>
+
+                    @await Html.PartialAsync("_ConsentItem", new { 
+                        Type = ConsentType.Newsletter,
+                        Title = "Newsletter",
+                        Description = "Receive our regular newsletter with platform updates, new features, and marketplace news.",
+                        Status = Model.Consents.GetValueOrDefault(ConsentType.Newsletter)
+                    })
+
+                    @await Html.PartialAsync("_ConsentItem", new { 
+                        Type = ConsentType.Marketing,
+                        Title = "Marketing Communications",
+                        Description = "Receive promotional offers, special deals, and marketing communications from Mercato.",
+                        Status = Model.Consents.GetValueOrDefault(ConsentType.Marketing)
+                    })
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Data Processing Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Control how your data is used and shared.</p>
+
+                    @await Html.PartialAsync("_ConsentItem", new { 
+                        Type = ConsentType.Profiling,
+                        Title = "Personalization & Profiling",
+                        Description = "Allow us to analyze your browsing and purchase behavior to provide personalized product recommendations and improve your shopping experience.",
+                        Status = Model.Consents.GetValueOrDefault(ConsentType.Profiling)
+                    })
+
+                    @await Html.PartialAsync("_ConsentItem", new { 
+                        Type = ConsentType.ThirdPartySharing,
+                        Title = "Third-Party Data Sharing",
+                        Description = "Allow us to share your data with trusted third-party partners for analytics, advertising, and service improvements.",
+                        Status = Model.Consents.GetValueOrDefault(ConsentType.ThirdPartySharing)
+                    })
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Required Consents</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">These consents are required to use our platform and cannot be withdrawn without account deletion.</p>
+
+                    @{
+                        var tosStatus = Model.Consents.GetValueOrDefault(ConsentType.TermsOfService);
+                        var ppStatus = Model.Consents.GetValueOrDefault(ConsentType.PrivacyPolicy);
+                    }
+
+                    <div class="mb-3 p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Terms of Service</h6>
+                                <p class="text-muted small mb-1">You accepted the Terms of Service when you created your account.</p>
+                                @if (tosStatus?.ConsentedAt != null)
+                                {
+                                    <small class="text-muted">
+                                        Accepted on: @tosStatus.ConsentedAt.Value.ToString("MMMM dd, yyyy 'at' HH:mm") UTC
+                                        @if (!string.IsNullOrEmpty(tosStatus.Version))
+                                        {
+                                            <span> | Version: @tosStatus.Version</span>
+                                        }
+                                    </small>
+                                }
+                            </div>
+                            <div>
+                                <span class="badge bg-success">Active</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Privacy Policy</h6>
+                                <p class="text-muted small mb-1">You accepted the Privacy Policy when you created your account.</p>
+                                @if (ppStatus?.ConsentedAt != null)
+                                {
+                                    <small class="text-muted">
+                                        Accepted on: @ppStatus.ConsentedAt.Value.ToString("MMMM dd, yyyy 'at' HH:mm") UTC
+                                        @if (!string.IsNullOrEmpty(ppStatus.Version))
+                                        {
+                                            <span> | Version: @ppStatus.Version</span>
+                                        }
+                                    </small>
+                                }
+                            </div>
+                            <div>
+                                <span class="badge bg-success">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <h6 class="alert-heading">Your Privacy Rights</h6>
+                <p class="mb-0">
+                    Under GDPR and other data protection regulations, you have the right to access, correct, or delete your personal data.
+                    To exercise these rights or if you have questions about how we process your data, please contact our privacy team.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+    </script>
+}
