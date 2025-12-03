@@ -62,12 +62,12 @@ public class SellerRating
     /// Gets or sets whether the review is approved for public display.
     /// Reviews may require moderation before becoming visible.
     /// </summary>
-    public bool IsApproved { get; set; } = true;
+    public bool IsApproved { get; set; } = false;
 
     /// <summary>
     /// Gets or sets the moderation status of the review.
     /// </summary>
-    public ReviewModerationStatus ModerationStatus { get; set; } = ReviewModerationStatus.Approved;
+    public ReviewModerationStatus ModerationStatus { get; set; } = ReviewModerationStatus.PendingReview;
 
     /// <summary>
     /// Gets or sets the date and time when the rating was submitted.

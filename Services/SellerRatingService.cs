@@ -73,7 +73,7 @@ public class SellerRatingService : ISellerRatingService
             Rating = rating,
             ReviewText = reviewText,
             CreatedAt = DateTime.UtcNow,
-            // Set moderation defaults - approved by default
+            // Approve by default - auto-check will flag if needed
             IsApproved = true,
             ModerationStatus = ReviewModerationStatus.Approved,
             ApprovedAt = DateTime.UtcNow
@@ -93,7 +93,7 @@ public class SellerRatingService : ISellerRatingService
     {
         // Only include approved ratings in the average calculation
         var average = await _context.SellerRatings
-            .Where(sr => sr.StoreId == storeId && sr.IsApproved && sr.ModerationStatus == ReviewModerationStatus.Approved)
+            .Where(sr => sr.StoreId == storeId && sr.ModerationStatus == ReviewModerationStatus.Approved)
             .Select(sr => (decimal?)sr.Rating)
             .AverageAsync();
 
@@ -105,7 +105,7 @@ public class SellerRatingService : ISellerRatingService
     {
         // Only count approved ratings
         return await _context.SellerRatings
-            .CountAsync(sr => sr.StoreId == storeId && sr.IsApproved && sr.ModerationStatus == ReviewModerationStatus.Approved);
+            .CountAsync(sr => sr.StoreId == storeId && sr.ModerationStatus == ReviewModerationStatus.Approved);
     }
 
     /// <inheritdoc />
