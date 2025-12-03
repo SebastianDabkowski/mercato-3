@@ -1,0 +1,109 @@
+@page
+@model MercatoApp.Pages.Admin.LegalDocuments.IndexModel
+@{
+    ViewData["Title"] = "Legal Documents Management - Admin";
+}
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-file-text"></i> Legal Documents Management
+                </h1>
+            </div>
+
+            <!-- Success Message -->
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Error Message -->
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Description -->
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle"></i>
+                Manage legal documents for the platform. Each document type can have multiple versions with effective dates.
+                Only one version per document type is active at a time.
+            </div>
+
+            <!-- Legal Documents Grid -->
+            <div class="row g-4">
+                @foreach (var kvp in Model.ActiveDocuments.OrderBy(x => (int)x.Key))
+                {
+                    var documentType = kvp.Key;
+                    var activeDoc = kvp.Value;
+                    var typeName = MercatoApp.Pages.Admin.LegalDocuments.IndexModel.GetDocumentTypeName(documentType);
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="card h-100 @(activeDoc != null ? "border-success" : "border-secondary")">
+                            <div class="card-header @(activeDoc != null ? "bg-success text-white" : "bg-secondary text-white")">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-file-text"></i> @typeName
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if (activeDoc != null)
+                                {
+                                    <p class="mb-2">
+                                        <strong>Current Version:</strong> @activeDoc.Version
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Title:</strong> @activeDoc.Title
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Effective Date:</strong> @activeDoc.EffectiveDate.ToString("MMM dd, yyyy")
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Last Updated:</strong> @(activeDoc.UpdatedAt?.ToString("MMM dd, yyyy") ?? activeDoc.CreatedAt.ToString("MMM dd, yyyy"))
+                                    </p>
+                                    @if (!string.IsNullOrEmpty(activeDoc.ChangeNotes))
+                                    {
+                                        <p class="mb-2 text-muted small">
+                                            <strong>Notes:</strong> @activeDoc.ChangeNotes
+                                        </p>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-muted">
+                                        <em>No active version available.</em>
+                                    </p>
+                                }
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between">
+                                    <a asp-page="./History" asp-route-type="@((int)documentType)" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-clock-history"></i> View History
+                                    </a>
+                                    <a asp-page="./Edit" asp-route-type="@((int)documentType)" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-plus-circle"></i> New Version
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Back Button -->
+            <div class="mt-4">
+                <a asp-page="/Admin/Dashboard" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

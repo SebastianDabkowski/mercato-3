@@ -417,6 +417,18 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<Integration> Integrations { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the legal documents table.
+    /// Stores versioned legal documents such as Terms of Service and Privacy Policy.
+    /// </summary>
+    public DbSet<LegalDocument> LegalDocuments { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the user consents table.
+    /// Stores user acceptances of legal documents for compliance and audit.
+    /// </summary>
+    public DbSet<UserConsent> UserConsents { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -2001,6 +2013,57 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UpdatedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<LegalDocument>(entity =>
+        {
+            // Composite index for finding active documents by type and language
+            entity.HasIndex(e => new { e.DocumentType, e.IsActive, e.LanguageCode });
+
+            // Index on effective date for date-based queries
+            entity.HasIndex(e => e.EffectiveDate);
+
+            // Composite index for versioning queries
+            entity.HasIndex(e => new { e.DocumentType, e.Version, e.LanguageCode });
+
+            // Configure optional relationship with CreatedByUser
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure optional relationship with UpdatedByUser
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UserConsent>(entity =>
+        {
+            // Index on user ID for finding all consents for a user
+            entity.HasIndex(e => e.UserId);
+
+            // Index on legal document ID for finding all consents for a document
+            entity.HasIndex(e => e.LegalDocumentId);
+
+            // Composite index for checking if a user has consented to a specific document
+            entity.HasIndex(e => new { e.UserId, e.LegalDocumentId });
+
+            // Index on consent date for audit queries
+            entity.HasIndex(e => e.ConsentedAt);
+
+            // Configure relationship with User
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with LegalDocument
+            entity.HasOne(e => e.LegalDocument)
+                .WithMany()
+                .HasForeignKey(e => e.LegalDocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
