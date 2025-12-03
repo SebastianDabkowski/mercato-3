@@ -15,16 +15,13 @@ namespace MercatoApp.Pages.Admin.AuditLogs;
 public class IndexModel : PageModel
 {
     private readonly IAdminAuditLogService _auditLogService;
-    private readonly IUserManagementService _userManagementService;
     private readonly ILogger<IndexModel> _logger;
 
     public IndexModel(
         IAdminAuditLogService auditLogService,
-        IUserManagementService userManagementService,
         ILogger<IndexModel> logger)
     {
         _auditLogService = auditLogService;
-        _userManagementService = userManagementService;
         _logger = logger;
     }
 

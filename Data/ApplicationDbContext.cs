@@ -2072,6 +2072,8 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.AdminUserId);
 
             // Index on target user ID for finding all actions on a user (optional)
+            // Note: When migrating to SQL Server or PostgreSQL, consider using a filtered index
+            // to exclude null values: .HasFilter("TargetUserId IS NOT NULL")
             entity.HasIndex(e => e.TargetUserId);
 
             // Index on entity type for filtering by entity

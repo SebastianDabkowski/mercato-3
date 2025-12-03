@@ -142,6 +142,7 @@ public class AdminAuditLogService : IAdminAuditLogService
     public async Task<List<string>> GetEntityTypesAsync()
     {
         return await _context.AdminAuditLogs
+            .Where(a => !string.IsNullOrEmpty(a.EntityType))
             .Select(a => a.EntityType)
             .Distinct()
             .OrderBy(e => e)
@@ -152,6 +153,7 @@ public class AdminAuditLogService : IAdminAuditLogService
     public async Task<List<string>> GetActionsAsync()
     {
         return await _context.AdminAuditLogs
+            .Where(a => !string.IsNullOrEmpty(a.Action))
             .Select(a => a.Action)
             .Distinct()
             .OrderBy(a => a)

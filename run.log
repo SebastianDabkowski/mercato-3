@@ -1,0 +1,692 @@
+Using launch settings from /home/runner/work/mercato-3/mercato-3/Properties/launchSettings.json...
+Building...
+/home/runner/work/mercato-3/mercato-3/MercatoApp.csproj : warning NU1903: Package 'Newtonsoft.Json' 10.0.3 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+/home/runner/work/mercato-3/mercato-3/MercatoApp.csproj : warning NU1903: Package 'Newtonsoft.Json' 10.0.3 has a known high severity vulnerability, https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 3 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 5 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 3 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 3 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 4 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+
+=== Integration Management Test Scenario ===
+
+Test 1: Create Payment Integration (Production)
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.IntegrationService[0]
+      Integration created: Stripe Payment Gateway (Type: Payment, Environment: Production) by user 4
+  ✓ Created: Stripe Payment Gateway (ID: 1)
+  - API Key (Masked): **********************************************wxyz
+
+Test 2: Create Shipping Integration (Sandbox)
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+  ✓ Created: FedEx Shipping (ID: 2)
+info: MercatoApp.Services.IntegrationService[0]
+      Integration created: FedEx Shipping (Type: Shipping, Environment: Sandbox) by user 4
+  - Environment: Sandbox
+
+Test 3: Create ERP Integration (Development)
+  ✓ Created: SAP ERP Connector (ID: 3)
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.IntegrationService[0]
+      Integration created: SAP ERP Connector (Type: ERP, Environment: Development) by user 4
+  - Status: Inactive, Enabled: False
+
+Test 4: List All Integrations
+  Total integrations: 3
+  - Stripe Payment Gateway (Payment, Production)
+  - FedEx Shipping (Shipping, Sandbox)
+  - SAP ERP Connector (ERP, Development)
+
+Test 5: Filter by Type (Payment)
+  Payment integrations: 1
+  - Stripe Payment Gateway
+
+Test 6: Health Check
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+  Stripe Health Check:
+  - Success: True
+  - Message: Configuration validation passed
+info: MercatoApp.Services.IntegrationService[0]
+      Health check performed for integration Stripe Payment Gateway (ID: 1): True
+  - Details: Integration Stripe Payment Gateway is properly configured. Note: This is a configuration check only. Actual connectivity tests would require provider-specific implementation.
+  - Checked At: 2025-12-03 12:08:30
+
+Test 7: Disable Integration
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+  ✓ FedEx integration disabled: True
+info: MercatoApp.Services.IntegrationService[0]
+      Integration disabled: FedEx Shipping (ID: 2) by user 4
+  - New Status: Inactive, Enabled: False
+
+Test 8: Enable Integration
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+  ✓ SAP integration enabled: True
+info: MercatoApp.Services.IntegrationService[0]
+      Integration enabled: SAP ERP Connector (ID: 3) by user 4
+  - New Status: Active, Enabled: True
+
+Test 9: Update Integration
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+  ✓ Updated Stripe integration
+  - New Merchant ID: acct_NEW_MERCHANT_ID
+  - New Callback URL: https://mercato.example.com/webhooks/stripe/v2
+
+Test 10: API Key Masking
+info: MercatoApp.Services.IntegrationService[0]
+      Integration updated: Stripe Payment Gateway (ID: 1) by user 4
+  Original: 'test_live_key_1234567890abcdefghijklmnopqrstuvwxyz' => Masked: '**********************************************wxyz'
+  Original: 'short' => Masked: '*hort'
+  Original: 'abc' => Masked: '***'
+  Original: '' => Masked: ''
+  Original: '(null)' => Masked: ''
+
+Test 11: Health Check on Non-Existent Integration
+  - Success: False
+  - Message: Integration not found
+
+=== All Integration Management Tests Completed Successfully ===
+
+=== Commission Invoice Test Scenario ===
+
+✓ Found test store: Test Electronics Store (ID: 1)
+
+Creating test commission transactions...
+WARNING: No escrow transaction found. Skipping commission transaction creation.
+
+Generating invoice for current month...
+info: MercatoApp.Services.CommissionInvoiceService[0]
+      Generating commission invoice for store 1, period 12/01/2025 00:00:00 to 12/31/2025 00:00:00
+INFO: No commission transactions found for the current month.
+Attempting to generate for last month...
+info: MercatoApp.Services.CommissionInvoiceService[0]
+      No commission transactions found for store 1 in period 12/01/2025 00:00:00 to 12/31/2025 00:00:00
+info: MercatoApp.Services.CommissionInvoiceService[0]
+      Generating commission invoice for store 1, period 11/01/2025 00:00:00 to 11/30/2025 00:00:00
+WARNING: Could not generate invoice (no commission transactions found).
+
+=== Test Scenario Complete ===
+
+info: MercatoApp.Services.CommissionInvoiceService[0]
+      No commission transactions found for store 1 in period 11/01/2025 00:00:00 to 11/30/2025 00:00:00
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BFQ4IeRBjNqqZwp_Rv9Rbi0U6uxX23UMBiEjRO70Sy8ZUI4sw1f0DHgX7OXHLWDfY1KTuTtll68cF6BoC2GkUR0
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: jiuFxrLllz1kwxmi23p5FqhoFbd2saYqjI5M0hSZ298
+=== Return/Complaint Request Test Scenario ===
+
+✓ Found delivered sub-order ORD-20241202-00001-2 from store Fashion Boutique
+
+Return eligibility validation: True
+
+Creating return request...
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.ReturnRequestService[0]
+      Return request RTN-20251203-A75D6A18 created for sub-order 2 by buyer 3
+info: MercatoApp.Services.EmailService[0]
+      Return Request notification would be sent to seller2@test.com for return RTN-20251203-A75D6A18. Store: Fashion Boutique, Sub-Order: ORD-20241202-00001-2, Reason: Damaged, Buyer: Test Buyer, Requested At: 12/03/2025 12:08
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.NotificationService[0]
+      Created notification 1 of type ReturnRequest for user 2
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.NotificationService[0]
+      Created notification 2 of type ReturnRequest for user 3
+✓ Return request RTN-20251203-A75D6A18 created successfully!
+  - Request Type: Return
+  - Reason: Damaged
+  - Status: Requested
+  - Refund Amount: ¤57.99
+
+Creating complaint request...
+Adding sample messages to return request...
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+✓ Added messages to return request
+
+Listing all requests for buyer...
+Found 1 request(s) for buyer ID 3
+  - RTN-20251203-A75D6A18: Return | Status: Requested | Amount: ¤57.99
+
+=== Return/Complaint Request Test Scenario Complete ===
+
+=== Case Resolution and Refund Linkage Test Scenario ===
+
+✓ Found return request RTN-20251203-A75D6A18
+  Type: Return
+  Status: Requested
+  Buyer: buyer@test.com
+  Store: Fashion Boutique
+  Refund Amount: ¤57.99
+
+✓ Seller (Store Owner) ID: 2
+
+--- Test Case 1: Full Refund Resolution ---
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.ReturnRequestService[0]
+      Return request 1 resolved with FullRefund by store 2
+fail: MercatoApp.Services.ReturnRequestService[0]
+      Failed to create refund for return request 1
+      System.InvalidOperationException: Order does not have a completed payment transaction.
+         at MercatoApp.Services.RefundService.ProcessPartialRefundAsync(Int32 orderId, Int32 sellerSubOrderId, Decimal refundAmount, String reason, Int32 initiatedByUserId, String notes, Nullable`1 returnRequestId) in /home/runner/work/mercato-3/mercato-3/Services/RefundService.cs:line 200
+         at MercatoApp.Services.ReturnRequestService.ResolveReturnCaseAsync(Int32 returnRequestId, Int32 storeId, ResolutionType resolutionType, String resolutionNotes, Nullable`1 resolutionAmount, Int32 initiatedByUserId) in /home/runner/work/mercato-3/mercato-3/Services/ReturnRequestService.cs:line 735
+✗ Failed to resolve case: Case resolved, but refund initiation failed. Please contact support.
+
+--- Test Case 2: Attempt to Change Resolution ---
+✓ Resolution can be changed (refund not yet completed)
+
+--- Test Case 3: Partial Refund Resolution ---
+ℹ No additional sub-orders available for partial refund test
+
+--- Test Case 4: No Refund Resolution ---
+ℹ No additional sub-orders available for no refund test
+
+=== Test Scenario Completed ===
+
+Summary of tested features:
+✓ Full refund resolution with automatic refund creation
+✓ Partial refund resolution with custom amount
+✓ No refund resolution without refund creation
+✓ Refund linkage to return requests
+✓ Resolution change validation
+=== SLA Tracking Test Scenario ===
+
+✓ Created default SLA configuration (24h first response, 168h resolution)
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+
+Found delivered sub-order: ORD-20241202-00001-2 from Fashion Boutique
+Using existing return request RTN-20251203-A75D6A18
+
+Return Request: RTN-20251203-A75D6A18
+  - Status: Resolved
+  - Requested At: 2025-12-03 12:08 UTC
+  - First Response Deadline: 2025-12-04 12:08 UTC
+    (24.0 hours remaining)
+  - Resolution Deadline: 2025-12-10 12:08 UTC
+    (168.0 hours remaining)
+  - First Response SLA Breached: False
+  - Resolution SLA Breached: False
+
+Testing SLA breach detection...
+✓ No SLA breaches detected (case is within deadlines)
+
+Retrieving SLA statistics...
+✓ Store 'Fashion Boutique' SLA statistics (last 30 days):
+  - Total Cases: 1
+  - Cases Resolved Within SLA: 1
+  - SLA Compliance Rate: 100%
+  - First Response Breaches: 0
+  - Resolution Breaches: 0
+  - Average Response Time: 0.0 hours
+  - Average Resolution Time: 0.0 hours
+
+✓ Platform-wide SLA statistics (last 30 days):
+  - Total Cases: 1
+  - Cases Resolved Within SLA: 1
+  - SLA Compliance Rate: 100%
+  - First Response Breaches: 0
+  - Resolution Breaches: 0
+  - Average Response Time: 0.0 hours
+  - Average Resolution Time: 0.0 hours
+
+Processing all pending cases for SLA breaches...
+✓ Processed SLA breaches. 0 case(s) flagged.
+
+=== SLA Tracking Test Completed Successfully ===
+=== Seller Reputation Test Scenario ===
+
+Testing reputation calculation for: Test Electronics Store (ID: 1)
+
+Initial Metrics:
+  Store ID: 1
+  Average Rating: N/A
+  Rating Count: 0
+  Total Completed Orders: 0
+  Total Delivered Orders: 0
+  Total Shipped Orders: 0
+  Total Cancelled Orders: 0
+  Total Disputed Orders: 0
+  On-Time Shipping Rate: 0.00%
+  Dispute Rate: 0.00%
+  Cancellation Rate: 0.00%
+  Reputation Score: N/A
+
+Calculating reputation score...
+info: MercatoApp.Services.SellerReputationService[0]
+      Store 1 has insufficient orders (0) for reputation calculation (minimum: 5)
+✓ No reputation score calculated (insufficient orders)
+  Minimum required: 5 completed orders
+  Current: 0 completed orders
+
+--- Testing Batch Recalculation ---
+info: MercatoApp.Services.SellerReputationService[0]
+      Starting batch recalculation of all seller reputation scores
+info: MercatoApp.Services.SellerReputationService[0]
+      Store 1 has insufficient orders (0) for reputation calculation (minimum: 5)
+info: MercatoApp.Services.SellerReputationService[0]
+      Store 2 has insufficient orders (1) for reputation calculation (minimum: 5)
+✓ Batch recalculation completed: 0 stores updated
+info: MercatoApp.Services.SellerReputationService[0]
+      Completed batch recalculation: 0 stores updated out of 2 active stores
+
+Final Metrics:
+  Store ID: 1
+  Average Rating: N/A
+  Rating Count: 0
+  Total Completed Orders: 0
+  Total Delivered Orders: 0
+  Total Shipped Orders: 0
+  Total Cancelled Orders: 0
+  Total Disputed Orders: 0
+  On-Time Shipping Rate: 0.00%
+  Dispute Rate: 0.00%
+  Cancellation Rate: 0.00%
+  Reputation Score: N/A
+
+=== Seller Reputation Test Completed ===
+
+=== Comprehensive Seller Reputation Test ===
+
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+Created test store: Reputation Test Store (ID: 3)
+
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+Created 10 test orders:
+  - 7 delivered
+  - 2 shipped (not yet delivered)
+  - 1 cancelled
+
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 7 entities to in-memory store.
+Added 7 seller ratings with average: 4.0 stars
+
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+Added 1 return request (dispute)
+
+--- Calculating Reputation Score ---
+Metrics:
+  Average Rating: 4.00
+  Rating Count: 7
+  Total Completed Orders: 7
+  Total Delivered Orders: 7
+  Total Shipped Orders: 9
+  Total Cancelled Orders: 1
+  Total Disputed Orders: 1
+  On-Time Shipping Rate: 77.78%
+  Dispute Rate: 14.29%
+  Cancellation Rate: 12.50%
+
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.SellerReputationService[0]
+      Updated reputation score for Store 3: 79.23 (Rating: 4, OnTime: 77.78%, Disputes: 14.29%, Cancellations: 12.50%)
+✓ Reputation Score Calculated: 79.23/100
+
+Score Breakdown (expected calculation):
+  Rating (40% weight): 30.00 points
+    4.0 stars → 75.00% → 30.00 points
+  On-Time Shipping (30% weight): 23.33 points
+    77.78% → 23.33 points
+  Low Dispute Rate (20% weight): 17.14 points
+    14.29% dispute → 85.71% score → 17.14 points
+  Low Cancellation Rate (10% weight): 8.75 points
+    12.50% cancelled → 87.50% score → 8.75 points
+
+Expected Total: 79.23 points
+Actual Score: 79.23 points
+✓ Calculation verified correctly!
+
+=== Comprehensive Test Completed ===
+
+
+=== Seller Dashboard Test Scenario ===
+
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+✓ Created test seller (ID: 7) and store (ID: 4)
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+✓ Created test products
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+✓ Created test buyer (ID: 8)
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+✓ Created 6 test orders spread over 7 days
+
+--- Testing Dashboard Metrics ---
+
+Test 1: Last 7 Days (Daily)
+  Total GMV: $1129.93
+  Total Orders: 4
+  Average Order Value: $282.48
+  Total Items Sold: 7
+  Time Series Points: 7
+  ✗ Metrics mismatch! Expected GMV: $2189.90, Orders: 6, Items: 10
+
+Test 2: Last 7 Days (Weekly)
+  Total GMV: $1129.93
+  Total Orders: 4
+  Time Series Points: 2
+
+Test 3: Electronics Category Filter
+  Total GMV: $1029.98
+  Total Orders: 2
+  Total Items Sold: 2
+  ✗ Filter mismatch! Expected GMV: $2089.95
+
+Test 4: Laptop Product Filter
+  Total GMV: $999.99
+  Total Orders: 1
+  Total Items Sold: 1
+  ✗ Product filter mismatch!
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+
+Test 5: Seller Isolation
+  Store 1 Total Orders: 4
+  ✗ Seller isolation failed! Expected 6 orders, got 4
+
+Test 6: Empty State (Future Date Range)
+  Total GMV: $0.00
+  Total Orders: 0
+  ✓ Empty state handled correctly!
+
+=== All Dashboard Tests Completed ===
+
+info: MercatoApp.Helpers.SLAMonitoringService[0]
+      SLA Monitoring Service started. Check interval: 30 minutes
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5000
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/mercato-3/mercato-3
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BLg91XDNdlt_BWX1BDJB1OJ0GkS2Euvxb7uvyUzCUZ_9w9iHkFUIkZQDyq3vNwGDTjE8bMxbz5jxMogqzu7iiGs
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: NpLseRtiMv3XTIqlubij4yntOx6XFvtctvSDVRDHJ_o
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BO7OqXzN841DRtZH1ypL53MT-FdBtBrd7tLgKxYcEqW9W2O5grPhP6WhQxZOOiKcYcP3qlWNyWvKhisRkhyQOhY
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: -4PTWmw-z7dDghCpmj_lzx8YEvBwh1TJYJa8it7b72I
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.UserAuthenticationService[0]
+      Successful login for user: admin@test.com
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: MercatoApp.Services.SessionService[0]
+      Session created for user 4. Expires at 12/03/2025 14:09:13. Persistent: False
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BKn6KTULd4jQO3s6NfvT9WXXnd3-NYuWyGJVh1V1beLLkxi-Ro-nFOPyzO3corwRpYYtHZlPjzHWXBFbcS5OELI
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: pTS_G_vvmruxChFK6h65Dbshy7Q25lKAhNfebZYWX08
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BG01AmtxpIx61hwDgsCTY_EdM5HHBOWRa3a-tTqBvhv7HNhfaAXsUGKvmJUkKS77Im4Bc0CwdumesOcaAMF6sqw
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: XERxKlBqoJg-6kAF7EXh8TbsW2BMtn6e-ntpmIzr7vE
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BHmPXIgdDwjX1xRrQdd1Eu3pE8twobl73gfiIsiI5pmt2k-TvDfM8UB5fHUewxOrYaBKF13f90Mm23dQwrvUsCk
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: Fpzdj5lOWnOzD010iFYWPeUabPz5ATmXFtgc3LYrxd8
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BAZv9yZVkgucbMxt7bnJ61RcwnxtgbwgLCxKsXVZ9v2fhKhooIbTKC30PhxZ9MiI2Ifbz2ppKny--p3gRGdu3rA
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: SInj8nrnOXeNxjaGiyLwmN-86ZGkAbcu55Jl0yggKjI
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BGXmsRU0z25ramfU1_6tOBdUu8c6SU26Yuq7oDJ_rMQiNjN4Zg6dwX7N3VvWYTbw_FkhmnUIqjFLTxelUXmRaQw
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: 9DfSR4_nB_C5pyQW_BQc4UMdP-shbBrQ7bT2KY4wcvI
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BFceEyHwtVnl0ys71MC58fn_tt79qhHirKK3oPthyTEQE294QXvM5wADjq4tWYWqArfoMh9MY-Xqvn--e6MZ6RA
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: 8ruShRfKmqiiWcn0Rh55mOWbzgmt4s9YY-VS4pUG-hs
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BIow0uGdiTsW0veoV3FjTdO1E6egPDtWg2K-ToI5bQSQCLnw8XQ2WhPvwQ6xKwcBOBZ0mmd7V3nPwpzYFi6_fQo
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: Q1QIX64hYFdwFd1JyXgnBgwzHwoSqioNw2IbDf8qW8Y
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BFPg0G6QUFGuYVMhDuEAdw9h2XLlyLEh_1rRjmHxUSOgvs-BG5fdOdM4ngj_ISrWEDvBqC22DHpQR3eqaTIfIC0
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: oOb9y7900aupyCgsEw3pQtONG82KzKg8XV8pIxm__Ec
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BL7z7agRi5hpSwoXS9GoEIPSUfOSQAydJmslM2WSa0qI8ZuhkG9NDUpJPYwDNHNnX5vhzmEN1HCEQ9vuXnYTcMw
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: h-WCA9GkT3ZD59gAFToafNdAVhZDnAd90oS1-GW3jps
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BNeiJ3KZpez2Rf4Moi00Po-Zc7iVCZb7auX-tMLjySMokfGH5ms1lPfOV_xPIlfV5UK2GdTb5U9YYrcgO7g801I
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: auCLbYWFIPx2smP6eafVyghxtnXMSPIlm01on4q7ab0
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+info: MercatoApp.Services.UserManagementService[0]
+      User 3 blocked by admin 4 for reason Fraud
+info: MercatoApp.Pages.Admin.Users.BlockModel[0]
+      Admin 4 blocked user 3 for reason Fraud
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BCQqgDoht8QOGZ2Ub0caI3gFQ89c6R0ShsoOayZHP4IQZXOHrDUsYkjyO1vxbLyTN53s8DYzld1OVUKLQVeZt5g
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: zZr-PO_Vo4wUrS9H2NvO7zxcG_kifC9O9M3DbM5wyUU
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BKst2LjiTF01yM6V36a8n-4EcuQ5SjrS04E08qbz0XHEgy9RZ4DycDwXGeWDbRwWAU8fAt_IC9Dm6DexngnnYEk
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: sIpJhjEpet5W4DBnJENfsv7AgQ5nad8BcjJjXz1Yc4c
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BGdNqENwcvwBCVBVYRD-CjgKPUohpeKJF67XLL3gsbk2AiSIqWCEMe251igrNwi7O4vVd-nGy3_o3yO8KD89BB4
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: CarAPeKK6sBLH1dGDU7WfoaXbTNWGnt63osidPCq2Qs
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BLxyCpU9emr7mVI9jNtuclRVIWiO5znRMSjUpCy5aQFNYf_la2GGdLY4ET0jlC8S66wh4-jb-c581IS428ZD3U4
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: 0b9l8dra4TTViTfwvj2JbMSJMwm9GXsmLpwPW5VS-9k
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BM1x8lOqXI8P7vbxOK6BqIfQhzzXKgImk0cCeKFGgAxHL-NUby-nWd_GOVAtgb9LOXxKP6UFDD4JSYI4z8Ws1zg
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: VgKDZrYxEx9tHiO2D-PJRVCdEO6_UzbsnJ5HxK3_Dcg
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BMkcD_HCydxudd0miB1kRXORo0B-ROLgyHEoD4yVOF2q9KyjCi1BJD4vZlVwugjOzFchgt5fw8qU-vSkV0h1Dhc
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: Ve5JfEJgZcGvbW_jem0RxCD9HMt8s5l7GHOad0K3SCY
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BNYEIfz68EJ2r4eCCtGueh9m55ZBJvB83IIbrEOaBVspoFt_JiDd58aZmNVbooYMsssXZefuJCctKMVsvjNgAdY
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: oDwihjxHgTc36t3TZuN8sZi8C6CvbMRtPzdkhiFgHtg
+warn: MercatoApp.Services.PushNotificationService[0]
+      VAPID keys not configured. Using auto-generated keys. For production, configure keys in appsettings.json
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Public Key: BHq7dY0ugtkUOGd956EguATz8aCTSBokFmS9jujTuUVCkMxf0SpyWQMqE_wvdFvPHs4NT1Bn-wuv_5Fd9d1FetE
+info: MercatoApp.Services.PushNotificationService[0]
+      Generated VAPID Private Key: CnjqFehGT92UJAyhEGJ-liY6LAfHwgPk2IanXlsbefs
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
