@@ -1,5 +1,6 @@
 @page
 @model MercatoApp.Pages.Admin.Integrations.IndexModel
+@using MercatoApp.Models
 @{
     ViewData["Title"] = "Integration Management - Admin";
 }
@@ -58,13 +59,13 @@
                 <a href="?" class="btn btn-outline-secondary @(!Model.TypeFilter.HasValue ? "active" : "")">
                     All Types
                 </a>
-                <a href="?typeFilter=@((int)MercatoApp.Models.IntegrationType.Payment)" class="btn btn-outline-secondary @(Model.TypeFilter == MercatoApp.Models.IntegrationType.Payment ? "active" : "")">
+                <a href="?typeFilter=@((int)IntegrationType.Payment)" class="btn btn-outline-secondary @(Model.TypeFilter == IntegrationType.Payment ? "active" : "")">
                     Payment
                 </a>
-                <a href="?typeFilter=@((int)MercatoApp.Models.IntegrationType.Shipping)" class="btn btn-outline-secondary @(Model.TypeFilter == MercatoApp.Models.IntegrationType.Shipping ? "active" : "")">
+                <a href="?typeFilter=@((int)IntegrationType.Shipping)" class="btn btn-outline-secondary @(Model.TypeFilter == IntegrationType.Shipping ? "active" : "")">
                     Shipping
                 </a>
-                <a href="?typeFilter=@((int)MercatoApp.Models.IntegrationType.ERP)" class="btn btn-outline-secondary @(Model.TypeFilter == MercatoApp.Models.IntegrationType.ERP ? "active" : "")">
+                <a href="?typeFilter=@((int)IntegrationType.ERP)" class="btn btn-outline-secondary @(Model.TypeFilter == IntegrationType.ERP ? "active" : "")">
                     ERP
                 </a>
             </div>
@@ -106,11 +107,11 @@
                                     </td>
                                     <td>@integration.Provider</td>
                                     <td>
-                                        @if (integration.Environment == MercatoApp.Models.IntegrationEnvironment.Production)
+                                        @if (integration.Environment == IntegrationEnvironment.Production)
                                         {
                                             <span class="badge bg-danger">Production</span>
                                         }
-                                        else if (integration.Environment == MercatoApp.Models.IntegrationEnvironment.Sandbox)
+                                        else if (integration.Environment == IntegrationEnvironment.Sandbox)
                                         {
                                             <span class="badge bg-warning text-dark">Sandbox</span>
                                         }
@@ -120,19 +121,19 @@
                                         }
                                     </td>
                                     <td>
-                                        @if (integration.Status == MercatoApp.Models.IntegrationStatus.Active)
+                                        @if (integration.Status == IntegrationStatus.Active)
                                         {
                                             <span class="badge bg-success">
                                                 <i class="bi bi-check-circle"></i> Active
                                             </span>
                                         }
-                                        else if (integration.Status == MercatoApp.Models.IntegrationStatus.Error)
+                                        else if (integration.Status == IntegrationStatus.Error)
                                         {
                                             <span class="badge bg-danger">
                                                 <i class="bi bi-exclamation-triangle"></i> Error
                                             </span>
                                         }
-                                        else if (integration.Status == MercatoApp.Models.IntegrationStatus.Testing)
+                                        else if (integration.Status == IntegrationStatus.Testing)
                                         {
                                             <span class="badge bg-warning text-dark">
                                                 <i class="bi bi-gear"></i> Testing

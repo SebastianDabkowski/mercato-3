@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace MercatoApp.Pages.Admin.Integrations;
 
@@ -104,7 +105,7 @@ public class CreateModel : PageModel
 
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userId = GetCurrentUserId();
 
             var integration = new Integration
             {
@@ -137,5 +138,15 @@ public class CreateModel : PageModel
             ErrorMessage = $"Error creating integration: {ex.Message}";
             return Page();
         }
+    }
+
+    private int GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            throw new InvalidOperationException("User ID not found in claims.");
+        }
+        return userId;
     }
 }

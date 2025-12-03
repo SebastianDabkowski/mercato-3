@@ -3,6 +3,7 @@ using MercatoApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Claims;
 
 namespace MercatoApp.Pages.Admin.Integrations;
 
@@ -78,7 +79,7 @@ public class IndexModel : PageModel
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userId = GetCurrentUserId();
             var success = await _integrationService.EnableIntegrationAsync(id, userId);
             if (success)
             {
@@ -107,7 +108,7 @@ public class IndexModel : PageModel
     {
         try
         {
-            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userId = GetCurrentUserId();
             var success = await _integrationService.DisableIntegrationAsync(id, userId);
             if (success)
             {
@@ -168,5 +169,15 @@ public class IndexModel : PageModel
         }
 
         return RedirectToPage();
+    }
+
+    private int GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            throw new InvalidOperationException("User ID not found in claims.");
+        }
+        return userId;
     }
 }
