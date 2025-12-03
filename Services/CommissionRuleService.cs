@@ -174,6 +174,9 @@ public class CommissionRuleService : ICommissionRuleService
             case CommissionRuleApplicability.Global:
                 // Global rules can conflict with any other global rule
                 break;
+            default:
+                throw new InvalidOperationException(
+                    $"Unknown applicability type: {rule.ApplicabilityType}");
         }
 
         var potentialConflicts = await query.ToListAsync();

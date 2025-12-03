@@ -1,5 +1,6 @@
 @page
 @model MercatoApp.Pages.Admin.CommissionRules.IndexModel
+@using MercatoApp.Models
 @{
     ViewData["Title"] = "Commission Rules - Admin";
 }
@@ -105,33 +106,33 @@
                                         }
                                     </td>
                                     <td>
-                                        @if (rule.ApplicabilityType == "Global")
+                                        @if (rule.ApplicabilityType == CommissionRuleApplicability.Global)
                                         {
                                             <span class="badge bg-primary">Global</span>
                                         }
-                                        else if (rule.ApplicabilityType == "Category")
+                                        else if (rule.ApplicabilityType == CommissionRuleApplicability.Category)
                                         {
                                             <span class="badge bg-success">Category</span>
                                         }
-                                        else if (rule.ApplicabilityType == "Seller")
+                                        else if (rule.ApplicabilityType == CommissionRuleApplicability.Seller)
                                         {
                                             <span class="badge bg-info">Seller</span>
                                         }
-                                        else if (rule.ApplicabilityType == "SellerTier")
+                                        else if (rule.ApplicabilityType == CommissionRuleApplicability.SellerTier)
                                         {
                                             <span class="badge bg-warning">Tier</span>
                                         }
                                     </td>
                                     <td>
-                                        @if (rule.ApplicabilityType == "Category" && rule.Category != null)
+                                        @if (rule.ApplicabilityType == CommissionRuleApplicability.Category && rule.Category != null)
                                         {
                                             <text>@rule.Category.Name</text>
                                         }
-                                        else if (rule.ApplicabilityType == "Seller" && rule.Store != null)
+                                        else if (rule.ApplicabilityType == CommissionRuleApplicability.Seller && rule.Store != null)
                                         {
                                             <text>@rule.Store.StoreName</text>
                                         }
-                                        else if (rule.ApplicabilityType == "SellerTier")
+                                        else if (rule.ApplicabilityType == CommissionRuleApplicability.SellerTier)
                                         {
                                             <text>@rule.SellerTier</text>
                                         }
