@@ -492,6 +492,18 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the security incidents table.
+    /// Stores detected security incidents for tracking and response.
+    /// </summary>
+    public DbSet<SecurityIncident> SecurityIncidents { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the security incident status history table.
+    /// Maintains audit trail of incident status changes.
+    /// </summary>
+    public DbSet<SecurityIncidentStatusHistory> SecurityIncidentStatusHistories { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -2299,6 +2311,72 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.TargetUser)
                 .WithMany()
                 .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<SecurityIncident>(entity =>
+        {
+            // Unique index on incident number
+            entity.HasIndex(e => e.IncidentNumber).IsUnique();
+
+            // Index on user ID for finding incidents by user
+            entity.HasIndex(e => e.UserId);
+
+            // Index on incident type for filtering
+            entity.HasIndex(e => e.IncidentType);
+
+            // Index on severity for filtering
+            entity.HasIndex(e => e.Severity);
+
+            // Index on status for filtering
+            entity.HasIndex(e => e.Status);
+
+            // Index on detected date for time-based queries
+            entity.HasIndex(e => e.DetectedAt);
+
+            // Composite index for filtering by status and severity
+            entity.HasIndex(e => new { e.Status, e.Severity });
+
+            // Composite index for filtering by type and detected date
+            entity.HasIndex(e => new { e.IncidentType, e.DetectedAt });
+
+            // Composite index for alert tracking
+            entity.HasIndex(e => new { e.AlertSent, e.Severity });
+
+            // Configure relationship with User (optional)
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with UpdatedByUser (optional)
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<SecurityIncidentStatusHistory>(entity =>
+        {
+            // Index on security incident ID for finding all status changes
+            entity.HasIndex(e => e.SecurityIncidentId);
+
+            // Composite index for ordering status changes by date
+            entity.HasIndex(e => new { e.SecurityIncidentId, e.ChangedAt });
+
+            // Index on changed by user for activity tracking
+            entity.HasIndex(e => e.ChangedByUserId);
+
+            // Configure relationship with SecurityIncident
+            entity.HasOne(e => e.SecurityIncident)
+                .WithMany()
+                .HasForeignKey(e => e.SecurityIncidentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure relationship with ChangedByUser (optional)
+            entity.HasOne(e => e.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ChangedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }

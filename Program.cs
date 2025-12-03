@@ -154,6 +154,7 @@ builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IAdminAuditLogService, AdminAuditLogService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<AuditHelper>();
+builder.Services.AddScoped<ISecurityIncidentService, SecurityIncidentService>();
 
 // Register shipping provider services as singleton collection
 builder.Services.AddSingleton<IShippingProviderService>(sp => 
