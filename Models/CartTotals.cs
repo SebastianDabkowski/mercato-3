@@ -22,12 +22,17 @@ public class CartTotals
     public decimal DiscountAmount { get; set; }
 
     /// <summary>
+    /// Gets or sets the tax amount calculated based on applicable VAT rules.
+    /// </summary>
+    public decimal TaxAmount { get; set; }
+
+    /// <summary>
     /// Gets or sets the applied promo code (if any).
     /// </summary>
     public PromoCode? AppliedPromoCode { get; set; }
 
     /// <summary>
-    /// Gets or sets the total amount payable by the buyer (items + shipping - discount).
+    /// Gets or sets the total amount payable by the buyer (items + shipping + tax - discount).
     /// </summary>
     public decimal TotalAmount { get; set; }
 

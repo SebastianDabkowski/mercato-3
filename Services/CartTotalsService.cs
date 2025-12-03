@@ -10,14 +10,15 @@ namespace MercatoApp.Services;
 public interface ICartTotalsService
 {
     /// <summary>
-    /// Calculates the cart totals including items subtotal, shipping costs, and total amount.
+    /// Calculates the cart totals including items subtotal, shipping costs, tax, and total amount.
     /// </summary>
     /// <param name="userId">The user ID for authenticated users, null for anonymous users.</param>
     /// <param name="sessionId">The session ID for anonymous users, null for authenticated users.</param>
+    /// <param name="deliveryAddress">The delivery address for tax calculation (required for tax calculation).</param>
     /// <param name="includeCommission">Whether to include internal commission calculations (for admin/internal use only).</param>
     /// <param name="promoCode">Optional promo code to apply to the cart.</param>
     /// <returns>The calculated cart totals.</returns>
-    Task<CartTotals> CalculateCartTotalsAsync(int? userId, string? sessionId, bool includeCommission = false, PromoCode? promoCode = null);
+    Task<CartTotals> CalculateCartTotalsAsync(int? userId, string? sessionId, Address? deliveryAddress = null, bool includeCommission = false, PromoCode? promoCode = null);
 
     /// <summary>
     /// Calculates shipping cost for a specific seller's items.
@@ -44,22 +45,25 @@ public class CartTotalsService : ICartTotalsService
     private readonly ApplicationDbContext _context;
     private readonly ICartService _cartService;
     private readonly IPromoCodeService _promoCodeService;
+    private readonly IVatRuleService _vatRuleService;
     private readonly ILogger<CartTotalsService> _logger;
 
     public CartTotalsService(
         ApplicationDbContext context,
         ICartService cartService,
         IPromoCodeService promoCodeService,
+        IVatRuleService vatRuleService,
         ILogger<CartTotalsService> logger)
     {
         _context = context;
         _cartService = cartService;
         _promoCodeService = promoCodeService;
+        _vatRuleService = vatRuleService;
         _logger = logger;
     }
 
     /// <inheritdoc />
-    public async Task<CartTotals> CalculateCartTotalsAsync(int? userId, string? sessionId, bool includeCommission = false, PromoCode? promoCode = null)
+    public async Task<CartTotals> CalculateCartTotalsAsync(int? userId, string? sessionId, Address? deliveryAddress = null, bool includeCommission = false, PromoCode? promoCode = null)
     {
         var itemsBySeller = await _cartService.GetCartItemsBySellerAsync(userId, sessionId);
 
@@ -90,8 +94,18 @@ public class CartTotalsService : ICartTotalsService
             cartTotals.DiscountAmount = _promoCodeService.CalculateDiscount(promoCode, itemsBySeller, cartTotals.ItemsSubtotal);
         }
 
-        // Calculate total amount payable by buyer (subtotal + shipping - discount)
-        cartTotals.TotalAmount = cartTotals.ItemsSubtotal + cartTotals.TotalShipping - cartTotals.DiscountAmount;
+        // Calculate tax if delivery address is provided
+        if (deliveryAddress != null && !string.IsNullOrEmpty(deliveryAddress.CountryCode))
+        {
+            cartTotals.TaxAmount = await CalculateTaxAsync(
+                itemsBySeller, 
+                cartTotals.ItemsSubtotal, 
+                deliveryAddress.CountryCode, 
+                deliveryAddress.StateProvince);
+        }
+
+        // Calculate total amount payable by buyer (subtotal + shipping + tax - discount)
+        cartTotals.TotalAmount = cartTotals.ItemsSubtotal + cartTotals.TotalShipping + cartTotals.TaxAmount - cartTotals.DiscountAmount;
 
         // Ensure total is not negative
         if (cartTotals.TotalAmount < 0)
@@ -105,8 +119,8 @@ public class CartTotalsService : ICartTotalsService
             cartTotals.InternalCommission = await CalculateCommissionAsync(cartTotals.ItemsSubtotal);
         }
 
-        _logger.LogDebug("Calculated cart totals: Items={ItemsSubtotal}, Shipping={TotalShipping}, Discount={DiscountAmount}, Total={TotalAmount}",
-            cartTotals.ItemsSubtotal, cartTotals.TotalShipping, cartTotals.DiscountAmount, cartTotals.TotalAmount);
+        _logger.LogDebug("Calculated cart totals: Items={ItemsSubtotal}, Shipping={TotalShipping}, Tax={TaxAmount}, Discount={DiscountAmount}, Total={TotalAmount}",
+            cartTotals.ItemsSubtotal, cartTotals.TotalShipping, cartTotals.TaxAmount, cartTotals.DiscountAmount, cartTotals.TotalAmount);
 
         return cartTotals;
     }
@@ -189,6 +203,81 @@ public class CartTotalsService : ICartTotalsService
         _logger.LogInformation("Created default shipping rule for store {StoreId}", storeId);
 
         return defaultRule;
+    }
+
+    /// <summary>
+    /// Calculates tax based on applicable VAT rules.
+    /// </summary>
+    /// <param name="itemsBySeller">Cart items grouped by seller.</param>
+    /// <param name="itemsSubtotal">The items subtotal before tax.</param>
+    /// <param name="countryCode">The delivery country code.</param>
+    /// <param name="regionCode">The delivery region/state code (optional).</param>
+    /// <returns>The total tax amount.</returns>
+    private async Task<decimal> CalculateTaxAsync(
+        Dictionary<Store, List<CartItem>> itemsBySeller,
+        decimal itemsSubtotal,
+        string countryCode,
+        string? regionCode = null)
+    {
+        // If no items, no tax
+        if (itemsSubtotal <= 0 || !itemsBySeller.Any())
+        {
+            return 0;
+        }
+
+        var transactionDate = DateTime.UtcNow;
+        decimal totalTax = 0;
+
+        // Collect all product IDs first to avoid N+1 query problem
+        var allProductIds = itemsBySeller.Values
+            .SelectMany(items => items)
+            .Select(item => item.ProductId)
+            .Distinct()
+            .ToList();
+
+        // Load all products in a single query
+        var products = await _context.Products
+            .Include(p => p.CategoryEntity)
+            .Where(p => allProductIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+
+        // Calculate tax for each seller's items
+        foreach (var sellerGroup in itemsBySeller)
+        {
+            var items = sellerGroup.Value;
+            
+            foreach (var cartItem in items)
+            {
+                // Get product from pre-loaded dictionary
+                if (!products.TryGetValue(cartItem.ProductId, out var product))
+                {
+                    continue;
+                }
+
+                // Get applicable VAT rule for this item
+                var vatRule = await _vatRuleService.GetApplicableRuleAsync(
+                    transactionDate,
+                    countryCode,
+                    regionCode,
+                    product.CategoryId);
+
+                if (vatRule != null && vatRule.TaxPercentage > 0)
+                {
+                    var itemSubtotal = cartItem.PriceAtAdd * cartItem.Quantity;
+                    var itemTax = itemSubtotal * (vatRule.TaxPercentage / 100m);
+                    totalTax += itemTax;
+
+                    _logger.LogDebug(
+                        "Tax calculated for product {ProductId} ({CategoryId}): {Subtotal} × {TaxRate}% = {Tax}",
+                        product.Id, product.CategoryId, itemSubtotal, vatRule.TaxPercentage, itemTax);
+                }
+            }
+        }
+
+        _logger.LogDebug("Total tax calculated: {TotalTax} for country {Country}, region {Region}",
+            totalTax, countryCode, regionCode ?? "N/A");
+
+        return totalTax;
     }
 
     /// <summary>

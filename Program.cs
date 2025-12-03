@@ -129,6 +129,7 @@ builder.Services.AddScoped<ICommissionInvoiceService, CommissionInvoiceService>(
 builder.Services.AddScoped<IEscrowService, EscrowService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<ISettlementService, SettlementService>();
+builder.Services.AddScoped<IVatRuleService, VatRuleService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Add background services
