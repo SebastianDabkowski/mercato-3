@@ -29,7 +29,14 @@
                         <label asp-for="Input.Name" class="form-label"></label>
                         <input asp-for="Input.Name" class="form-control" aria-required="true" placeholder="e.g., Electronics, Fashion, Home & Garden" />
                         <span asp-validation-for="Input.Name" class="text-danger"></span>
-                        <div class="form-text">Enter a descriptive name for the category (max 100 characters).</div>
+                        <div class="form-text">Enter a descriptive name for the category (max 100 characters). A URL-friendly slug will be generated automatically.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Description" class="form-label"></label>
+                        <textarea asp-for="Input.Description" class="form-control" rows="3" placeholder="Optional description for the category"></textarea>
+                        <span asp-validation-for="Input.Description" class="text-danger"></span>
+                        <div class="form-text">Optional description to help explain what products belong in this category (max 500 characters).</div>
                     </div>
 
                     <div class="mb-3">

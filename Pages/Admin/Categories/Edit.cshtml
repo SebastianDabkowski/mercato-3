@@ -35,6 +35,20 @@
                     </div>
 
                     <div class="mb-3">
+                        <label asp-for="Input.Slug" class="form-label"></label>
+                        <input asp-for="Input.Slug" class="form-control" aria-required="true" placeholder="e.g., electronics, fashion, home-garden" />
+                        <span asp-validation-for="Input.Slug" class="text-danger"></span>
+                        <div class="form-text">URL-friendly slug for SEO. Only lowercase letters, numbers, and hyphens allowed (max 150 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Description" class="form-label"></label>
+                        <textarea asp-for="Input.Description" class="form-control" rows="3" placeholder="Optional description for the category"></textarea>
+                        <span asp-validation-for="Input.Description" class="text-danger"></span>
+                        <div class="form-text">Optional description to help explain what products belong in this category (max 500 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label asp-for="Input.ParentCategoryId" class="form-label"></label>
                         <select asp-for="Input.ParentCategoryId" asp-items="Model.ParentCategories" class="form-select">
                         </select>
