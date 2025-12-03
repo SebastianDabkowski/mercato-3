@@ -1,0 +1,274 @@
+@page
+@model MercatoApp.Pages.Admin.Currencies.IndexModel
+@{
+    ViewData["Title"] = "Currency Management - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Admin</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Currency Management</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-cash-coin"></i> Currency Management
+            </h1>
+            <p class="text-muted">
+                Configure available currencies and manage platform currency settings.
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Base Currency Info -->
+    <div class="alert alert-info mb-4" role="alert">
+        <i class="bi bi-info-circle"></i>
+        <strong>Base Currency:</strong> @Model.Config.BaseCurrencyCode
+        <span class="ms-3">
+            <a href="/Admin/Currencies/Settings" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-gear"></i> Change Settings
+            </a>
+        </span>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <a href="/Admin/Currencies/Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Currency
+            </a>
+        </div>
+        <div class="col-md-6 text-end">
+            <div class="btn-group" role="group">
+                <a href="?filter=all" class="btn btn-outline-secondary @(Model.Filter == "all" ? "active" : "")">
+                    All Currencies
+                </a>
+                <a href="?filter=enabled" class="btn btn-outline-secondary @(Model.Filter == "enabled" ? "active" : "")">
+                    Enabled Only
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currencies Table -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-list-ul"></i> Currencies
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Currencies.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Symbol</th>
+                                <th>Exchange Rate</th>
+                                <th>Rate Source</th>
+                                <th>Last Updated</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var currency in Model.Currencies)
+                            {
+                                var isBaseCurrency = currency.Code == Model.Config.BaseCurrencyCode;
+                                <tr class="@(!currency.IsEnabled ? "table-secondary" : "")">
+                                    <td>
+                                        <strong>@currency.Code</strong>
+                                        @if (isBaseCurrency)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">BASE</span>
+                                        }
+                                    </td>
+                                    <td>@currency.Name</td>
+                                    <td><span class="fs-5">@currency.Symbol</span></td>
+                                    <td>
+                                        @if (isBaseCurrency)
+                                        {
+                                            <span class="text-muted">1.00000000</span>
+                                        }
+                                        else
+                                        {
+                                            <strong>@currency.ExchangeRate.ToString("F8")</strong>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(currency.ExchangeRateSource))
+                                        {
+                                            <small class="text-muted">@currency.ExchangeRateSource</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">-</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (currency.ExchangeRateLastUpdated.HasValue)
+                                        {
+                                            <small>@currency.ExchangeRateLastUpdated.Value.ToString("yyyy-MM-dd HH:mm")</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">Never</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (currency.IsEnabled)
+                                        {
+                                            <span class="badge bg-success">Enabled</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Disabled</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="/Admin/Currencies/Edit?id=@currency.Id" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            @if (currency.IsEnabled && !isBaseCurrency)
+                                            {
+                                                <form method="post" class="d-inline" asp-page-handler="Disable">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@currency.Id" />
+                                                    <button type="submit" class="btn btn-outline-warning" title="Disable"
+                                                            onclick="return confirm('Disable @currency.Code? It will not be available for new listings or transactions.');">
+                                                        <i class="bi bi-toggle-off"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            @if (!currency.IsEnabled)
+                                            {
+                                                <form method="post" class="d-inline" asp-page-handler="Enable">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@currency.Id" />
+                                                    <button type="submit" class="btn btn-outline-success" title="Enable">
+                                                        <i class="bi bi-toggle-on"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            @if (!isBaseCurrency)
+                                            {
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        onclick="confirmDelete(@currency.Id, '@currency.Code')" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3">No currencies found.</p>
+                    <a href="/Admin/Currencies/Create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Your First Currency
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Information Cards -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Important Notes</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Disabling a currency does not affect existing transactions or historical data.</li>
+                        <li>Disabled currencies cannot be used for new product listings or purchases.</li>
+                        <li>The base currency cannot be disabled or deleted.</li>
+                        <li>Exchange rates are for display purposes; actual currency conversion is handled by external modules.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-currency-exchange"></i> Exchange Rate Updates</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">Exchange rate information displayed here is tracked for reference.</p>
+                    <p class="mb-0">
+                        <small class="text-muted">
+                            External exchange rate loading and automatic updates are handled by other modules or integrations.
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<form method="post" id="deleteForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteCurrencyId" />
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the currency <strong id="deleteCurrencyCode"></strong>?</p>
+                    <p class="text-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        This action cannot be undone. Existing transactions will not be affected.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" asp-page-handler="Delete" class="btn btn-danger">Delete Currency</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        function confirmDelete(currencyId, currencyCode) {
+            document.getElementById('deleteCurrencyId').value = currencyId;
+            document.getElementById('deleteCurrencyCode').textContent = currencyCode;
+            var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+    </script>
+}

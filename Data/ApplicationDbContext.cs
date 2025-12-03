@@ -384,6 +384,18 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<VatRule> VatRules { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the currencies table.
+    /// Stores available currencies with exchange rate information.
+    /// </summary>
+    public DbSet<Currency> Currencies { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the currency configuration table.
+    /// Stores platform-wide currency settings including base currency.
+    /// </summary>
+    public DbSet<CurrencyConfig> CurrencyConfigs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1842,6 +1854,25 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Currency>(entity =>
+        {
+            // Unique index on currency code
+            entity.HasIndex(e => e.Code).IsUnique();
+
+            // Configure decimal precision for exchange rate
+            entity.Property(e => e.ExchangeRate)
+                .HasPrecision(18, 8);
+        });
+
+        modelBuilder.Entity<CurrencyConfig>(entity =>
+        {
+            // Configure optional relationship with User
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
