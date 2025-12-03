@@ -1,16 +1,31 @@
+using MercatoApp;
 using MercatoApp.Authorization;
 using MercatoApp.Data;
 using MercatoApp.Models;
 using MercatoApp.Services;
 using Microsoft.AspNetCore.Authentication;
-using MercatoApp; // For CommissionInvoiceTestScenario class
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
+#if DEBUG
+using MercatoApp.Tests; // Only reference test namespace in debug builds
+#endif
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure HSTS for production
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.AddHsts(options =>
+    {
+        options.MaxAge = TimeSpan.FromDays(365); // 1 year
+        options.IncludeSubDomains = true;
+        options.Preload = true;
+    });
+}
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -21,9 +36,18 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-CSRF-TOKEN";
     options.Cookie.Name = "MercatoAntiForgery";
     options.Cookie.HttpOnly = true;
-    // Use SameAsRequest to work in both development (HTTP) and production (HTTPS)
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.SameSite = SameSiteMode.Strict;
+    
+    // Enforce secure cookies in production (HTTPS only)
+    // Allow flexible policy in development for local testing
+    if (builder.Environment.IsDevelopment())
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    }
+    else
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    }
 });
 
 // Add Entity Framework with In-Memory database
@@ -45,10 +69,25 @@ builder.Services.AddSession(options =>
     options.Cookie.Name = "MercatoSession";
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow HTTP in development
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.IdleTimeout = TimeSpan.FromDays(7);
+    
+    // Enforce secure cookies in production (HTTPS only)
+    // Allow non-secure in development for local testing
+    // lgtm[cs/web/cookie-secure-not-set] - Intentionally allowing non-secure cookies in development only
+    if (builder.Environment.IsDevelopment())
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+    }
+    else
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    }
 });
+
+// Add encryption and key management services
+builder.Services.AddSingleton<IKeyManagementService, KeyManagementService>();
+builder.Services.AddScoped<IDataEncryptionService, DataEncryptionService>();
 
 // Add application services
 builder.Services.AddScoped<IPasswordValidationService, PasswordValidationService>();
@@ -301,16 +340,22 @@ if (app.Environment.IsDevelopment())
     // Run RBAC test scenario
     var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
     await RbacTestScenario.RunTestAsync(context, permissionService);
+
+    // Run encryption test scenario
+    await EncryptionTest.RunTestAsync();
 }
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // Configure HSTS with a longer max-age for production (1 year)
+    // Include subdomains and allow preload for enhanced security
     app.UseHsts();
 }
 
+// Always redirect HTTP to HTTPS for security
+// In production, this ensures all traffic is encrypted in transit
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 

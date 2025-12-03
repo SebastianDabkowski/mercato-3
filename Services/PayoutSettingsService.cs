@@ -101,13 +101,16 @@ public class PayoutSettingsService : IPayoutSettingsService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<PayoutSettingsService> _logger;
+    private readonly IDataEncryptionService _encryptionService;
 
     public PayoutSettingsService(
         ApplicationDbContext context,
-        ILogger<PayoutSettingsService> logger)
+        ILogger<PayoutSettingsService> logger,
+        IDataEncryptionService encryptionService)
     {
         _context = context;
         _logger = logger;
+        _encryptionService = encryptionService;
     }
 
     /// <inheritdoc />
@@ -173,7 +176,7 @@ public class PayoutSettingsService : IPayoutSettingsService
             DisplayName = data.DisplayName.Trim(),
             BankName = data.BankName.Trim(),
             BankAccountHolderName = data.BankAccountHolderName.Trim(),
-            BankAccountNumberEncrypted = EncryptBankAccountNumber(data.BankAccountNumber.Trim()),
+            BankAccountNumberEncrypted = _encryptionService.Encrypt(data.BankAccountNumber.Trim()),
             BankAccountNumberLast4 = GetLast4Digits(data.BankAccountNumber.Trim()),
             BankRoutingNumber = data.BankRoutingNumber?.Trim(),
             Currency = string.IsNullOrWhiteSpace(data.Currency) ? null : data.Currency.Trim().ToUpperInvariant(),
@@ -228,7 +231,7 @@ public class PayoutSettingsService : IPayoutSettingsService
         payoutMethod.DisplayName = data.DisplayName.Trim();
         payoutMethod.BankName = data.BankName.Trim();
         payoutMethod.BankAccountHolderName = data.BankAccountHolderName.Trim();
-        payoutMethod.BankAccountNumberEncrypted = EncryptBankAccountNumber(data.BankAccountNumber.Trim());
+        payoutMethod.BankAccountNumberEncrypted = _encryptionService.Encrypt(data.BankAccountNumber.Trim());
         payoutMethod.BankAccountNumberLast4 = GetLast4Digits(data.BankAccountNumber.Trim());
         payoutMethod.BankRoutingNumber = data.BankRoutingNumber?.Trim();
         payoutMethod.Currency = string.IsNullOrWhiteSpace(data.Currency) ? null : data.Currency.Trim().ToUpperInvariant();
@@ -480,19 +483,6 @@ public class PayoutSettingsService : IPayoutSettingsService
     private static bool IsValidCountryCode(string code)
     {
         return ValidCountryCodes.Contains(code);
-    }
-
-    /// <summary>
-    /// Encrypts the bank account number.
-    /// In production, this should use a proper encryption mechanism (e.g., Azure Key Vault, AWS KMS).
-    /// This is a placeholder implementation for demonstration purposes.
-    /// </summary>
-    private static string EncryptBankAccountNumber(string accountNumber)
-    {
-        // NOTE: In production, implement proper encryption using a key management service
-        // This is a simple Base64 encoding for demonstration purposes only
-        var bytes = System.Text.Encoding.UTF8.GetBytes(accountNumber);
-        return Convert.ToBase64String(bytes);
     }
 
     private static string GetLast4Digits(string accountNumber)

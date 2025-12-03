@@ -11,13 +11,16 @@ public class IntegrationService : IIntegrationService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<IntegrationService> _logger;
+    private readonly IDataEncryptionService _encryptionService;
 
     public IntegrationService(
         ApplicationDbContext context,
-        ILogger<IntegrationService> logger)
+        ILogger<IntegrationService> logger,
+        IDataEncryptionService encryptionService)
     {
         _context = context;
         _logger = logger;
+        _encryptionService = encryptionService;
     }
 
     /// <inheritdoc />
@@ -56,6 +59,12 @@ public class IntegrationService : IIntegrationService
     /// <inheritdoc />
     public async Task<Integration> CreateIntegrationAsync(Integration integration, int userId)
     {
+        // Encrypt API key before storing
+        if (!string.IsNullOrWhiteSpace(integration.ApiKey))
+        {
+            integration.ApiKey = _encryptionService.Encrypt(integration.ApiKey);
+        }
+
         integration.CreatedAt = DateTime.UtcNow;
         integration.CreatedByUserId = userId;
         integration.UpdatedAt = DateTime.UtcNow;
@@ -87,10 +96,10 @@ public class IntegrationService : IIntegrationService
         existing.Status = integration.Status;
         existing.ApiEndpoint = integration.ApiEndpoint;
         
-        // Only update API key if a new one is provided
+        // Only update API key if a new one is provided, and encrypt it
         if (!string.IsNullOrWhiteSpace(integration.ApiKey))
         {
-            existing.ApiKey = integration.ApiKey;
+            existing.ApiKey = _encryptionService.Encrypt(integration.ApiKey);
         }
 
         existing.MerchantId = integration.MerchantId;
