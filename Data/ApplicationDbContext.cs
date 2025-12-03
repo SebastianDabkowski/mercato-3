@@ -486,6 +486,12 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<AccountDeletionLog> AccountDeletionLogs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the audit logs table.
+    /// Stores comprehensive audit trail of all critical actions for security and compliance.
+    /// </summary>
+    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -2246,6 +2252,54 @@ public class ApplicationDbContext : DbContext
 
             // Composite index for filtering by user type and date
             entity.HasIndex(e => new { e.UserType, e.CompletedAt });
+        });
+
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            // Index on user ID for finding all actions by a user
+            entity.HasIndex(e => e.UserId);
+
+            // Index on target user ID for finding all actions affecting a user
+            entity.HasIndex(e => e.TargetUserId);
+
+            // Index on action type for filtering by action
+            entity.HasIndex(e => e.ActionType);
+
+            // Index on entity type for filtering by entity
+            entity.HasIndex(e => e.EntityType);
+
+            // Index on timestamp for time-based queries and retention cleanup
+            entity.HasIndex(e => e.Timestamp);
+
+            // Index on archived status for retention queries
+            entity.HasIndex(e => new { e.IsArchived, e.ArchivedAt });
+
+            // Composite index for filtering by entity type and entity ID
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+
+            // Composite index for filtering by action type and timestamp
+            entity.HasIndex(e => new { e.ActionType, e.Timestamp });
+
+            // Composite index for filtering by success and timestamp
+            entity.HasIndex(e => new { e.Success, e.Timestamp });
+
+            // Index on correlation ID for grouping related entries
+            entity.HasIndex(e => e.CorrelationId);
+
+            // Composite index for comprehensive queries
+            entity.HasIndex(e => new { e.EntityType, e.UserId, e.Timestamp });
+
+            // Configure relationship with User (optional, can be system action)
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with TargetUser (optional)
+            entity.HasOne(e => e.TargetUser)
+                .WithMany()
+                .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
