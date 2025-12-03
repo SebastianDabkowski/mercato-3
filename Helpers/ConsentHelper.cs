@@ -9,6 +9,44 @@ namespace MercatoApp.Helpers;
 public static class ConsentHelper
 {
     /// <summary>
+    /// Consent types that are required and cannot be withdrawn.
+    /// </summary>
+    public static readonly HashSet<ConsentType> RequiredConsents = new()
+    {
+        ConsentType.TermsOfService,
+        ConsentType.PrivacyPolicy
+    };
+
+    /// <summary>
+    /// Consent types that are used for communication eligibility checks.
+    /// </summary>
+    public static readonly HashSet<ConsentType> CommunicationConsents = new()
+    {
+        ConsentType.Newsletter,
+        ConsentType.Marketing
+    };
+
+    /// <summary>
+    /// Checks if a consent type is required.
+    /// </summary>
+    /// <param name="consentType">The consent type to check.</param>
+    /// <returns>True if the consent is required, false otherwise.</returns>
+    public static bool IsRequired(ConsentType consentType)
+    {
+        return RequiredConsents.Contains(consentType);
+    }
+
+    /// <summary>
+    /// Checks if a consent type is a communication consent.
+    /// </summary>
+    /// <param name="consentType">The consent type to check.</param>
+    /// <returns>True if the consent is for communication, false otherwise.</returns>
+    public static bool IsCommunicationConsent(ConsentType consentType)
+    {
+        return CommunicationConsents.Contains(consentType);
+    }
+
+    /// <summary>
     /// Records consent to required legal documents during user registration.
     /// </summary>
     /// <param name="legalDocumentService">The legal document service.</param>

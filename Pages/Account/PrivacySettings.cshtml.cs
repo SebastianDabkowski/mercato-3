@@ -66,7 +66,7 @@ public class PrivacySettingsModel : PageModel
         }
 
         // Prevent changing required consents
-        if (type == ConsentType.TermsOfService || type == ConsentType.PrivacyPolicy)
+        if (Helpers.ConsentHelper.IsRequired(type))
         {
             ErrorMessage = "Required consents cannot be changed. Please contact support if you wish to delete your account.";
             await LoadConsentsAsync(userId);
@@ -144,7 +144,7 @@ public class PrivacySettingsModel : PageModel
                 ConsentedAt = consent?.ConsentedAt,
                 Version = consent?.ConsentVersion,
                 ConsentText = consent?.ConsentText,
-                IsRequired = type == ConsentType.TermsOfService || type == ConsentType.PrivacyPolicy
+                IsRequired = Helpers.ConsentHelper.IsRequired(type)
             };
         }
     }

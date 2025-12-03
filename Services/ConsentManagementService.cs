@@ -174,8 +174,7 @@ public class ConsentManagementService : IConsentManagementService
     public async Task<bool> IsEligibleForCommunicationAsync(int userId, ConsentType communicationType)
     {
         // Verify the consent type is a communication type
-        if (communicationType != ConsentType.Newsletter && 
-            communicationType != ConsentType.Marketing)
+        if (!Helpers.ConsentHelper.IsCommunicationConsent(communicationType))
         {
             _logger.LogWarning(
                 "Invalid communication type: {ConsentType}",

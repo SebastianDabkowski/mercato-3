@@ -164,35 +164,21 @@ public class RegisterModel : PageModel
             var userAgent = HttpContext.Request.Headers.UserAgent.ToString();
 
             // Record required consents (Terms of Service and Privacy Policy)
-            var tosDocument = await _legalDocumentService.GetActiveDocumentAsync(LegalDocumentType.TermsOfService);
-            if (tosDocument != null)
-            {
-                await _consentService.RecordConsentAsync(
-                    result.User.Id,
-                    ConsentType.TermsOfService,
-                    isGranted: true,
-                    version: tosDocument.Version,
-                    consentText: "I accept the Terms of Service",
-                    ipAddress,
-                    userAgent,
-                    context: "registration",
-                    legalDocumentId: tosDocument.Id);
-            }
+            await RecordLegalDocumentConsentAsync(
+                result.User.Id, 
+                LegalDocumentType.TermsOfService, 
+                ConsentType.TermsOfService,
+                "I accept the Terms of Service",
+                ipAddress, 
+                userAgent);
 
-            var ppDocument = await _legalDocumentService.GetActiveDocumentAsync(LegalDocumentType.PrivacyPolicy);
-            if (ppDocument != null)
-            {
-                await _consentService.RecordConsentAsync(
-                    result.User.Id,
-                    ConsentType.PrivacyPolicy,
-                    isGranted: true,
-                    version: ppDocument.Version,
-                    consentText: "I accept the Privacy Policy",
-                    ipAddress,
-                    userAgent,
-                    context: "registration",
-                    legalDocumentId: ppDocument.Id);
-            }
+            await RecordLegalDocumentConsentAsync(
+                result.User.Id,
+                LegalDocumentType.PrivacyPolicy,
+                ConsentType.PrivacyPolicy,
+                "I accept the Privacy Policy",
+                ipAddress,
+                userAgent);
 
             // Record optional consents
             if (Input.AcceptNewsletter)
@@ -251,6 +237,33 @@ public class RegisterModel : PageModel
         if (!string.IsNullOrEmpty(facebookAppId) && !string.IsNullOrEmpty(facebookAppSecret))
         {
             ExternalProviders.Add("Facebook");
+        }
+    }
+
+    /// <summary>
+    /// Helper method to record consent for a legal document.
+    /// </summary>
+    private async Task RecordLegalDocumentConsentAsync(
+        int userId,
+        LegalDocumentType documentType,
+        ConsentType consentType,
+        string consentText,
+        string? ipAddress,
+        string? userAgent)
+    {
+        var document = await _legalDocumentService.GetActiveDocumentAsync(documentType);
+        if (document != null)
+        {
+            await _consentService.RecordConsentAsync(
+                userId,
+                consentType,
+                isGranted: true,
+                version: document.Version,
+                consentText: consentText,
+                ipAddress,
+                userAgent,
+                context: "registration",
+                legalDocumentId: document.Id);
         }
     }
 }
