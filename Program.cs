@@ -242,6 +242,10 @@ if (app.Environment.IsDevelopment())
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await TestDataSeeder.SeedTestDataAsync(context);
 
+    // Run integration management test scenario
+    var integrationService = scope.ServiceProvider.GetRequiredService<IIntegrationService>();
+    await IntegrationManagementTestScenario.RunTestAsync(context, integrationService);
+
     // Run commission invoice test scenario
     var invoiceService = scope.ServiceProvider.GetRequiredService<ICommissionInvoiceService>();
     var commissionService = scope.ServiceProvider.GetRequiredService<ICommissionService>();
