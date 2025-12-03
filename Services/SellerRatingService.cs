@@ -21,7 +21,7 @@ public class SellerRatingService : ISellerRatingService
     }
 
     /// <inheritdoc />
-    public async Task<SellerRating> SubmitRatingAsync(int userId, int sellerSubOrderId, int rating)
+    public async Task<SellerRating> SubmitRatingAsync(int userId, int sellerSubOrderId, int rating, string? reviewText = null)
     {
         // Validate rating range
         if (rating < 1 || rating > 5)
@@ -71,7 +71,12 @@ public class SellerRatingService : ISellerRatingService
             UserId = userId,
             SellerSubOrderId = sellerSubOrderId,
             Rating = rating,
-            CreatedAt = DateTime.UtcNow
+            ReviewText = reviewText,
+            CreatedAt = DateTime.UtcNow,
+            // Approve by default - auto-check will flag if needed
+            IsApproved = true,
+            ModerationStatus = ReviewModerationStatus.Approved,
+            ApprovedAt = DateTime.UtcNow
         };
 
         _context.SellerRatings.Add(sellerRating);
@@ -86,8 +91,9 @@ public class SellerRatingService : ISellerRatingService
     /// <inheritdoc />
     public async Task<decimal?> GetAverageRatingAsync(int storeId)
     {
+        // Only include approved ratings in the average calculation
         var average = await _context.SellerRatings
-            .Where(sr => sr.StoreId == storeId)
+            .Where(sr => sr.StoreId == storeId && sr.ModerationStatus == ReviewModerationStatus.Approved)
             .Select(sr => (decimal?)sr.Rating)
             .AverageAsync();
 
@@ -97,8 +103,9 @@ public class SellerRatingService : ISellerRatingService
     /// <inheritdoc />
     public async Task<int> GetRatingCountAsync(int storeId)
     {
+        // Only count approved ratings
         return await _context.SellerRatings
-            .CountAsync(sr => sr.StoreId == storeId);
+            .CountAsync(sr => sr.StoreId == storeId && sr.ModerationStatus == ReviewModerationStatus.Approved);
     }
 
     /// <inheritdoc />

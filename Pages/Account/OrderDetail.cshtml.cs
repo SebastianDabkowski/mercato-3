@@ -19,6 +19,7 @@ public class OrderDetailModel : PageModel
     private readonly IProductReviewService _reviewService;
     private readonly IReviewModerationService _moderationService;
     private readonly ISellerRatingService _sellerRatingService;
+    private readonly ISellerRatingModerationService _sellerRatingModerationService;
     private readonly IOrderMessageService _messageService;
     private readonly ILogger<OrderDetailModel> _logger;
 
@@ -28,6 +29,7 @@ public class OrderDetailModel : PageModel
         IProductReviewService reviewService,
         IReviewModerationService moderationService,
         ISellerRatingService sellerRatingService,
+        ISellerRatingModerationService sellerRatingModerationService,
         IOrderMessageService messageService,
         ILogger<OrderDetailModel> logger)
     {
@@ -36,6 +38,7 @@ public class OrderDetailModel : PageModel
         _reviewService = reviewService;
         _moderationService = moderationService;
         _sellerRatingService = sellerRatingService;
+        _sellerRatingModerationService = sellerRatingModerationService;
         _messageService = messageService;
         _logger = logger;
     }
@@ -340,7 +343,8 @@ public class OrderDetailModel : PageModel
     public async Task<IActionResult> OnPostSubmitSellerRatingAsync(
         int sellerSubOrderId,
         int orderId,
-        int rating)
+        int rating,
+        string? reviewText = null)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!int.TryParse(userIdClaim, out var userId))
@@ -358,7 +362,22 @@ public class OrderDetailModel : PageModel
 
         try
         {
-            var sellerRating = await _sellerRatingService.SubmitRatingAsync(userId, sellerSubOrderId, rating);
+            var sellerRating = await _sellerRatingService.SubmitRatingAsync(userId, sellerSubOrderId, rating, reviewText);
+            
+            // Auto-check the rating for moderation if it has review text
+            if (!string.IsNullOrWhiteSpace(reviewText))
+            {
+                try
+                {
+                    await _sellerRatingModerationService.AutoCheckRatingAsync(sellerRating.Id);
+                }
+                catch (Exception ex)
+                {
+                    // Log the error but don't fail the rating submission
+                    _logger.LogError(ex, "Failed to auto-check seller rating {RatingId}", sellerRating.Id);
+                }
+            }
+            
             TempData["SuccessMessage"] = "Thank you for rating the seller!";
             return RedirectToPage(new { orderId });
         }

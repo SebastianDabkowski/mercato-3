@@ -8,7 +8,7 @@
     <div class="row mb-4">
         <div class="col-md-12">
             <h2>Review Moderation</h2>
-            <p class="text-muted">Manage and moderate product reviews for content policy compliance.</p>
+            <p class="text-muted">Manage and moderate product reviews and seller ratings for content policy compliance.</p>
         </div>
     </div>
 
@@ -28,37 +28,64 @@
         </div>
     }
 
+    <!-- Filter by Review Type -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="btn-group" role="group">
+                <a href="?tab=@Model.CurrentTab&type=all" class="btn btn-sm btn-outline-primary @(Model.ReviewType == "all" ? "active" : "")">
+                    All Reviews
+                </a>
+                <a href="?tab=@Model.CurrentTab&type=product" class="btn btn-sm btn-outline-primary @(Model.ReviewType == "product" ? "active" : "")">
+                    Product Reviews
+                </a>
+                <a href="?tab=@Model.CurrentTab&type=seller" class="btn btn-sm btn-outline-primary @(Model.ReviewType == "seller" ? "active" : "")">
+                    Seller Ratings
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Active Flags</h5>
-                    <h2 class="mb-0">@Model.Stats.GetValueOrDefault("ActiveFlags", 0)</h2>
+        <div class="col-md-6">
+            <h5>Product Reviews</h5>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-0">Active Flags</h6>
+                            <h4 class="mb-0">@Model.ProductStats.GetValueOrDefault("ActiveFlags", 0)</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-0">Pending</h6>
+                            <h4 class="mb-0">@Model.ProductStats.GetValueOrDefault("PendingReview", 0)</h4>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Pending Review</h5>
-                    <h2 class="mb-0">@Model.Stats.GetValueOrDefault("PendingReview", 0)</h2>
+        <div class="col-md-6">
+            <h5>Seller Ratings</h5>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-0">Active Flags</h6>
+                            <h4 class="mb-0">@Model.SellerStats.GetValueOrDefault("ActiveFlags", 0)</h4>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Approved</h5>
-                    <h2 class="mb-0">@Model.Stats.GetValueOrDefault("Approved", 0)</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Rejected</h5>
-                    <h2 class="mb-0">@Model.Stats.GetValueOrDefault("Rejected", 0)</h2>
+                <div class="col-md-6 mb-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-0">Pending</h6>
+                            <h4 class="mb-0">@Model.SellerStats.GetValueOrDefault("PendingReview", 0)</h4>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -68,33 +95,39 @@
     <ul class="nav nav-tabs" id="reviewTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <a class="nav-link @(Model.CurrentTab == "flagged" ? "active" : "")" 
-               href="?tab=flagged" role="tab">
+               href="?tab=flagged&type=@Model.ReviewType" role="tab">
                 Flagged Reviews
-                @if (Model.Stats.GetValueOrDefault("ActiveFlags", 0) > 0)
+                @{
+                    var totalFlags = Model.ProductStats.GetValueOrDefault("ActiveFlags", 0) + Model.SellerStats.GetValueOrDefault("ActiveFlags", 0);
+                }
+                @if (totalFlags > 0)
                 {
-                    <span class="badge bg-warning">@Model.Stats.GetValueOrDefault("ActiveFlags", 0)</span>
+                    <span class="badge bg-warning">@totalFlags</span>
                 }
             </a>
         </li>
         <li class="nav-item" role="presentation">
             <a class="nav-link @(Model.CurrentTab == "pending" ? "active" : "")" 
-               href="?tab=pending" role="tab">
+               href="?tab=pending&type=@Model.ReviewType" role="tab">
                 Pending Reviews
-                @if (Model.Stats.GetValueOrDefault("PendingReview", 0) > 0)
+                @{
+                    var totalPending = Model.ProductStats.GetValueOrDefault("PendingReview", 0) + Model.SellerStats.GetValueOrDefault("PendingReview", 0);
+                }
+                @if (totalPending > 0)
                 {
-                    <span class="badge bg-info">@Model.Stats.GetValueOrDefault("PendingReview", 0)</span>
+                    <span class="badge bg-info">@totalPending</span>
                 }
             </a>
         </li>
         <li class="nav-item" role="presentation">
             <a class="nav-link @(Model.CurrentTab == "approved" ? "active" : "")" 
-               href="?tab=approved" role="tab">
+               href="?tab=approved&type=@Model.ReviewType" role="tab">
                 Approved Reviews
             </a>
         </li>
         <li class="nav-item" role="presentation">
             <a class="nav-link @(Model.CurrentTab == "rejected" ? "active" : "")" 
-               href="?tab=rejected" role="tab">
+               href="?tab=rejected&type=@Model.ReviewType" role="tab">
                 Rejected Reviews
             </a>
         </li>
@@ -105,14 +138,18 @@
         @if (Model.CurrentTab == "flagged")
         {
             <div class="tab-pane fade show active">
-                @if (Model.FlaggedReviews.Any())
+                <!-- Product Review Flags -->
+                @if (Model.ReviewType == "all" || Model.ReviewType == "product")
                 {
-                    foreach (var flag in Model.FlaggedReviews)
+                    @if (Model.FlaggedProductReviews.Any())
                     {
-                        <div class="card mb-3 @(flag.IsAutomated ? "border-warning" : "border-danger")">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>
+                        <h4 class="mb-3">Product Reviews</h4>
+                        foreach (var flag in Model.FlaggedProductReviews)
+                        {
+                            <div class="card mb-3 @(flag.IsAutomated ? "border-warning" : "border-danger")">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-primary">Product Review</span>
                                         @if (flag.IsAutomated)
                                         {
                                             <span class="badge bg-warning text-dark">Auto-Flagged</span>
@@ -121,115 +158,235 @@
                                         {
                                             <span class="badge bg-danger">User Reported</span>
                                         }
-                                        @flag.Reason.ToString().Replace("_", " ")
-                                    </strong>
-                                    <small class="text-muted ms-2">Flagged @flag.CreatedAt.ToString("MMM d, yyyy h:mm tt")</small>
+                                        <strong>@flag.Reason.ToString().Replace("_", " ")</strong>
+                                        <small class="text-muted ms-2">Flagged @flag.CreatedAt.ToString("MMM d, yyyy h:mm tt")</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge @(flag.ProductReview.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Approved ? "bg-success" : 
+                                                             flag.ProductReview.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Rejected ? "bg-danger" : 
+                                                             flag.ProductReview.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Flagged ? "bg-warning" : "bg-secondary")">
+                                            @flag.ProductReview.ModerationStatus
+                                        </span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span class="badge @(flag.ProductReview.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Approved ? "bg-success" : 
-                                                         flag.ProductReview.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Rejected ? "bg-danger" : 
-                                                         flag.ProductReview.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Flagged ? "bg-warning" : "bg-secondary")">
-                                        @flag.ProductReview.ModerationStatus
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <h6>Product: @flag.ProductReview.Product.Title</h6>
-                                        <p class="mb-2">
-                                            <strong>Rating:</strong>
-                                            @for (int i = 1; i <= 5; i++)
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6>Product: @flag.ProductReview.Product.Title</h6>
+                                            <p class="mb-2">
+                                                <strong>Rating:</strong>
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <span class="@(i <= flag.ProductReview.Rating ? "text-warning" : "text-muted")">★</span>
+                                                }
+                                            </p>
+                                            <p class="mb-2"><strong>Review:</strong></p>
+                                            <div class="bg-light p-3 rounded">
+                                                @(flag.ProductReview.ReviewText ?? "(No text)")
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(flag.Details))
                                             {
-                                                <span class="@(i <= flag.ProductReview.Rating ? "text-warning" : "text-muted")">★</span>
+                                                <p class="mt-2 mb-0"><small><strong>Flag Details:</strong> @flag.Details</small></p>
                                             }
-                                        </p>
-                                        <p class="mb-2"><strong>Review:</strong></p>
-                                        <div class="bg-light p-3 rounded">
-                                            @(flag.ProductReview.ReviewText ?? "(No text)")
+                                            <p class="mt-2 mb-0">
+                                                <small class="text-muted">
+                                                    Submitted by @flag.ProductReview.User.FirstName @flag.ProductReview.User.LastName on @flag.ProductReview.CreatedAt.ToString("MMM d, yyyy")
+                                                </small>
+                                            </p>
                                         </div>
-                                        @if (!string.IsNullOrEmpty(flag.Details))
-                                        {
-                                            <p class="mt-2 mb-0"><small><strong>Flag Details:</strong> @flag.Details</small></p>
-                                        }
-                                        <p class="mt-2 mb-0">
-                                            <small class="text-muted">
-                                                Submitted by @flag.ProductReview.User.FirstName @flag.ProductReview.User.LastName on @flag.ProductReview.CreatedAt.ToString("MMM d, yyyy")
-                                            </small>
-                                        </p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="d-grid gap-2">
-                                            <form method="post" asp-page-handler="Approve" class="d-inline">
-                                                <input type="hidden" name="reviewId" value="@flag.ProductReview.Id" />
-                                                <input type="hidden" name="returnTab" value="flagged" />
-                                                <button type="submit" class="btn btn-success w-100">
-                                                    <i class="bi bi-check-circle"></i> Approve Review
+                                        <div class="col-md-4">
+                                            <div class="d-grid gap-2">
+                                                <form method="post" asp-page-handler="ApproveProductReview" class="d-inline">
+                                                    <input type="hidden" name="reviewId" value="@flag.ProductReview.Id" />
+                                                    <input type="hidden" name="returnTab" value="flagged" />
+                                                    <button type="submit" class="btn btn-success w-100">
+                                                        <i class="bi bi-check-circle"></i> Approve Review
+                                                    </button>
+                                                </form>
+                                                
+                                                <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectProductModal-@flag.Id">
+                                                    <i class="bi bi-x-circle"></i> Reject Review
                                                 </button>
-                                            </form>
-                                            
-                                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal-@flag.Id">
-                                                <i class="bi bi-x-circle"></i> Reject Review
-                                            </button>
-                                            
-                                            <form method="post" asp-page-handler="ToggleVisibility" class="d-inline">
-                                                <input type="hidden" name="reviewId" value="@flag.ProductReview.Id" />
-                                                <input type="hidden" name="isVisible" value="@(!flag.ProductReview.IsApproved)" />
-                                                <input type="hidden" name="returnTab" value="flagged" />
-                                                <button type="submit" class="btn btn-secondary w-100">
-                                                    <i class="bi bi-eye@(flag.ProductReview.IsApproved ? "-slash" : "")"></i> 
-                                                    @(flag.ProductReview.IsApproved ? "Hide" : "Show") Review
-                                                </button>
-                                            </form>
-                                            
-                                            <form method="post" asp-page-handler="ResolveFlag" class="d-inline">
-                                                <input type="hidden" name="flagId" value="@flag.Id" />
-                                                <input type="hidden" name="returnTab" value="flagged" />
-                                                <button type="submit" class="btn btn-outline-primary w-100">
-                                                    <i class="bi bi-flag"></i> Resolve Flag Only
-                                                </button>
-                                            </form>
-
-                                            <a href="/Admin/Reviews/Details?reviewId=@flag.ProductReview.Id" class="btn btn-outline-secondary w-100">
-                                                <i class="bi bi-info-circle"></i> View Details
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Reject Modal -->
-                        <div class="modal fade" id="rejectModal-@flag.Id" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form method="post" asp-page-handler="Reject">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Reject Review</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <input type="hidden" name="reviewId" value="@flag.ProductReview.Id" />
-                                            <input type="hidden" name="returnTab" value="flagged" />
-                                            <div class="mb-3">
-                                                <label class="form-label">Reason for rejection:</label>
-                                                <textarea name="reason" class="form-control" rows="3" required></textarea>
+                                                
+                                                <form method="post" asp-page-handler="ResolveProductFlag" class="d-inline">
+                                                    <input type="hidden" name="flagId" value="@flag.Id" />
+                                                    <input type="hidden" name="returnTab" value="flagged" />
+                                                    <button type="submit" class="btn btn-outline-primary w-100">
+                                                        <i class="bi bi-flag"></i> Resolve Flag Only
+                                                    </button>
+                                                </form>
                                             </div>
                                         </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <button type="submit" class="btn btn-danger">Reject Review</button>
-                                        </div>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                            
+                            <!-- Reject Modal for Product Review -->
+                            <div class="modal fade" id="rejectProductModal-@flag.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reject Product Review</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" asp-page-handler="RejectProductReview">
+                                            <div class="modal-body">
+                                                <input type="hidden" name="reviewId" value="@flag.ProductReview.Id" />
+                                                <input type="hidden" name="returnTab" value="flagged" />
+                                                <div class="mb-3">
+                                                    <label for="reason-@flag.Id" class="form-label">Reason for Rejection *</label>
+                                                    <select class="form-select" id="reason-@flag.Id" name="reason" required>
+                                                        <option value="">Select a reason...</option>
+                                                        <option value="Hate speech or harassment">Hate speech or harassment</option>
+                                                        <option value="Spam or fake review">Spam or fake review</option>
+                                                        <option value="Off-topic or irrelevant">Off-topic or irrelevant</option>
+                                                        <option value="Contains personal information">Contains personal information</option>
+                                                        <option value="Inappropriate language">Inappropriate language</option>
+                                                        <option value="Fraudulent content">Fraudulent content</option>
+                                                        <option value="Other policy violation">Other policy violation</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-danger">Reject Review</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     }
                 }
-                else
+                
+                <!-- Seller Rating Flags -->
+                @if (Model.ReviewType == "all" || Model.ReviewType == "seller")
+                {
+                    @if (Model.FlaggedSellerRatings.Any())
+                    {
+                        <h4 class="mb-3 @(Model.ReviewType == "all" ? "mt-4" : "")">Seller Ratings</h4>
+                        foreach (var flag in Model.FlaggedSellerRatings)
+                        {
+                            <div class="card mb-3 @(flag.IsAutomated ? "border-warning" : "border-danger")">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-success">Seller Rating</span>
+                                        @if (flag.IsAutomated)
+                                        {
+                                            <span class="badge bg-warning text-dark">Auto-Flagged</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">User Reported</span>
+                                        }
+                                        <strong>@flag.Reason.ToString().Replace("_", " ")</strong>
+                                        <small class="text-muted ms-2">Flagged @flag.CreatedAt.ToString("MMM d, yyyy h:mm tt")</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge @(flag.SellerRating.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Approved ? "bg-success" : 
+                                                             flag.SellerRating.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Rejected ? "bg-danger" : 
+                                                             flag.SellerRating.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Flagged ? "bg-warning" : "bg-secondary")">
+                                            @flag.SellerRating.ModerationStatus
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6>Store: @flag.SellerRating.Store.StoreName</h6>
+                                            <p class="mb-2">
+                                                <strong>Rating:</strong>
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <span class="@(i <= flag.SellerRating.Rating ? "text-warning" : "text-muted")">★</span>
+                                                }
+                                            </p>
+                                            @if (!string.IsNullOrWhiteSpace(flag.SellerRating.ReviewText))
+                                            {
+                                                <p class="mb-2"><strong>Review:</strong></p>
+                                                <div class="bg-light p-3 rounded">
+                                                    @flag.SellerRating.ReviewText
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(flag.Details))
+                                            {
+                                                <p class="mt-2 mb-0"><small><strong>Flag Details:</strong> @flag.Details</small></p>
+                                            }
+                                            <p class="mt-2 mb-0">
+                                                <small class="text-muted">
+                                                    Submitted by @flag.SellerRating.User.FirstName @flag.SellerRating.User.LastName on @flag.SellerRating.CreatedAt.ToString("MMM d, yyyy")
+                                                </small>
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="d-grid gap-2">
+                                                <form method="post" asp-page-handler="ApproveSellerRating" class="d-inline">
+                                                    <input type="hidden" name="ratingId" value="@flag.SellerRating.Id" />
+                                                    <input type="hidden" name="returnTab" value="flagged" />
+                                                    <button type="submit" class="btn btn-success w-100">
+                                                        <i class="bi bi-check-circle"></i> Approve Rating
+                                                    </button>
+                                                </form>
+                                                
+                                                <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectSellerModal-@flag.Id">
+                                                    <i class="bi bi-x-circle"></i> Reject Rating
+                                                </button>
+                                                
+                                                <form method="post" asp-page-handler="ResolveSellerFlag" class="d-inline">
+                                                    <input type="hidden" name="flagId" value="@flag.Id" />
+                                                    <input type="hidden" name="returnTab" value="flagged" />
+                                                    <button type="submit" class="btn btn-outline-primary w-100">
+                                                        <i class="bi bi-flag"></i> Resolve Flag Only
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Reject Modal for Seller Rating -->
+                            <div class="modal fade" id="rejectSellerModal-@flag.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reject Seller Rating</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" asp-page-handler="RejectSellerRating">
+                                            <div class="modal-body">
+                                                <input type="hidden" name="ratingId" value="@flag.SellerRating.Id" />
+                                                <input type="hidden" name="returnTab" value="flagged" />
+                                                <div class="mb-3">
+                                                    <label for="reason-seller-@flag.Id" class="form-label">Reason for Rejection *</label>
+                                                    <select class="form-select" id="reason-seller-@flag.Id" name="reason" required>
+                                                        <option value="">Select a reason...</option>
+                                                        <option value="Hate speech or harassment">Hate speech or harassment</option>
+                                                        <option value="Spam or fake rating">Spam or fake rating</option>
+                                                        <option value="Off-topic or irrelevant">Off-topic or irrelevant</option>
+                                                        <option value="Contains personal information">Contains personal information</option>
+                                                        <option value="Inappropriate language">Inappropriate language</option>
+                                                        <option value="Fraudulent content">Fraudulent content</option>
+                                                        <option value="Other policy violation">Other policy violation</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-danger">Reject Rating</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+                
+                @if (!Model.FlaggedProductReviews.Any() && !Model.FlaggedSellerRatings.Any())
                 {
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> No flagged reviews at this time.
+                        <i class="bi bi-info-circle"></i> No flagged reviews to display.
                     </div>
                 }
             </div>
@@ -239,99 +396,221 @@
         @if (Model.CurrentTab != "flagged")
         {
             <div class="tab-pane fade show active">
-                @if (Model.PendingReviews.Any())
+                <!-- Product Reviews -->
+                @if (Model.ReviewType == "all" || Model.ReviewType == "product")
                 {
-                    foreach (var review in Model.PendingReviews)
+                    @if (Model.ProductReviews.Any())
                     {
-                        <div class="card mb-3">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>Review for @review.Product.Title</strong>
-                                    <small class="text-muted ms-2">@review.CreatedAt.ToString("MMM d, yyyy h:mm tt")</small>
-                                </div>
-                                <span class="badge @(review.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Approved ? "bg-success" : 
-                                                     review.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Rejected ? "bg-danger" : 
-                                                     review.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Flagged ? "bg-warning" : "bg-secondary")">
-                                    @review.ModerationStatus
-                                </span>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <p class="mb-2">
-                                            <strong>Rating:</strong>
-                                            @for (int i = 1; i <= 5; i++)
-                                            {
-                                                <span class="@(i <= review.Rating ? "text-warning" : "text-muted")">★</span>
-                                            }
-                                        </p>
-                                        <p class="mb-2"><strong>Review:</strong></p>
-                                        <div class="bg-light p-3 rounded">
-                                            @(review.ReviewText ?? "(No text)")
-                                        </div>
-                                        <p class="mt-2 mb-0">
-                                            <small class="text-muted">
-                                                Submitted by @review.User.FirstName @review.User.LastName
-                                            </small>
-                                        </p>
+                        <h4 class="mb-3">Product Reviews</h4>
+                        foreach (var review in Model.ProductReviews)
+                        {
+                            <div class="card mb-3">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-primary">Product Review</span>
+                                        <strong>@review.Product.Title</strong>
+                                        <small class="text-muted ms-2">@review.CreatedAt.ToString("MMM d, yyyy h:mm tt")</small>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="d-grid gap-2">
-                                            @if (review.ModerationStatus != MercatoApp.Models.ReviewModerationStatus.Approved)
+                                    <span class="badge @(review.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Approved ? "bg-success" : 
+                                                         review.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Rejected ? "bg-danger" : 
+                                                         review.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Flagged ? "bg-warning" : "bg-secondary")">
+                                        @review.ModerationStatus
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <p class="mb-2">
+                                                <strong>Rating:</strong>
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <span class="@(i <= review.Rating ? "text-warning" : "text-muted")">★</span>
+                                                }
+                                            </p>
+                                            @if (!string.IsNullOrWhiteSpace(review.ReviewText))
                                             {
-                                                <form method="post" asp-page-handler="Approve" class="d-inline">
-                                                    <input type="hidden" name="reviewId" value="@review.Id" />
-                                                    <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
-                                                    <button type="submit" class="btn btn-success w-100">
-                                                        <i class="bi bi-check-circle"></i> Approve
+                                                <p class="mb-2"><strong>Review:</strong></p>
+                                                <div class="bg-light p-3 rounded">
+                                                    @review.ReviewText
+                                                </div>
+                                            }
+                                            <p class="mt-2 mb-0">
+                                                <small class="text-muted">
+                                                    Submitted by @review.User.FirstName @review.User.LastName
+                                                </small>
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="d-grid gap-2">
+                                                @if (review.ModerationStatus != MercatoApp.Models.ReviewModerationStatus.Approved)
+                                                {
+                                                    <form method="post" asp-page-handler="ApproveProductReview" class="d-inline">
+                                                        <input type="hidden" name="reviewId" value="@review.Id" />
+                                                        <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
+                                                        <button type="submit" class="btn btn-success w-100">
+                                                            <i class="bi bi-check-circle"></i> Approve
+                                                        </button>
+                                                    </form>
+                                                }
+                                                
+                                                @if (review.ModerationStatus != MercatoApp.Models.ReviewModerationStatus.Rejected)
+                                                {
+                                                    <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectProductModal-other-@review.Id">
+                                                        <i class="bi bi-x-circle"></i> Reject
                                                     </button>
-                                                </form>
-                                            }
-                                            
-                                            @if (review.ModerationStatus != MercatoApp.Models.ReviewModerationStatus.Rejected)
-                                            {
-                                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal-@review.Id">
-                                                    <i class="bi bi-x-circle"></i> Reject
-                                                </button>
-                                            }
-                                            
-                                            <a href="/Admin/Reviews/Details?reviewId=@review.Id" class="btn btn-outline-secondary w-100">
-                                                <i class="bi bi-info-circle"></i> View Details
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Reject Modal -->
-                        <div class="modal fade" id="rejectModal-@review.Id" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form method="post" asp-page-handler="Reject">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Reject Review</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <input type="hidden" name="reviewId" value="@review.Id" />
-                                            <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
-                                            <div class="mb-3">
-                                                <label class="form-label">Reason for rejection:</label>
-                                                <textarea name="reason" class="form-control" rows="3" required></textarea>
+                                                }
                                             </div>
                                         </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <button type="submit" class="btn btn-danger">Reject Review</button>
-                                        </div>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+
+                            <!-- Reject Modal for Product -->
+                            <div class="modal fade" id="rejectProductModal-other-@review.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reject Product Review</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" asp-page-handler="RejectProductReview">
+                                            <div class="modal-body">
+                                                <input type="hidden" name="reviewId" value="@review.Id" />
+                                                <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
+                                                <div class="mb-3">
+                                                    <label class="form-label">Reason for Rejection *</label>
+                                                    <select class="form-select" name="reason" required>
+                                                        <option value="">Select a reason...</option>
+                                                        <option value="Hate speech or harassment">Hate speech or harassment</option>
+                                                        <option value="Spam or fake review">Spam or fake review</option>
+                                                        <option value="Off-topic or irrelevant">Off-topic or irrelevant</option>
+                                                        <option value="Contains personal information">Contains personal information</option>
+                                                        <option value="Inappropriate language">Inappropriate language</option>
+                                                        <option value="Fraudulent content">Fraudulent content</option>
+                                                        <option value="Other policy violation">Other policy violation</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-danger">Reject Review</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     }
                 }
-                else
+                
+                <!-- Seller Ratings -->
+                @if (Model.ReviewType == "all" || Model.ReviewType == "seller")
+                {
+                    @if (Model.SellerRatings.Any())
+                    {
+                        <h4 class="mb-3 @(Model.ReviewType == "all" ? "mt-4" : "")">Seller Ratings</h4>
+                        foreach (var rating in Model.SellerRatings)
+                        {
+                            <div class="card mb-3">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-success">Seller Rating</span>
+                                        <strong>@rating.Store.StoreName</strong>
+                                        <small class="text-muted ms-2">@rating.CreatedAt.ToString("MMM d, yyyy h:mm tt")</small>
+                                    </div>
+                                    <span class="badge @(rating.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Approved ? "bg-success" : 
+                                                         rating.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Rejected ? "bg-danger" : 
+                                                         rating.ModerationStatus == MercatoApp.Models.ReviewModerationStatus.Flagged ? "bg-warning" : "bg-secondary")">
+                                        @rating.ModerationStatus
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <p class="mb-2">
+                                                <strong>Rating:</strong>
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <span class="@(i <= rating.Rating ? "text-warning" : "text-muted")">★</span>
+                                                }
+                                            </p>
+                                            @if (!string.IsNullOrWhiteSpace(rating.ReviewText))
+                                            {
+                                                <p class="mb-2"><strong>Review:</strong></p>
+                                                <div class="bg-light p-3 rounded">
+                                                    @rating.ReviewText
+                                                </div>
+                                            }
+                                            <p class="mt-2 mb-0">
+                                                <small class="text-muted">
+                                                    Submitted by @rating.User.FirstName @rating.User.LastName
+                                                </small>
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="d-grid gap-2">
+                                                @if (rating.ModerationStatus != MercatoApp.Models.ReviewModerationStatus.Approved)
+                                                {
+                                                    <form method="post" asp-page-handler="ApproveSellerRating" class="d-inline">
+                                                        <input type="hidden" name="ratingId" value="@rating.Id" />
+                                                        <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
+                                                        <button type="submit" class="btn btn-success w-100">
+                                                            <i class="bi bi-check-circle"></i> Approve
+                                                        </button>
+                                                    </form>
+                                                }
+                                                
+                                                @if (rating.ModerationStatus != MercatoApp.Models.ReviewModerationStatus.Rejected)
+                                                {
+                                                    <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectSellerModal-other-@rating.Id">
+                                                        <i class="bi bi-x-circle"></i> Reject
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Reject Modal for Seller Rating -->
+                            <div class="modal fade" id="rejectSellerModal-other-@rating.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reject Seller Rating</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" asp-page-handler="RejectSellerRating">
+                                            <div class="modal-body">
+                                                <input type="hidden" name="ratingId" value="@rating.Id" />
+                                                <input type="hidden" name="returnTab" value="@Model.CurrentTab" />
+                                                <div class="mb-3">
+                                                    <label class="form-label">Reason for Rejection *</label>
+                                                    <select class="form-select" name="reason" required>
+                                                        <option value="">Select a reason...</option>
+                                                        <option value="Hate speech or harassment">Hate speech or harassment</option>
+                                                        <option value="Spam or fake rating">Spam or fake rating</option>
+                                                        <option value="Off-topic or irrelevant">Off-topic or irrelevant</option>
+                                                        <option value="Contains personal information">Contains personal information</option>
+                                                        <option value="Inappropriate language">Inappropriate language</option>
+                                                        <option value="Fraudulent content">Fraudulent content</option>
+                                                        <option value="Other policy violation">Other policy violation</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-danger">Reject Rating</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+                
+                @if (!Model.ProductReviews.Any() && !Model.SellerRatings.Any())
                 {
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> No @Model.CurrentTab reviews found.
