@@ -1,0 +1,216 @@
+@page
+@model MercatoApp.Pages.Admin.DataProcessing.IndexModel
+@{
+    ViewData["Title"] = "GDPR Processing Registry";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h1>GDPR Processing Registry</h1>
+            <p class="text-muted">Manage personal data processing activities (GDPR Article 30)</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="get" class="d-inline">
+                <div class="form-check form-switch d-inline-block">
+                    <input class="form-check-input" type="checkbox" role="switch" id="activeOnly" 
+                           name="ActiveOnly" value="true" @(Model.ActiveOnly ? "checked" : "")
+                           onchange="this.form.submit()">
+                    <label class="form-check-label" for="activeOnly">
+                        Show active only
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6 text-end">
+            <a asp-page="./Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create Processing Activity
+            </a>
+            <a asp-page="./Export" class="btn btn-success">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export to Excel
+            </a>
+        </div>
+    </div>
+
+    @if (Model.ProcessingActivities.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No processing activities found. 
+            @if (Model.ActiveOnly)
+            {
+                <text>Try showing all activities or <a asp-page="./Create">create a new one</a>.</text>
+            }
+            else
+            {
+                <text><a asp-page="./Create">Create your first processing activity</a>.</text>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Purpose</th>
+                        <th>Legal Basis</th>
+                        <th>Data Subjects</th>
+                        <th>Retention Period</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var activity in Model.ProcessingActivities)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@activity.Name</strong>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(activity.Purpose))
+                                {
+                                    if (activity.Purpose.Length > 100)
+                                    {
+                                        @activity.Purpose.Substring(0, 100)<text>...</text>
+                                    }
+                                    else
+                                    {
+                                        @activity.Purpose
+                                    }
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(activity.LegalBasis))
+                                {
+                                    if (activity.LegalBasis.Length > 50)
+                                    {
+                                        @activity.LegalBasis.Substring(0, 50)<text>...</text>
+                                    }
+                                    else
+                                    {
+                                        @activity.LegalBasis
+                                    }
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(activity.DataSubjects))
+                                {
+                                    if (activity.DataSubjects.Length > 50)
+                                    {
+                                        @activity.DataSubjects.Substring(0, 50)<text>...</text>
+                                    }
+                                    else
+                                    {
+                                        @activity.DataSubjects
+                                    }
+                                }
+                            </td>
+                            <td>@activity.RetentionPeriod</td>
+                            <td>
+                                @if (activity.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @if (activity.UpdatedAt.HasValue)
+                                {
+                                    @activity.UpdatedAt.Value.ToString("yyyy-MM-dd")
+                                }
+                                else
+                                {
+                                    @activity.CreatedAt.ToString("yyyy-MM-dd")
+                                }
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-page="./Details" asp-route-id="@activity.Id" 
+                                       class="btn btn-outline-primary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-page="./Edit" asp-route-id="@activity.Id" 
+                                       class="btn btn-outline-secondary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    @if (activity.IsActive)
+                                    {
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteModal-@activity.Id"
+                                                title="Deactivate">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
+                                </div>
+
+                                <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteModal-@activity.Id" tabindex="-1" 
+                                     aria-labelledby="deleteModalLabel-@activity.Id" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="deleteModalLabel-@activity.Id">
+                                                    Confirm Deactivation
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" 
+                                                        aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Are you sure you want to deactivate the processing activity 
+                                                <strong>@activity.Name</strong>? This will mark it as inactive 
+                                                but preserve the record for audit purposes.
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" 
+                                                        data-bs-dismiss="modal">Cancel</button>
+                                                <form method="post" asp-page-handler="Delete" class="d-inline">
+                                                    <input type="hidden" name="id" value="@activity.Id" />
+                                                    <button type="submit" class="btn btn-danger">
+                                                        Deactivate
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-3">
+            <p class="text-muted">
+                <i class="bi bi-info-circle"></i> 
+                Showing @Model.ProcessingActivities.Count processing activit@(Model.ProcessingActivities.Count == 1 ? "y" : "ies")
+            </p>
+        </div>
+    }
+</div>

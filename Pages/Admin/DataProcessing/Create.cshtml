@@ -1,0 +1,186 @@
+@page
+@model MercatoApp.Pages.Admin.DataProcessing.CreateModel
+@{
+    ViewData["Title"] = "Create Processing Activity";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Create Processing Activity</h1>
+            <p class="text-muted">Record a new personal data processing activity as per GDPR Article 30</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10">
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Name" class="form-label">
+                                Activity Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ProcessingActivity.Name" class="form-control" 
+                                   placeholder="e.g., User Registration Processing" />
+                            <span asp-validation-for="ProcessingActivity.Name" class="text-danger"></span>
+                            <div class="form-text">A descriptive name for this processing activity</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Purpose" class="form-label">
+                                Purpose <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="ProcessingActivity.Purpose" class="form-control" rows="4"
+                                      placeholder="Describe the purposes of processing this personal data"></textarea>
+                            <span asp-validation-for="ProcessingActivity.Purpose" class="text-danger"></span>
+                            <div class="form-text">What is the purpose of processing this data?</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.LegalBasis" class="form-label">
+                                Legal Basis <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ProcessingActivity.LegalBasis" class="form-control" 
+                                   placeholder="e.g., Consent, Contract, Legal Obligation, Legitimate Interest" />
+                            <span asp-validation-for="ProcessingActivity.LegalBasis" class="text-danger"></span>
+                            <div class="form-text">The legal basis for processing (Art. 6 GDPR)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Data Categories & Subjects</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.DataCategories" class="form-label">
+                                Categories of Personal Data <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="ProcessingActivity.DataCategories" class="form-control" rows="3"
+                                      placeholder="e.g., Name, Email, Address, Payment Information"></textarea>
+                            <span asp-validation-for="ProcessingActivity.DataCategories" class="text-danger"></span>
+                            <div class="form-text">What types of personal data are being processed?</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.DataSubjects" class="form-label">
+                                Categories of Data Subjects <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="ProcessingActivity.DataSubjects" class="form-control" rows="3"
+                                      placeholder="e.g., Customers, Employees, Suppliers"></textarea>
+                            <span asp-validation-for="ProcessingActivity.DataSubjects" class="text-danger"></span>
+                            <div class="form-text">Who are the data subjects?</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recipients & Transfers</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Recipients" class="form-label">
+                                Recipients
+                            </label>
+                            <textarea asp-for="ProcessingActivity.Recipients" class="form-control" rows="3"
+                                      placeholder="Categories of recipients to whom data may be disclosed"></textarea>
+                            <span asp-validation-for="ProcessingActivity.Recipients" class="text-danger"></span>
+                            <div class="form-text">Who receives or has access to this data?</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.InternationalTransfers" class="form-label">
+                                International Transfers
+                            </label>
+                            <textarea asp-for="ProcessingActivity.InternationalTransfers" class="form-control" rows="2"
+                                      placeholder="Information about transfers to third countries"></textarea>
+                            <span asp-validation-for="ProcessingActivity.InternationalTransfers" class="text-danger"></span>
+                            <div class="form-text">Is data transferred outside the EEA? If so, provide details</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Processors" class="form-label">
+                                Data Processors
+                            </label>
+                            <textarea asp-for="ProcessingActivity.Processors" class="form-control" rows="2"
+                                      placeholder="Names of data processors involved"></textarea>
+                            <span asp-validation-for="ProcessingActivity.Processors" class="text-danger"></span>
+                            <div class="form-text">Third parties processing data on behalf of the controller</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Retention & Security</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.RetentionPeriod" class="form-label">
+                                Retention Period <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ProcessingActivity.RetentionPeriod" class="form-control" 
+                                   placeholder="e.g., 2 years after account closure" />
+                            <span asp-validation-for="ProcessingActivity.RetentionPeriod" class="text-danger"></span>
+                            <div class="form-text">How long will the data be retained?</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.SecurityMeasures" class="form-label">
+                                Security Measures
+                            </label>
+                            <textarea asp-for="ProcessingActivity.SecurityMeasures" class="form-control" rows="3"
+                                      placeholder="Technical and organizational security measures"></textarea>
+                            <span asp-validation-for="ProcessingActivity.SecurityMeasures" class="text-danger"></span>
+                            <div class="form-text">What security measures protect this data?</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Additional Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Notes" class="form-label">
+                                Notes
+                            </label>
+                            <textarea asp-for="ProcessingActivity.Notes" class="form-control" rows="3"
+                                      placeholder="Any additional notes or comments"></textarea>
+                            <span asp-validation-for="ProcessingActivity.Notes" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="ProcessingActivity.IsActive" class="form-check-input" type="checkbox" checked />
+                            <label asp-for="ProcessingActivity.IsActive" class="form-check-label">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a asp-page="./Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Create Processing Activity
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

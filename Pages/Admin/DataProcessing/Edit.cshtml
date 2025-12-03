@@ -1,0 +1,185 @@
+@page
+@model MercatoApp.Pages.Admin.DataProcessing.EditModel
+@{
+    ViewData["Title"] = "Edit Processing Activity";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Edit Processing Activity</h1>
+            <p class="text-muted">Update personal data processing activity record</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10">
+            <form method="post">
+                <input type="hidden" asp-for="ProcessingActivity.Id" />
+                <input type="hidden" asp-for="ProcessingActivity.CreatedAt" />
+                <input type="hidden" asp-for="ProcessingActivity.CreatedByUserId" />
+                
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Name" class="form-label">
+                                Activity Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ProcessingActivity.Name" class="form-control" />
+                            <span asp-validation-for="ProcessingActivity.Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Purpose" class="form-label">
+                                Purpose <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="ProcessingActivity.Purpose" class="form-control" rows="4"></textarea>
+                            <span asp-validation-for="ProcessingActivity.Purpose" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.LegalBasis" class="form-label">
+                                Legal Basis <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ProcessingActivity.LegalBasis" class="form-control" />
+                            <span asp-validation-for="ProcessingActivity.LegalBasis" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Data Categories & Subjects</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.DataCategories" class="form-label">
+                                Categories of Personal Data <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="ProcessingActivity.DataCategories" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="ProcessingActivity.DataCategories" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.DataSubjects" class="form-label">
+                                Categories of Data Subjects <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="ProcessingActivity.DataSubjects" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="ProcessingActivity.DataSubjects" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recipients & Transfers</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Recipients" class="form-label">
+                                Recipients
+                            </label>
+                            <textarea asp-for="ProcessingActivity.Recipients" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="ProcessingActivity.Recipients" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.InternationalTransfers" class="form-label">
+                                International Transfers
+                            </label>
+                            <textarea asp-for="ProcessingActivity.InternationalTransfers" class="form-control" rows="2"></textarea>
+                            <span asp-validation-for="ProcessingActivity.InternationalTransfers" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Processors" class="form-label">
+                                Data Processors
+                            </label>
+                            <textarea asp-for="ProcessingActivity.Processors" class="form-control" rows="2"></textarea>
+                            <span asp-validation-for="ProcessingActivity.Processors" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Retention & Security</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.RetentionPeriod" class="form-label">
+                                Retention Period <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ProcessingActivity.RetentionPeriod" class="form-control" />
+                            <span asp-validation-for="ProcessingActivity.RetentionPeriod" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.SecurityMeasures" class="form-label">
+                                Security Measures
+                            </label>
+                            <textarea asp-for="ProcessingActivity.SecurityMeasures" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="ProcessingActivity.SecurityMeasures" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Additional Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="ProcessingActivity.Notes" class="form-label">
+                                Notes
+                            </label>
+                            <textarea asp-for="ProcessingActivity.Notes" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="ProcessingActivity.Notes" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="ProcessingActivity.IsActive" class="form-check-input" type="checkbox" />
+                            <label asp-for="ProcessingActivity.IsActive" class="form-check-label">
+                                Active
+                            </label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ChangeNotes" class="form-label">
+                                Change Notes
+                            </label>
+                            <textarea asp-for="ChangeNotes" class="form-control" rows="2"
+                                      placeholder="Describe what was changed in this update (for audit trail)"></textarea>
+                            <span asp-validation-for="ChangeNotes" class="text-danger"></span>
+                            <div class="form-text">Optional: Describe what was changed for the audit trail</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a asp-page="./Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                    <div>
+                        <a asp-page="./Details" asp-route-id="@Model.ProcessingActivity.Id" 
+                           class="btn btn-outline-primary me-2">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
