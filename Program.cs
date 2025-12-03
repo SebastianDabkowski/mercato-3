@@ -132,6 +132,7 @@ builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddScoped<IVatRuleService, VatRuleService>();
 builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+builder.Services.AddScoped<IIntegrationService, IntegrationService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Add background services

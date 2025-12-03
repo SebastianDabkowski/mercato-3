@@ -411,6 +411,12 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<CurrencyConfig> CurrencyConfigs { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the integrations table.
+    /// Stores external integration configurations for payment, shipping, and other services.
+    /// </summary>
+    public DbSet<Integration> Integrations { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1964,6 +1970,33 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<CurrencyConfig>(entity =>
         {
             // Configure optional relationship with User
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<Integration>(entity =>
+        {
+            // Index on type for filtering integrations by type
+            entity.HasIndex(e => e.Type);
+
+            // Index on status for filtering by status
+            entity.HasIndex(e => e.Status);
+
+            // Composite index for filtering enabled integrations by type
+            entity.HasIndex(e => new { e.Type, e.IsEnabled });
+
+            // Index on environment for filtering
+            entity.HasIndex(e => e.Environment);
+
+            // Configure relationship with CreatedByUser
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure relationship with UpdatedByUser (optional)
             entity.HasOne(e => e.UpdatedByUser)
                 .WithMany()
                 .HasForeignKey(e => e.UpdatedByUserId)
