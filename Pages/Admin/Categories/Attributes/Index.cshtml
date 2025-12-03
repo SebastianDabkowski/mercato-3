@@ -1,0 +1,183 @@
+@page "{categoryId:int}"
+@model MercatoApp.Pages.Admin.Categories.Attributes.IndexModel
+@{
+    ViewData["Title"] = $"Attributes - {Model.Category?.Name}";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-12 col-lg-10">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-page="/Admin/Dashboard">Admin</a></li>
+                <li class="breadcrumb-item"><a asp-page="/Admin/Categories/Index">Categories</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Category?.Name Attributes</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>Category Attributes</h1>
+                <p class="text-muted mb-0">
+                    Manage structured attributes for <strong>@Model.Category?.Name</strong> category.
+                </p>
+            </div>
+            <a asp-page="Create" asp-route-categoryId="@Model.CategoryId" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Add Attribute
+            </a>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @Model.ErrorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (Model.Attributes.Count == 0)
+        {
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <h4 class="text-muted mb-3">No Attributes Yet</h4>
+                    <p class="text-muted mb-4">Define attributes to structure product data and enable filtering for this category.</p>
+                    <a asp-page="Create" asp-route-categoryId="@Model.CategoryId" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Create First Attribute
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th class="text-center">Required</th>
+                                <th class="text-center">Filterable</th>
+                                <th class="text-center">Products</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var attr in Model.Attributes)
+                            {
+                                <tr class="@(attr.IsDeprecated ? "table-secondary" : "")">
+                                    <td>
+                                        <strong>@attr.Name</strong>
+                                        @if (!string.IsNullOrEmpty(attr.Description))
+                                        {
+                                            <br />
+                                            <small class="text-muted">@attr.Description</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@attr.AttributeType</span>
+                                        @if (!string.IsNullOrEmpty(attr.Unit))
+                                        {
+                                            <br />
+                                            <small class="text-muted">Unit: @attr.Unit</small>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (attr.IsRequired)
+                                        {
+                                            <i class="bi bi-check-circle-fill text-success" title="Required"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-dash-circle text-muted" title="Optional"></i>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (attr.IsFilterable)
+                                        {
+                                            <i class="bi bi-funnel-fill text-primary" title="Filterable"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-dash-circle text-muted" title="Not Filterable"></i>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @Model.ProductCounts.GetValueOrDefault(attr.Id, 0)
+                                    </td>
+                                    <td class="text-center">
+                                        @if (attr.IsDeprecated)
+                                        {
+                                            <span class="badge bg-secondary">Deprecated</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-page="Edit" asp-route-id="@attr.Id" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            @if (attr.IsDeprecated)
+                                            {
+                                                <button type="button" class="btn btn-outline-success" 
+                                                        onclick="document.getElementById('restore-form-@attr.Id').submit();" 
+                                                        title="Restore">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </button>
+                                                <form id="restore-form-@attr.Id" method="post" asp-page-handler="Restore" asp-route-id="@attr.Id" style="display: none;">
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-outline-warning" 
+                                                        onclick="if(confirm('Are you sure you want to deprecate this attribute? It will be hidden from new products.')) document.getElementById('deprecate-form-@attr.Id').submit();" 
+                                                        title="Deprecate">
+                                                    <i class="bi bi-archive"></i>
+                                                </button>
+                                                <form id="deprecate-form-@attr.Id" method="post" asp-page-handler="Deprecate" asp-route-id="@attr.Id" style="display: none;">
+                                                </form>
+                                            }
+                                            @if (Model.ProductCounts.GetValueOrDefault(attr.Id, 0) == 0)
+                                            {
+                                                <a asp-page="Delete" asp-route-id="@attr.Id" class="btn btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-3 text-muted">
+                <small>
+                    Showing @Model.Attributes.Count attribute(s)
+                    @if (Model.Attributes.Any(a => a.IsDeprecated))
+                    {
+                        <span>including @Model.Attributes.Count(a => a.IsDeprecated) deprecated</span>
+                    }
+                </small>
+            </div>
+        }
+
+        <div class="mt-4">
+            <a asp-page="/Admin/Categories/Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Categories
+            </a>
+        </div>
+    </div>
+</div>
