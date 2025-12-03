@@ -447,6 +447,18 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<FeatureFlagHistory> FeatureFlagHistories { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the processing activities table.
+    /// Stores GDPR Article 30 processing activity records.
+    /// </summary>
+    public DbSet<ProcessingActivity> ProcessingActivities { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the processing activity history table.
+    /// Stores audit trail of processing activity changes.
+    /// </summary>
+    public DbSet<ProcessingActivityHistory> ProcessingActivityHistories { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

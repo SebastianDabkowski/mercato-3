@@ -137,6 +137,7 @@ builder.Services.AddScoped<IIntegrationService, IntegrationService>();
 builder.Services.AddScoped<ILegalDocumentService, LegalDocumentService>();
 builder.Services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 builder.Services.AddScoped<IFeatureFlagManagementService, FeatureFlagManagementService>();
+builder.Services.AddScoped<IProcessingActivityService, ProcessingActivityService>();
 
 // Add background services
 builder.Services.AddHostedService<MercatoApp.Helpers.SLAMonitoringService>();

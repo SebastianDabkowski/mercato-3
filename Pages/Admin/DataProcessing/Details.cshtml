@@ -1,0 +1,238 @@
+@page
+@model MercatoApp.Pages.Admin.DataProcessing.DetailsModel
+@{
+    ViewData["Title"] = "Processing Activity Details";
+}
+
+<div class="container-fluid mt-4">
+    @if (Model.ProcessingActivity == null)
+    {
+        <div class="alert alert-danger">Processing activity not found.</div>
+    }
+    else
+    {
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1>@Model.ProcessingActivity.Name</h1>
+                        <p class="text-muted">Processing Activity Details</p>
+                    </div>
+                    <div>
+                        @if (Model.ProcessingActivity.IsActive)
+                        {
+                            <span class="badge bg-success fs-6">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary fs-6">Inactive</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col">
+                <a asp-page="./Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+                <a asp-page="./Edit" asp-route-id="@Model.ProcessingActivity.Id" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-3">Purpose</dt>
+                            <dd class="col-sm-9">@Model.ProcessingActivity.Purpose</dd>
+
+                            <dt class="col-sm-3">Legal Basis</dt>
+                            <dd class="col-sm-9">@Model.ProcessingActivity.LegalBasis</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Data Categories & Subjects</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-3">Data Categories</dt>
+                            <dd class="col-sm-9">
+                                <div style="white-space: pre-wrap;">@Model.ProcessingActivity.DataCategories</div>
+                            </dd>
+
+                            <dt class="col-sm-3">Data Subjects</dt>
+                            <dd class="col-sm-9">
+                                <div style="white-space: pre-wrap;">@Model.ProcessingActivity.DataSubjects</div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recipients & Transfers</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-3">Recipients</dt>
+                            <dd class="col-sm-9">
+                                @if (!string.IsNullOrWhiteSpace(Model.ProcessingActivity.Recipients))
+                                {
+                                    <div style="white-space: pre-wrap;">@Model.ProcessingActivity.Recipients</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Not specified</span>
+                                }
+                            </dd>
+
+                            <dt class="col-sm-3">International Transfers</dt>
+                            <dd class="col-sm-9">
+                                @if (!string.IsNullOrWhiteSpace(Model.ProcessingActivity.InternationalTransfers))
+                                {
+                                    <div style="white-space: pre-wrap;">@Model.ProcessingActivity.InternationalTransfers</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">None</span>
+                                }
+                            </dd>
+
+                            <dt class="col-sm-3">Data Processors</dt>
+                            <dd class="col-sm-9">
+                                @if (!string.IsNullOrWhiteSpace(Model.ProcessingActivity.Processors))
+                                {
+                                    <div style="white-space: pre-wrap;">@Model.ProcessingActivity.Processors</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Not specified</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Retention & Security</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-3">Retention Period</dt>
+                            <dd class="col-sm-9">@Model.ProcessingActivity.RetentionPeriod</dd>
+
+                            <dt class="col-sm-3">Security Measures</dt>
+                            <dd class="col-sm-9">
+                                @if (!string.IsNullOrWhiteSpace(Model.ProcessingActivity.SecurityMeasures))
+                                {
+                                    <div style="white-space: pre-wrap;">@Model.ProcessingActivity.SecurityMeasures</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Not specified</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.ProcessingActivity.Notes))
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">Notes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div style="white-space: pre-wrap;">@Model.ProcessingActivity.Notes</div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Metadata</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Created</dt>
+                            <dd class="col-sm-7">
+                                @Model.ProcessingActivity.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                                @if (Model.ProcessingActivity.CreatedByUser != null)
+                                {
+                                    <br />
+                                    <small class="text-muted">by @Model.ProcessingActivity.CreatedByUser.Email</small>
+                                }
+                            </dd>
+
+                            @if (Model.ProcessingActivity.UpdatedAt.HasValue)
+                            {
+                                <dt class="col-sm-5">Last Updated</dt>
+                                <dd class="col-sm-7">
+                                    @Model.ProcessingActivity.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                    @if (Model.ProcessingActivity.UpdatedByUser != null)
+                                    {
+                                        <br />
+                                        <small class="text-muted">by @Model.ProcessingActivity.UpdatedByUser.Email</small>
+                                    }
+                                </dd>
+                            }
+                        </dl>
+                    </div>
+                </div>
+
+                @if (Model.History.Count > 0)
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Change History</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                @foreach (var entry in Model.History.Take(10))
+                                {
+                                    <div class="list-group-item px-0">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <small class="text-muted">
+                                                @entry.ChangedAt.ToString("yyyy-MM-dd HH:mm")
+                                            </small>
+                                        </div>
+                                        @if (entry.ChangedByUser != null)
+                                        {
+                                            <small class="text-muted">by @entry.ChangedByUser.Email</small>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(entry.ChangeNotes))
+                                        {
+                                            <p class="mb-0 mt-1"><small>@entry.ChangeNotes</small></p>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            @if (Model.History.Count > 10)
+                            {
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        Showing 10 of @Model.History.Count changes
+                                    </small>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
