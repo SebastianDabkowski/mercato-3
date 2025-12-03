@@ -429,6 +429,24 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<UserConsent> UserConsents { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the feature flags table.
+    /// Stores feature flags for controlling platform features.
+    /// </summary>
+    public DbSet<FeatureFlag> FeatureFlags { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the feature flag rules table.
+    /// Stores targeting rules for feature flags.
+    /// </summary>
+    public DbSet<FeatureFlagRule> FeatureFlagRules { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the feature flag history table.
+    /// Stores audit trail of feature flag changes.
+    /// </summary>
+    public DbSet<FeatureFlagHistory> FeatureFlagHistories { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -2102,6 +2120,72 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.TargetUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<FeatureFlag>(entity =>
+        {
+            // Unique index on key for fast lookups
+            entity.HasIndex(e => e.Key).IsUnique();
+
+            // Index on IsActive for filtering active flags
+            entity.HasIndex(e => e.IsActive);
+
+            // Index on created date for ordering
+            entity.HasIndex(e => e.CreatedAt);
+
+            // Configure optional relationship with CreatedByUser
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure optional relationship with UpdatedByUser
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<FeatureFlagRule>(entity =>
+        {
+            // Index on feature flag ID for finding all rules for a flag
+            entity.HasIndex(e => e.FeatureFlagId);
+
+            // Composite index for ordering rules by priority
+            entity.HasIndex(e => new { e.FeatureFlagId, e.Priority });
+
+            // Configure relationship with FeatureFlag
+            entity.HasOne(e => e.FeatureFlag)
+                .WithMany(f => f.Rules)
+                .HasForeignKey(e => e.FeatureFlagId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FeatureFlagHistory>(entity =>
+        {
+            // Index on feature flag ID for finding all history for a flag
+            entity.HasIndex(e => e.FeatureFlagId);
+
+            // Composite index for ordering history by date
+            entity.HasIndex(e => new { e.FeatureFlagId, e.ChangedAt });
+
+            // Index on changed by user for admin activity tracking
+            entity.HasIndex(e => e.ChangedByUserId);
+
+            // Index on change type for filtering
+            entity.HasIndex(e => e.ChangeType);
+
+            // Configure optional relationship with FeatureFlag (SetNull for deleted flags)
+            entity.HasOne(e => e.FeatureFlag)
+                .WithMany()
+                .HasForeignKey(e => e.FeatureFlagId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationship with ChangedByUser
+            entity.HasOne(e => e.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ChangedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

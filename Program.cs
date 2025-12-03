@@ -135,7 +135,8 @@ builder.Services.AddScoped<IVatRuleService, VatRuleService>();
 builder.Services.AddScoped<ICurrencyService, CurrencyService>();
 builder.Services.AddScoped<IIntegrationService, IntegrationService>();
 builder.Services.AddScoped<ILegalDocumentService, LegalDocumentService>();
-builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
+builder.Services.AddScoped<IFeatureFlagService, FeatureFlagService>();
+builder.Services.AddScoped<IFeatureFlagManagementService, FeatureFlagManagementService>();
 
 // Add background services
 builder.Services.AddHostedService<MercatoApp.Helpers.SLAMonitoringService>();
@@ -276,6 +277,11 @@ if (app.Environment.IsDevelopment())
     var dashboardService = scope.ServiceProvider.GetRequiredService<ISellerDashboardService>();
     var dashboardTest = new SellerDashboardTestScenario(context, dashboardService);
     await dashboardTest.RunAsync();
+
+    // Run feature flag test scenario
+    var flagManagementService = scope.ServiceProvider.GetRequiredService<IFeatureFlagManagementService>();
+    var flagRuntimeService = scope.ServiceProvider.GetRequiredService<IFeatureFlagService>();
+    await FeatureFlagTestScenario.RunTestAsync(context, flagManagementService, flagRuntimeService);
 }
 
 // Configure the HTTP request pipeline.

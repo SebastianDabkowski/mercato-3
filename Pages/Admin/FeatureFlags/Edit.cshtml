@@ -1,0 +1,333 @@
+@page
+@model MercatoApp.Pages.Admin.FeatureFlags.EditModel
+@{
+    ViewData["Title"] = "Edit Feature Flag - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Admin</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/FeatureFlags">Feature Flags</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-pencil"></i> Edit Feature Flag
+            </h1>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="post" id="editForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="FeatureFlag.Id" />
+                <input type="hidden" asp-for="FeatureFlag.Key" />
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Flag Key</label>
+                            <input type="text" class="form-control" value="@Model.FeatureFlag.Key" readonly />
+                            <div class="form-text">The key cannot be changed after creation.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FeatureFlag.Name" class="form-label">Display Name *</label>
+                            <input asp-for="FeatureFlag.Name" class="form-control" />
+                            <span asp-validation-for="FeatureFlag.Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FeatureFlag.Description" class="form-label">Description</label>
+                            <textarea asp-for="FeatureFlag.Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="FeatureFlag.Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FeatureFlag.Environments" class="form-label">Environments</label>
+                            <input asp-for="FeatureFlag.Environments" class="form-control" 
+                                   placeholder="dev,test,stage,prod (leave empty for all)" />
+                            <div class="form-text">Comma-separated list of environments where this flag applies.</div>
+                            <span asp-validation-for="FeatureFlag.Environments" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="FeatureFlag.IsEnabledByDefault" class="form-check-input" type="checkbox" />
+                                <label asp-for="FeatureFlag.IsEnabledByDefault" class="form-check-label">
+                                    Enable by Default
+                                </label>
+                                <div class="form-text">When enabled, the feature will be on by default (unless targeting rules override it).</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="FeatureFlag.IsActive" class="form-check-input" type="checkbox" />
+                                <label asp-for="FeatureFlag.IsActive" class="form-check-label">
+                                    Active
+                                </label>
+                                <div class="form-text">Inactive flags are not evaluated and always return false.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Targeting Rules</h5>
+                        <button type="button" class="btn btn-sm btn-light" onclick="addRule()">
+                            <i class="bi bi-plus-circle"></i> Add Rule
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Rules are evaluated in order from top to bottom. The first matching rule determines the feature state.
+                        </p>
+
+                        <div id="rulesContainer">
+                            @for (int i = 0; i < Model.Rules.Count; i++)
+                            {
+                                <div class="rule-item card mb-3" data-index="@i">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h6 class="mb-0">Rule @(i + 1)</h6>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRule(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Rule Type</label>
+                                                <select asp-for="Rules[i].RuleType" class="form-select" onchange="updateRuleValuePlaceholder(this)">
+                                                    <option value="UserRole">User Role</option>
+                                                    <option value="UserId">User ID</option>
+                                                    <option value="StoreId">Store ID</option>
+                                                    <option value="PercentageRollout">Percentage Rollout</option>
+                                                    <option value="Environment">Environment</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Value</label>
+                                                <input asp-for="Rules[i].RuleValue" class="form-control rule-value" />
+                                                <small class="form-text text-muted rule-hint"></small>
+                                            </div>
+
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Action</label>
+                                                <select asp-for="Rules[i].IsEnabled" class="form-select">
+                                                    <option value="true">Enable</option>
+                                                    <option value="false">Disable</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-0">
+                                            <label class="form-label">Description (optional)</label>
+                                            <input asp-for="Rules[i].Description" class="form-control" 
+                                                   placeholder="e.g., Enable for all admins" />
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @if (!Model.Rules.Any())
+                        {
+                            <div class="text-center py-4 text-muted" id="noRulesMessage">
+                                <i class="bi bi-info-circle"></i>
+                                No targeting rules defined. The default state will apply to all requests.
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="/Admin/FeatureFlags" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Rule Types</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>User Role:</strong></p>
+                    <p class="mb-3 small">Target by role (Admin, Seller, Buyer). Example: <code>Admin,Seller</code></p>
+
+                    <p class="mb-2"><strong>User ID:</strong></p>
+                    <p class="mb-3 small">Target specific users. Example: <code>1,5,10</code></p>
+
+                    <p class="mb-2"><strong>Store ID:</strong></p>
+                    <p class="mb-3 small">Target specific stores. Example: <code>3,7</code></p>
+
+                    <p class="mb-2"><strong>Percentage Rollout:</strong></p>
+                    <p class="mb-3 small">Gradually enable for X% of users. Example: <code>25</code> for 25%</p>
+
+                    <p class="mb-2"><strong>Environment:</strong></p>
+                    <p class="mb-0 small">Target by environment. Example: <code>dev,test</code></p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-clock-history"></i> Actions</h6>
+                </div>
+                <div class="card-body">
+                    <a href="/Admin/FeatureFlags/History?id=@Model.FeatureFlag.Id" class="btn btn-outline-info w-100 mb-2">
+                        <i class="bi bi-clock-history"></i> View Change History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let ruleIndex = @Model.Rules.Count;
+
+        function addRule() {
+            const container = document.getElementById('rulesContainer');
+            const noRulesMsg = document.getElementById('noRulesMessage');
+            if (noRulesMsg) {
+                noRulesMsg.style.display = 'none';
+            }
+
+            const ruleHtml = `
+                <div class="rule-item card mb-3" data-index="${ruleIndex}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h6 class="mb-0">Rule ${ruleIndex + 1}</h6>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRule(this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Rule Type</label>
+                                <select name="Rules[${ruleIndex}].RuleType" class="form-select" onchange="updateRuleValuePlaceholder(this)">
+                                    <option value="UserRole">User Role</option>
+                                    <option value="UserId">User ID</option>
+                                    <option value="StoreId">Store ID</option>
+                                    <option value="PercentageRollout">Percentage Rollout</option>
+                                    <option value="Environment">Environment</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Value</label>
+                                <input name="Rules[${ruleIndex}].RuleValue" class="form-control rule-value" />
+                                <small class="form-text text-muted rule-hint"></small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Action</label>
+                                <select name="Rules[${ruleIndex}].IsEnabled" class="form-select">
+                                    <option value="true" selected>Enable</option>
+                                    <option value="false">Disable</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Description (optional)</label>
+                            <input name="Rules[${ruleIndex}].Description" class="form-control" 
+                                   placeholder="e.g., Enable for all admins" />
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', ruleHtml);
+            
+            // Update placeholder for the new rule
+            const newRule = container.lastElementChild;
+            const select = newRule.querySelector('select[name*="RuleType"]');
+            updateRuleValuePlaceholder(select);
+            
+            ruleIndex++;
+            updateRuleNumbers();
+        }
+
+        function removeRule(button) {
+            const ruleItem = button.closest('.rule-item');
+            ruleItem.remove();
+            updateRuleNumbers();
+            
+            const container = document.getElementById('rulesContainer');
+            if (container.children.length === 0) {
+                const noRulesMsg = document.getElementById('noRulesMessage');
+                if (noRulesMsg) {
+                    noRulesMsg.style.display = 'block';
+                }
+            }
+        }
+
+        function updateRuleNumbers() {
+            const rules = document.querySelectorAll('.rule-item');
+            rules.forEach((rule, index) => {
+                rule.querySelector('h6').textContent = `Rule ${index + 1}`;
+            });
+        }
+
+        function updateRuleValuePlaceholder(select) {
+            const ruleItem = select.closest('.rule-item');
+            const valueInput = ruleItem.querySelector('.rule-value');
+            const hint = ruleItem.querySelector('.rule-hint');
+            
+            const ruleType = select.value;
+            switch (ruleType) {
+                case 'UserRole':
+                    valueInput.placeholder = 'Admin,Seller,Buyer';
+                    hint.textContent = 'Comma-separated roles';
+                    break;
+                case 'UserId':
+                    valueInput.placeholder = '1,5,10';
+                    hint.textContent = 'Comma-separated user IDs';
+                    break;
+                case 'StoreId':
+                    valueInput.placeholder = '3,7';
+                    hint.textContent = 'Comma-separated store IDs';
+                    break;
+                case 'PercentageRollout':
+                    valueInput.placeholder = '25';
+                    hint.textContent = 'Percentage (0-100)';
+                    break;
+                case 'Environment':
+                    valueInput.placeholder = 'dev,test,prod';
+                    hint.textContent = 'Comma-separated environments';
+                    break;
+            }
+        }
+
+        // Initialize placeholders on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('select[name*="RuleType"]').forEach(select => {
+                updateRuleValuePlaceholder(select);
+            });
+        });
+    </script>
+}
