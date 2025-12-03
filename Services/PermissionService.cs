@@ -75,14 +75,14 @@ public class PermissionService : IPermissionService
         try
         {
             // Verify role exists
-            var role = await _context.Roles.FindAsync(roleId);
+            var role = await _context.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Id == roleId);
             if (role == null)
             {
                 return PermissionResult.FailResult("Role not found.");
             }
 
             // Verify permission exists
-            var permission = await _context.Permissions.FindAsync(permissionId);
+            var permission = await _context.Permissions.AsNoTracking().FirstOrDefaultAsync(p => p.Id == permissionId);
             if (permission == null)
             {
                 return PermissionResult.FailResult("Permission not found.");
@@ -144,8 +144,6 @@ public class PermissionService : IPermissionService
         try
         {
             var rolePermission = await _context.RolePermissions
-                .Include(rp => rp.Role)
-                .Include(rp => rp.Permission)
                 .FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId);
 
             if (rolePermission == null)
@@ -158,6 +156,10 @@ public class PermissionService : IPermissionService
                 return PermissionResult.FailResult("Permission already revoked from this role.");
             }
 
+            // Get role and permission names for logging
+            var role = await _context.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Id == roleId);
+            var permission = await _context.Permissions.AsNoTracking().FirstOrDefaultAsync(p => p.Id == permissionId);
+
             // Soft delete by setting IsActive to false
             rolePermission.IsActive = false;
             rolePermission.ModifiedAt = DateTime.UtcNow;
@@ -167,7 +169,7 @@ public class PermissionService : IPermissionService
 
             _logger.LogInformation(
                 "Permission {PermissionName} revoked from role {RoleName} by user {UserId}",
-                rolePermission.Permission.Name, rolePermission.Role.Name, revokedByUserId);
+                permission?.Name ?? "Unknown", role?.Name ?? "Unknown", revokedByUserId);
 
             return PermissionResult.SuccessResult();
         }

@@ -20,6 +20,12 @@ public class AccessDeniedModel : PageModel
     /// </summary>
     public string? ReturnUrl { get; set; }
 
+    /// <summary>
+    /// Gets or sets the required role for the resource.
+    /// </summary>
+    [BindProperty(SupportsGet = true)]
+    public string? RequiredRole { get; set; }
+
     public void OnGet(string? returnUrl = null)
     {
         ReturnUrl = returnUrl;
@@ -30,10 +36,11 @@ public class AccessDeniedModel : PageModel
         var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
 
         _logger.LogWarning(
-            "Access denied - UserId: {UserId}, Email: {Email}, Role: {Role}, RequestedUrl: {ReturnUrl}",
+            "Access denied - UserId: {UserId}, Email: {Email}, Role: {Role}, RequiredRole: {RequiredRole}, RequestedUrl: {ReturnUrl}",
             userId ?? "not authenticated",
             userEmail ?? "unknown",
             userRole ?? "none",
+            RequiredRole ?? "not specified",
             returnUrl ?? "not specified");
     }
 }

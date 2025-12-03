@@ -293,6 +293,10 @@ if (app.Environment.IsDevelopment())
     var flagManagementService = scope.ServiceProvider.GetRequiredService<IFeatureFlagManagementService>();
     var flagRuntimeService = scope.ServiceProvider.GetRequiredService<IFeatureFlagService>();
     await FeatureFlagTestScenario.RunTestAsync(context, flagManagementService, flagRuntimeService);
+
+    // Run RBAC test scenario
+    var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
+    await RbacTestScenario.RunTestAsync(context, permissionService);
 }
 
 // Configure the HTTP request pipeline.
