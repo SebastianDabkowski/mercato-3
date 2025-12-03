@@ -93,7 +93,7 @@ public class AuditLog
     /// <summary>
     /// Gets or sets the IP address from which the action was performed.
     /// </summary>
-    [MaxLength(45)] // IPv6 max length
+    [MaxLength(46)] // IPv6 max length with all representations
     public string? IpAddress { get; set; }
 
     /// <summary>

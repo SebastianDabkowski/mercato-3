@@ -78,14 +78,16 @@ public class AuditHelper
                 "Failed to create audit log for action {ActionType} on {EntityType} {EntityId}",
                 actionType, entityType, entityId);
             
-            // Return a placeholder entry
+            // Return a minimal entry with essential fields
             return new AuditLog
             {
                 UserId = userId,
                 ActionType = actionType,
                 EntityType = entityType,
                 EntityId = entityId,
-                Success = success
+                Success = success,
+                Timestamp = DateTime.UtcNow,
+                EntryHash = string.Empty // Placeholder, not calculated
             };
         }
     }

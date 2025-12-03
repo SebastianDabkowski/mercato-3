@@ -338,8 +338,7 @@ public class AuditLogService : IAuditLogService
                    $"{log.TargetUserId}|{log.Success}|{log.Timestamp:O}|" +
                    $"{log.PreviousValue}|{log.NewValue}|{log.Details}";
 
-        using var sha256 = SHA256.Create();
-        var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(data));
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(data));
         return Convert.ToHexString(hashBytes);
     }
 }
