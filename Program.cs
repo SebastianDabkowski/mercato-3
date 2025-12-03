@@ -142,6 +142,7 @@ builder.Services.AddScoped<IDataExportService, DataExportService>();
 builder.Services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 builder.Services.AddScoped<IFeatureFlagManagementService, FeatureFlagManagementService>();
 builder.Services.AddScoped<IProcessingActivityService, ProcessingActivityService>();
+builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 
 // Add background services
 builder.Services.AddHostedService<MercatoApp.Helpers.SLAMonitoringService>();

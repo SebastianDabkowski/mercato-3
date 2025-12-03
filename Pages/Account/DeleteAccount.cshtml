@@ -1,0 +1,171 @@
+@page
+@model MercatoApp.Pages.Account.DeleteAccountModel
+@{
+    ViewData["Title"] = "Delete Account";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Your Account
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+                    {
+                        <div class="alert @(Model.StatusMessage.StartsWith("Error") ? "alert-danger" : "alert-success") alert-dismissible fade show" role="alert">
+                            @Model.StatusMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (Model.ValidationResult != null && !Model.ValidationResult.CanDelete)
+                    {
+                        <div class="alert alert-warning">
+                            <h5 class="alert-heading">
+                                <i class="bi bi-exclamation-circle me-2"></i>Account Cannot Be Deleted
+                            </h5>
+                            <p class="mb-0">Your account cannot be deleted at this time due to the following reasons:</p>
+                            <ul class="mt-2 mb-0">
+                                @foreach (var reason in Model.ValidationResult.BlockingReasons)
+                                {
+                                    <li>@reason</li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="mt-3">
+                            <a href="/Account/Orders" class="btn btn-primary">View My Orders</a>
+                            <a href="/" class="btn btn-secondary">Return to Home</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger">
+                            <h5 class="alert-heading">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Warning: This Action is Permanent and Irreversible
+                            </h5>
+                            <p><strong>Before you proceed, please understand the following:</strong></p>
+                            <ul>
+                                <li>Your account will be <strong>permanently deleted</strong> and cannot be recovered.</li>
+                                <li>You will <strong>lose access</strong> to your account immediately.</li>
+                                <li>Your personal information (name, email, phone, address) will be <strong>permanently removed or anonymized</strong>.</li>
+                                <li>Your login credentials will be <strong>deleted</strong>, and you will not be able to sign in again.</li>
+                                @if (Model.DeletionImpact?.HasStore == true)
+                                {
+                                    <li>Your store "<strong>@Model.DeletionImpact.StoreName</strong>" will be permanently closed.</li>
+                                    <li>All your products will be removed from the marketplace.</li>
+                                }
+                            </ul>
+                        </div>
+
+                        @if (Model.DeletionImpact != null)
+                        {
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="mb-0">What Will Be Retained (Anonymized)</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small mb-3">
+                                        For legal and tax compliance reasons, certain transactional records will be retained 
+                                        in an anonymized form. Your personal identifiers will be replaced with anonymous values, 
+                                        but business-critical information will be preserved.
+                                    </p>
+                                    <div class="row text-center">
+                                        @if (Model.DeletionImpact.OrderCount > 0)
+                                        {
+                                            <div class="col-md-4">
+                                                <div class="p-3 border rounded">
+                                                    <h3 class="text-primary">@Model.DeletionImpact.OrderCount</h3>
+                                                    <p class="small text-muted mb-0">Order(s) will be anonymized</p>
+                                                </div>
+                                            </div>
+                                        }
+                                        @if (Model.DeletionImpact.ReturnRequestCount > 0)
+                                        {
+                                            <div class="col-md-4">
+                                                <div class="p-3 border rounded">
+                                                    <h3 class="text-warning">@Model.DeletionImpact.ReturnRequestCount</h3>
+                                                    <p class="small text-muted mb-0">Return request(s) will be anonymized</p>
+                                                </div>
+                                            </div>
+                                        }
+                                        @if (Model.DeletionImpact.AddressCount > 0)
+                                        {
+                                            <div class="col-md-4">
+                                                <div class="p-3 border rounded">
+                                                    <h3 class="text-info">@Model.DeletionImpact.AddressCount</h3>
+                                                    <p class="small text-muted mb-0">Address(es) will be anonymized</p>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="mt-3">
+                                        <p class="small text-muted mb-0">
+                                            <strong>What will be preserved (anonymized):</strong>
+                                        </p>
+                                        <ul class="small text-muted">
+                                            <li>Order amounts, dates, and product information</li>
+                                            <li>Financial transaction records</li>
+                                            <li>Return and refund records</li>
+                                        </ul>
+                                        <p class="small text-muted mb-0">
+                                            <strong>What will be permanently removed:</strong>
+                                        </p>
+                                        <ul class="small text-muted">
+                                            <li>Your name, email, phone number, and addresses</li>
+                                            <li>Your login credentials</li>
+                                            <li>Your notification preferences and saved items</li>
+                                            <li>All personal profile information</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <form method="post">
+                            <div class="mb-3">
+                                <label for="deletionReason" class="form-label">Reason for Deletion (Optional)</label>
+                                <textarea class="form-control" id="deletionReason" asp-for="DeletionReason" 
+                                          rows="3" placeholder="Please share why you're deleting your account (optional)"></textarea>
+                                <div class="form-text">This helps us improve our service.</div>
+                            </div>
+
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="confirmUnderstanding" 
+                                       asp-for="ConfirmUnderstanding" required>
+                                <label class="form-check-label" for="confirmUnderstanding">
+                                    <strong>I understand that this action is permanent and irreversible. 
+                                    My account and personal data will be permanently deleted or anonymized, 
+                                    and I will lose access to this account.</strong>
+                                </label>
+                                <span asp-validation-for="ConfirmUnderstanding" class="text-danger"></span>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                <a href="/" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash3 me-2"></i>Delete My Account Permanently
+                                </button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <p class="text-muted small">
+                    Need help? <a href="/Support/Contact">Contact Support</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

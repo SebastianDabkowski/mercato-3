@@ -480,6 +480,12 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ProcessingActivityHistory> ProcessingActivityHistories { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the account deletion logs table.
+    /// Stores audit trail of account deletion events for GDPR compliance.
+    /// </summary>
+    public DbSet<AccountDeletionLog> AccountDeletionLogs { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -2225,6 +2231,21 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ChangedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AccountDeletionLog>(entity =>
+        {
+            // Index on user ID for finding deletion logs by user
+            entity.HasIndex(e => e.UserId);
+
+            // Index on anonymized email for lookups
+            entity.HasIndex(e => e.AnonymizedEmail);
+
+            // Index on deletion date for audit queries
+            entity.HasIndex(e => e.CompletedAt);
+
+            // Composite index for filtering by user type and date
+            entity.HasIndex(e => new { e.UserType, e.CompletedAt });
         });
     }
 }
