@@ -86,8 +86,9 @@ public class SellerRatingService : ISellerRatingService
     /// <inheritdoc />
     public async Task<decimal?> GetAverageRatingAsync(int storeId)
     {
+        // Only include approved ratings in the average calculation
         var average = await _context.SellerRatings
-            .Where(sr => sr.StoreId == storeId)
+            .Where(sr => sr.StoreId == storeId && sr.IsApproved && sr.ModerationStatus == ReviewModerationStatus.Approved)
             .Select(sr => (decimal?)sr.Rating)
             .AverageAsync();
 
@@ -97,8 +98,9 @@ public class SellerRatingService : ISellerRatingService
     /// <inheritdoc />
     public async Task<int> GetRatingCountAsync(int storeId)
     {
+        // Only count approved ratings
         return await _context.SellerRatings
-            .CountAsync(sr => sr.StoreId == storeId);
+            .CountAsync(sr => sr.StoreId == storeId && sr.IsApproved && sr.ModerationStatus == ReviewModerationStatus.Approved);
     }
 
     /// <inheritdoc />

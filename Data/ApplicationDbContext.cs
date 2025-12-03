@@ -303,6 +303,16 @@ public class ApplicationDbContext : DbContext
     public DbSet<SellerRating> SellerRatings { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the seller rating flags table.
+    /// </summary>
+    public DbSet<SellerRatingFlag> SellerRatingFlags { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the seller rating moderation logs table.
+    /// </summary>
+    public DbSet<SellerRatingModerationLog> SellerRatingModerationLogs { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the email logs table for tracking email notifications.
     /// </summary>
     public DbSet<EmailLog> EmailLogs { get; set; } = null!;

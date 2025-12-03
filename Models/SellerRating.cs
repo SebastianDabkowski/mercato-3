@@ -53,7 +53,54 @@ public class SellerRating
     public int Rating { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional review text/feedback for the seller.
+    /// </summary>
+    [MaxLength(2000)]
+    public string? ReviewText { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the review is approved for public display.
+    /// Reviews may require moderation before becoming visible.
+    /// </summary>
+    public bool IsApproved { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the moderation status of the review.
+    /// </summary>
+    public ReviewModerationStatus ModerationStatus { get; set; } = ReviewModerationStatus.Approved;
+
+    /// <summary>
     /// Gets or sets the date and time when the rating was submitted.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the date and time when the review was approved (if applicable).
+    /// </summary>
+    public DateTime? ApprovedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the admin user ID who last moderated this review.
+    /// </summary>
+    public int? ModeratedByUserId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the admin who last moderated this review (navigation property).
+    /// </summary>
+    public User? ModeratedByUser { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when the review was last moderated.
+    /// </summary>
+    public DateTime? ModeratedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the collection of flags raised on this review.
+    /// </summary>
+    public ICollection<SellerRatingFlag> Flags { get; set; } = new List<SellerRatingFlag>();
+
+    /// <summary>
+    /// Gets or sets the collection of moderation log entries for this review.
+    /// </summary>
+    public ICollection<SellerRatingModerationLog> ModerationLogs { get; set; } = new List<SellerRatingModerationLog>();
 }
