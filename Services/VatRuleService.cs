@@ -281,12 +281,12 @@ public class VatRuleService : IVatRuleService
 
         if (fromDate.HasValue)
         {
-            query = query.Where(r => r.CreatedAt >= fromDate.Value || r.UpdatedAt >= fromDate.Value);
+            query = query.Where(r => r.CreatedAt >= fromDate.Value || (r.UpdatedAt.HasValue && r.UpdatedAt >= fromDate.Value));
         }
 
         if (toDate.HasValue)
         {
-            query = query.Where(r => r.CreatedAt <= toDate.Value);
+            query = query.Where(r => (r.UpdatedAt ?? r.CreatedAt) <= toDate.Value);
         }
 
         return await query

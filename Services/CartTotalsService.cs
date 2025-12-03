@@ -228,6 +228,19 @@ public class CartTotalsService : ICartTotalsService
         var transactionDate = DateTime.UtcNow;
         decimal totalTax = 0;
 
+        // Collect all product IDs first to avoid N+1 query problem
+        var allProductIds = itemsBySeller.Values
+            .SelectMany(items => items)
+            .Select(item => item.ProductId)
+            .Distinct()
+            .ToList();
+
+        // Load all products in a single query
+        var products = await _context.Products
+            .Include(p => p.CategoryEntity)
+            .Where(p => allProductIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+
         // Calculate tax for each seller's items
         foreach (var sellerGroup in itemsBySeller)
         {
@@ -235,12 +248,8 @@ public class CartTotalsService : ICartTotalsService
             
             foreach (var cartItem in items)
             {
-                // Load product with category if needed
-                var product = await _context.Products
-                    .Include(p => p.CategoryEntity)
-                    .FirstOrDefaultAsync(p => p.Id == cartItem.ProductId);
-
-                if (product == null)
+                // Get product from pre-loaded dictionary
+                if (!products.TryGetValue(cartItem.ProductId, out var product))
                 {
                     continue;
                 }
