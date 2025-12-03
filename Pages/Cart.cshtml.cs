@@ -65,8 +65,8 @@ public class CartModel : PageModel
             }
         }
 
-        // Calculate totals using the new service
-        CartTotals = await _cartTotalsService.CalculateCartTotalsAsync(userId, sessionId, false, appliedPromoCode);
+        // Calculate totals using the new service (no delivery address in cart view yet)
+        CartTotals = await _cartTotalsService.CalculateCartTotalsAsync(userId, sessionId, null, false, appliedPromoCode);
         
         TotalAmount = CartTotals.TotalAmount;
         TotalItems = ItemsBySeller.Values
