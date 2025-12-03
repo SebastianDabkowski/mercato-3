@@ -58,6 +58,74 @@ public static class TestDataSeeder
         context.Stores.Add(store);
         await context.SaveChangesAsync();
 
+        // Create test categories
+        var electronicsCategory = new Category
+        {
+            Name = "Electronics",
+            Slug = "electronics",
+            Description = "Electronic devices and accessories",
+            DisplayOrder = 0,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Categories.Add(electronicsCategory);
+
+        var fashionCategory = new Category
+        {
+            Name = "Fashion",
+            Slug = "fashion",
+            Description = "Clothing, shoes, and accessories",
+            DisplayOrder = 1,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Categories.Add(fashionCategory);
+
+        var homeGardenCategory = new Category
+        {
+            Name = "Home & Garden",
+            Slug = "home-garden",
+            Description = "Home decor, furniture, and gardening supplies",
+            DisplayOrder = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Categories.Add(homeGardenCategory);
+
+        await context.SaveChangesAsync();
+
+        // Create subcategories
+        var computersCategory = new Category
+        {
+            Name = "Computers & Laptops",
+            Slug = "computers-laptops",
+            Description = "Desktop computers, laptops, and accessories",
+            ParentCategoryId = electronicsCategory.Id,
+            DisplayOrder = 0,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Categories.Add(computersCategory);
+
+        var audioCategory = new Category
+        {
+            Name = "Audio & Headphones",
+            Slug = "audio-headphones",
+            Description = "Headphones, speakers, and audio equipment",
+            ParentCategoryId = electronicsCategory.Id,
+            DisplayOrder = 1,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Categories.Add(audioCategory);
+
+        await context.SaveChangesAsync();
+
         // Create test products
         var products = new[]
         {
@@ -69,6 +137,7 @@ public static class TestDataSeeder
                 Price = 79.99m,
                 Stock = 50,
                 Category = "Electronics",
+                CategoryId = audioCategory.Id,
                 Status = ProductStatus.Active,
                 Condition = ProductCondition.New,
                 ImageUrls = "https://via.placeholder.com/300x300?text=Headphones",
@@ -97,6 +166,7 @@ public static class TestDataSeeder
                 Price = 49.99m,
                 Stock = 100,
                 Category = "Electronics",
+                CategoryId = audioCategory.Id,
                 Status = ProductStatus.Active,
                 Condition = ProductCondition.New,
                 ImageUrls = "https://via.placeholder.com/300x300?text=Speaker",
