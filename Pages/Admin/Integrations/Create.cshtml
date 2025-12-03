@@ -1,0 +1,174 @@
+@page
+@model MercatoApp.Pages.Admin.Integrations.CreateModel
+@{
+    ViewData["Title"] = "Add Integration - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Admin</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/Integrations">Integration Management</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Integration</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-plus-circle"></i> Add New Integration
+            </h1>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-diagram-3"></i> Integration Details
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.Name" class="form-label"></label>
+                            <input asp-for="Input.Name" class="form-control" placeholder="My Payment Gateway" />
+                            <span asp-validation-for="Input.Name" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.Provider" class="form-label"></label>
+                            <input asp-for="Input.Provider" class="form-control" placeholder="Stripe" />
+                            <span asp-validation-for="Input.Provider" class="text-danger"></span>
+                            <small class="text-muted">e.g., Stripe, PayPal, FedEx, UPS</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Input.Type" class="form-label"></label>
+                            <select asp-for="Input.Type" class="form-select" asp-items="Html.GetEnumSelectList<MercatoApp.Models.IntegrationType>()">
+                                <option value="">-- Select Type --</option>
+                            </select>
+                            <span asp-validation-for="Input.Type" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Input.Environment" class="form-label"></label>
+                            <select asp-for="Input.Environment" class="form-select" asp-items="Html.GetEnumSelectList<MercatoApp.Models.IntegrationEnvironment>()">
+                                <option value="">-- Select Environment --</option>
+                            </select>
+                            <span asp-validation-for="Input.Environment" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Input.Status" class="form-label"></label>
+                            <select asp-for="Input.Status" class="form-select" asp-items="Html.GetEnumSelectList<MercatoApp.Models.IntegrationStatus>()">
+                                <option value="">-- Select Status --</option>
+                            </select>
+                            <span asp-validation-for="Input.Status" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <h6 class="mb-3"><i class="bi bi-key"></i> API Configuration</h6>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.ApiEndpoint" class="form-label"></label>
+                            <input asp-for="Input.ApiEndpoint" class="form-control" placeholder="https://api.provider.com" />
+                            <span asp-validation-for="Input.ApiEndpoint" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.MerchantId" class="form-label"></label>
+                            <input asp-for="Input.MerchantId" class="form-control" placeholder="merchant_12345" />
+                            <span asp-validation-for="Input.MerchantId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.ApiKey" class="form-label"></label>
+                            <input asp-for="Input.ApiKey" class="form-control" type="password" placeholder="sk_test_..." />
+                            <span asp-validation-for="Input.ApiKey" class="text-danger"></span>
+                            <small class="text-muted">API key or secret will be stored securely</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.CallbackUrl" class="form-label"></label>
+                            <input asp-for="Input.CallbackUrl" class="form-control" placeholder="https://yourdomain.com/webhooks/integration" />
+                            <span asp-validation-for="Input.CallbackUrl" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.AdditionalConfig" class="form-label"></label>
+                    <textarea asp-for="Input.AdditionalConfig" class="form-control" rows="4" placeholder='{"timeout": 30, "retries": 3}'></textarea>
+                    <span asp-validation-for="Input.AdditionalConfig" class="text-danger"></span>
+                    <small class="text-muted">Additional configuration in JSON format (optional)</small>
+                </div>
+
+                <hr />
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input asp-for="Input.IsEnabled" class="form-check-input" type="checkbox" id="isEnabledSwitch" checked />
+                        <label class="form-check-label" for="isEnabledSwitch">
+                            <strong>Enabled</strong>
+                        </label>
+                    </div>
+                    <small class="text-muted">Enable this integration for use on the platform</small>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="/Admin/Integrations" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Create Integration
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Security Notice</h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">
+                <i class="bi bi-shield-lock"></i> API keys and secrets are stored securely and masked when displayed.
+                Only update the API key when you need to change it. Never share API keys publicly.
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

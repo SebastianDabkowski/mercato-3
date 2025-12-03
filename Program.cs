@@ -132,6 +132,7 @@ builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<ISettlementService, SettlementService>();
 builder.Services.AddScoped<IVatRuleService, VatRuleService>();
 builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+builder.Services.AddScoped<IIntegrationService, IntegrationService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
 // Add background services
@@ -240,6 +241,10 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await TestDataSeeder.SeedTestDataAsync(context);
+
+    // Run integration management test scenario
+    var integrationService = scope.ServiceProvider.GetRequiredService<IIntegrationService>();
+    await IntegrationManagementTestScenario.RunTestAsync(context, integrationService);
 
     // Run commission invoice test scenario
     var invoiceService = scope.ServiceProvider.GetRequiredService<ICommissionInvoiceService>();

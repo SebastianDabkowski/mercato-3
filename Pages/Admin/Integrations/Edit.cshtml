@@ -1,0 +1,176 @@
+@page
+@model MercatoApp.Pages.Admin.Integrations.EditModel
+@{
+    ViewData["Title"] = "Edit Integration - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Admin</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/Integrations">Integration Management</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit Integration</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-pencil"></i> Edit Integration - @Model.Integration.Name
+            </h1>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-diagram-3"></i> Integration Details
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Input.Id" />
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.Name" class="form-label"></label>
+                            <input asp-for="Input.Name" class="form-control" />
+                            <span asp-validation-for="Input.Name" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.Provider" class="form-label"></label>
+                            <input asp-for="Input.Provider" class="form-control" />
+                            <span asp-validation-for="Input.Provider" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Input.Type" class="form-label"></label>
+                            <select asp-for="Input.Type" class="form-select" asp-items="Html.GetEnumSelectList<MercatoApp.Models.IntegrationType>()">
+                            </select>
+                            <span asp-validation-for="Input.Type" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Input.Environment" class="form-label"></label>
+                            <select asp-for="Input.Environment" class="form-select" asp-items="Html.GetEnumSelectList<MercatoApp.Models.IntegrationEnvironment>()">
+                            </select>
+                            <span asp-validation-for="Input.Environment" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label asp-for="Input.Status" class="form-label"></label>
+                            <select asp-for="Input.Status" class="form-select" asp-items="Html.GetEnumSelectList<MercatoApp.Models.IntegrationStatus>()">
+                            </select>
+                            <span asp-validation-for="Input.Status" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <h6 class="mb-3"><i class="bi bi-key"></i> API Configuration</h6>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.ApiEndpoint" class="form-label"></label>
+                            <input asp-for="Input.ApiEndpoint" class="form-control" />
+                            <span asp-validation-for="Input.ApiEndpoint" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.MerchantId" class="form-label"></label>
+                            <input asp-for="Input.MerchantId" class="form-control" />
+                            <span asp-validation-for="Input.MerchantId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.ApiKey" class="form-label"></label>
+                            <input asp-for="Input.ApiKey" class="form-control" type="password" placeholder="Leave blank to keep existing" />
+                            <span asp-validation-for="Input.ApiKey" class="text-danger"></span>
+                            <small class="text-muted">
+                                Current: <code>@Model.MaskedApiKey</code><br />
+                                Leave blank to keep the existing API key
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label asp-for="Input.CallbackUrl" class="form-label"></label>
+                            <input asp-for="Input.CallbackUrl" class="form-control" />
+                            <span asp-validation-for="Input.CallbackUrl" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.AdditionalConfig" class="form-label"></label>
+                    <textarea asp-for="Input.AdditionalConfig" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Input.AdditionalConfig" class="text-danger"></span>
+                    <small class="text-muted">Additional configuration in JSON format (optional)</small>
+                </div>
+
+                <hr />
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input asp-for="Input.IsEnabled" class="form-check-input" type="checkbox" id="isEnabledSwitch" />
+                        <label class="form-check-label" for="isEnabledSwitch">
+                            <strong>Enabled</strong>
+                        </label>
+                    </div>
+                    <small class="text-muted">Disabled integrations will not be used by the platform</small>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="/Admin/Integrations" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Important Notes</h6>
+        </div>
+        <div class="card-body">
+            <ul class="mb-0">
+                <li>API keys are stored securely and never displayed in full.</li>
+                <li>Only provide a new API key if you want to update it; leave the field blank to keep the existing one.</li>
+                <li>Changing integration settings may affect active transactions or operations.</li>
+                <li>Use the Details page to perform health checks on this integration.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
