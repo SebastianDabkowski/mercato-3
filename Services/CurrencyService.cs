@@ -168,8 +168,9 @@ public class CurrencyService : ICurrencyService
             throw new InvalidOperationException("Cannot delete the base currency. Please change the base currency first.");
         }
 
-        // In a real application, check if the currency is used in any transactions
-        // For now, we'll allow deletion
+        // Note: This implementation allows deletion without checking for usage in transactions.
+        // In production, you should verify the currency is not referenced by existing orders,
+        // products, or other entities before allowing deletion.
 
         _context.Currencies.Remove(currency);
         await _context.SaveChangesAsync();
