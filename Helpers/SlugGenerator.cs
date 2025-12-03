@@ -41,7 +41,7 @@ public static class SlugGenerator
         // Limit length to 150 characters
         if (slug.Length > 150)
         {
-            slug = slug.Substring(0, 150).TrimEnd('-');
+            slug = slug[..150].TrimEnd('-');
         }
 
         return slug;

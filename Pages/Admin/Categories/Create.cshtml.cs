@@ -29,11 +29,11 @@ public class CreateModel : PageModel
     public class InputModel
     {
         [Required(ErrorMessage = "Category name is required.")]
-        [MaxLength(100, ErrorMessage = "Category name must be 100 characters or less.")]
+        [MaxLength(CategoryService.MaxNameLength, ErrorMessage = "Category name must be 100 characters or less.")]
         [Display(Name = "Category Name")]
         public string Name { get; set; } = string.Empty;
 
-        [MaxLength(500, ErrorMessage = "Description must be 500 characters or less.")]
+        [MaxLength(CategoryService.MaxDescriptionLength, ErrorMessage = "Description must be 500 characters or less.")]
         [Display(Name = "Description")]
         public string? Description { get; set; }
 

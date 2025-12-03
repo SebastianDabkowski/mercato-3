@@ -138,6 +138,16 @@ public class CategoryService : ICategoryService
     /// </summary>
     public const int MaxNameLength = 100;
 
+    /// <summary>
+    /// Maximum length for category slug.
+    /// </summary>
+    public const int MaxSlugLength = 150;
+
+    /// <summary>
+    /// Maximum length for category description.
+    /// </summary>
+    public const int MaxDescriptionLength = 500;
+
     public CategoryService(
         ApplicationDbContext context,
         ILogger<CategoryService> logger)
@@ -166,9 +176,7 @@ public class CategoryService : ICategoryService
         }
 
         // Generate or validate slug
-        var slug = string.IsNullOrWhiteSpace(data.Slug) 
-            ? SlugGenerator.GenerateSlug(trimmedName) 
-            : SlugGenerator.GenerateSlug(data.Slug);
+        var slug = SlugGenerator.GenerateSlug(string.IsNullOrWhiteSpace(data.Slug) ? trimmedName : data.Slug);
 
         if (string.IsNullOrWhiteSpace(slug))
         {
