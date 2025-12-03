@@ -348,6 +348,10 @@ public class SecurityIncidentService : ISecurityIncidentService
         var prefix = $"SI-{today:yyyyMMdd}-";
 
         // Find the highest sequence number for today
+        // Note: In a production environment with high concurrency, consider using:
+        // 1. A database sequence or auto-increment column
+        // 2. A distributed lock mechanism
+        // 3. Optimistic concurrency with retry logic
         var lastIncidentToday = await _context.SecurityIncidents
             .Where(i => i.IncidentNumber.StartsWith(prefix))
             .OrderByDescending(i => i.IncidentNumber)
@@ -356,11 +360,18 @@ public class SecurityIncidentService : ISecurityIncidentService
         int sequence = 1;
         if (lastIncidentToday != null)
         {
-            // Extract sequence number from last incident
+            // Extract sequence number from last incident with validation
             var lastSequence = lastIncidentToday.IncidentNumber.Substring(prefix.Length);
             if (int.TryParse(lastSequence, out var num))
             {
                 sequence = num + 1;
+            }
+            else
+            {
+                // Log warning if incident number format is unexpected
+                _logger.LogWarning(
+                    "Unexpected incident number format: {IncidentNumber}. Using sequence 1.",
+                    lastIncidentToday.IncidentNumber);
             }
         }
 

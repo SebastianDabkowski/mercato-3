@@ -102,6 +102,14 @@ public class LoginEventService : ILoginEventService
     private readonly ILogger<LoginEventService> _logger;
     private readonly ISecurityIncidentService? _securityIncidentService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoginEventService"/> class.
+    /// </summary>
+    /// <param name="context">The database context.</param>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="serviceProvider">Service provider for resolving optional dependencies.
+    /// Used to resolve ISecurityIncidentService to avoid circular dependency.
+    /// The service is optional and LoginEventService will function without it.</param>
     public LoginEventService(
         ApplicationDbContext context,
         ILogger<LoginEventService> logger,
@@ -109,8 +117,16 @@ public class LoginEventService : ILoginEventService
     {
         _context = context;
         _logger = logger;
-        // Use service provider to avoid circular dependency
+        // Use service provider to avoid circular dependency:
+        // LoginEventService -> SecurityIncidentService -> LoginEventService
+        // SecurityIncidentService is optional - login events will still be logged if unavailable
         _securityIncidentService = serviceProvider.GetService<ISecurityIncidentService>();
+        
+        if (_securityIncidentService == null)
+        {
+            _logger.LogWarning(
+                "SecurityIncidentService not available. Security incidents will not be automatically created from login events.");
+        }
     }
 
     /// <inheritdoc />
@@ -129,6 +145,17 @@ public class LoginEventService : ILoginEventService
             CreatedAt = DateTime.UtcNow
         };
 
+        // Save login event first
+        _context.LoginEvents.Add(loginEvent);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Login event logged: Type={EventType}, Success={IsSuccessful}, UserId={UserId}, IP={IpAddress}",
+            data.EventType,
+            data.IsSuccessful,
+            data.UserId,
+            data.IpAddress);
+
         // Check for security alerts on successful logins
         if (data.IsSuccessful && data.UserId.HasValue)
         {
@@ -142,7 +169,7 @@ public class LoginEventService : ILoginEventService
                     data.UserId,
                     alertResult.AlertReason);
                 
-                // Create security incident for suspicious login
+                // Create security incident for suspicious login if service is available
                 await CreateSecurityIncidentIfNeededAsync(data, alertResult);
             }
         }
@@ -151,22 +178,12 @@ public class LoginEventService : ILoginEventService
         {
             var failedAttempts = await GetRecentFailedAttemptsAsync(data.UserId.Value, IncidentWindowMinutes);
             
-            // Create security incident if threshold exceeded
-            if (failedAttempts >= MaxFailedAttemptsForIncident - 1) // -1 because this attempt hasn't been saved yet
+            // Create security incident if threshold is met or exceeded
+            if (failedAttempts >= MaxFailedAttemptsForIncident)
             {
-                await CreateMultipleFailedLoginsIncidentAsync(data, failedAttempts + 1);
+                await CreateMultipleFailedLoginsIncidentAsync(data, failedAttempts);
             }
         }
-
-        _context.LoginEvents.Add(loginEvent);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Login event logged: Type={EventType}, Success={IsSuccessful}, UserId={UserId}, IP={IpAddress}",
-            data.EventType,
-            data.IsSuccessful,
-            data.UserId,
-            data.IpAddress);
 
         return loginEvent;
     }
