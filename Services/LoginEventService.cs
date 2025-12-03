@@ -95,16 +95,38 @@ public class LoginEventService : ILoginEventService
 {
     private const int MaxFailedAttemptsForAlert = 3;
     private const int AlertWindowMinutes = 60;
+    private const int MaxFailedAttemptsForIncident = 5;
+    private const int IncidentWindowMinutes = 10;
 
     private readonly ApplicationDbContext _context;
     private readonly ILogger<LoginEventService> _logger;
+    private readonly ISecurityIncidentService? _securityIncidentService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoginEventService"/> class.
+    /// </summary>
+    /// <param name="context">The database context.</param>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="serviceProvider">Service provider for resolving optional dependencies.
+    /// Used to resolve ISecurityIncidentService to avoid circular dependency.
+    /// The service is optional and LoginEventService will function without it.</param>
     public LoginEventService(
         ApplicationDbContext context,
-        ILogger<LoginEventService> logger)
+        ILogger<LoginEventService> logger,
+        IServiceProvider serviceProvider)
     {
         _context = context;
         _logger = logger;
+        // Use service provider to avoid circular dependency:
+        // LoginEventService -> SecurityIncidentService -> LoginEventService
+        // SecurityIncidentService is optional - login events will still be logged if unavailable
+        _securityIncidentService = serviceProvider.GetService<ISecurityIncidentService>();
+        
+        if (_securityIncidentService == null)
+        {
+            _logger.LogWarning(
+                "SecurityIncidentService not available. Security incidents will not be automatically created from login events.");
+        }
     }
 
     /// <inheritdoc />
@@ -123,6 +145,17 @@ public class LoginEventService : ILoginEventService
             CreatedAt = DateTime.UtcNow
         };
 
+        // Save login event first
+        _context.LoginEvents.Add(loginEvent);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Login event logged: Type={EventType}, Success={IsSuccessful}, UserId={UserId}, IP={IpAddress}",
+            data.EventType,
+            data.IsSuccessful,
+            data.UserId,
+            data.IpAddress);
+
         // Check for security alerts on successful logins
         if (data.IsSuccessful && data.UserId.HasValue)
         {
@@ -135,18 +168,22 @@ public class LoginEventService : ILoginEventService
                     "Security alert triggered for user {UserId}: {AlertReason}",
                     data.UserId,
                     alertResult.AlertReason);
+                
+                // Create security incident for suspicious login if service is available
+                await CreateSecurityIncidentIfNeededAsync(data, alertResult);
             }
         }
-
-        _context.LoginEvents.Add(loginEvent);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Login event logged: Type={EventType}, Success={IsSuccessful}, UserId={UserId}, IP={IpAddress}",
-            data.EventType,
-            data.IsSuccessful,
-            data.UserId,
-            data.IpAddress);
+        // Check for multiple failed login attempts
+        else if (!data.IsSuccessful && data.UserId.HasValue)
+        {
+            var failedAttempts = await GetRecentFailedAttemptsAsync(data.UserId.Value, IncidentWindowMinutes);
+            
+            // Create security incident if threshold is met or exceeded
+            if (failedAttempts >= MaxFailedAttemptsForIncident)
+            {
+                await CreateMultipleFailedLoginsIncidentAsync(data, failedAttempts);
+            }
+        }
 
         return loginEvent;
     }
@@ -291,4 +328,79 @@ public class LoginEventService : ILoginEventService
                        e.CreatedAt >= windowStart)
             .CountAsync();
     }
+
+    /// <summary>
+    /// Creates a security incident for suspicious login activity.
+    /// </summary>
+    private async Task CreateSecurityIncidentIfNeededAsync(LoginEventData data, SecurityAlertResult alertResult)
+    {
+        if (_securityIncidentService == null)
+        {
+            _logger.LogWarning("SecurityIncidentService not available. Skipping incident creation.");
+            return;
+        }
+
+        try
+        {
+            var incidentType = alertResult.AlertType switch
+            {
+                SecurityAlertType.NewLocation => SecurityIncidentType.SuspectedAccountCompromise,
+                SecurityAlertType.NewDevice => SecurityIncidentType.SuspectedAccountCompromise,
+                SecurityAlertType.MultipleFailedAttempts => SecurityIncidentType.MultipleFailedLogins,
+                _ => SecurityIncidentType.Other
+            };
+
+            var incidentData = new CreateSecurityIncidentData
+            {
+                IncidentType = incidentType,
+                Severity = SecurityIncidentSeverity.Medium,
+                DetectionRule = alertResult.AlertReason ?? "Suspicious login activity detected",
+                Source = data.IpAddress,
+                UserId = data.UserId,
+                Details = $"Login event type: {data.EventType}, Email: {data.Email}, User Agent: {data.UserAgent}",
+                Metadata = $"{{\"alertType\":\"{alertResult.AlertType}\",\"eventType\":\"{data.EventType}\"}}",
+                DetectedAt = DateTime.UtcNow
+            };
+
+            await _securityIncidentService.CreateIncidentAsync(incidentData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create security incident for login event");
+        }
+    }
+
+    /// <summary>
+    /// Creates a security incident for multiple failed login attempts.
+    /// </summary>
+    private async Task CreateMultipleFailedLoginsIncidentAsync(LoginEventData data, int attemptCount)
+    {
+        if (_securityIncidentService == null)
+        {
+            _logger.LogWarning("SecurityIncidentService not available. Skipping incident creation.");
+            return;
+        }
+
+        try
+        {
+            var incidentData = new CreateSecurityIncidentData
+            {
+                IncidentType = SecurityIncidentType.MultipleFailedLogins,
+                Severity = SecurityIncidentSeverity.High,
+                DetectionRule = $"Multiple failed login attempts ({attemptCount} attempts in {IncidentWindowMinutes} minutes)",
+                Source = data.IpAddress,
+                UserId = data.UserId,
+                Details = $"Email: {data.Email}, Failed attempts: {attemptCount}, User Agent: {data.UserAgent}, Last failure reason: {data.FailureReason}",
+                Metadata = $"{{\"attemptCount\":{attemptCount},\"windowMinutes\":{IncidentWindowMinutes},\"eventType\":\"{data.EventType}\"}}",
+                DetectedAt = DateTime.UtcNow
+            };
+
+            await _securityIncidentService.CreateIncidentAsync(incidentData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create security incident for multiple failed login attempts");
+        }
+    }
 }
+

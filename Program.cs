@@ -154,6 +154,7 @@ builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IAdminAuditLogService, AdminAuditLogService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<AuditHelper>();
+builder.Services.AddScoped<ISecurityIncidentService, SecurityIncidentService>();
 
 // Register shipping provider services as singleton collection
 builder.Services.AddSingleton<IShippingProviderService>(sp => 
@@ -345,6 +346,16 @@ if (app.Environment.IsDevelopment())
 
     // Run encryption test scenario
     await EncryptionTest.RunTestAsync();
+}
+
+// Run security incident test scenario in a separate scope to avoid tracking conflicts
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var securityIncidentService = scope.ServiceProvider.GetRequiredService<ISecurityIncidentService>();
+    var loginEventService = scope.ServiceProvider.GetRequiredService<ILoginEventService>();
+    await SecurityIncidentTestScenario.RunTestAsync(context, securityIncidentService, loginEventService);
 }
 
 // Configure the HTTP request pipeline.
