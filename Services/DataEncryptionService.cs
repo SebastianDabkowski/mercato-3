@@ -65,6 +65,12 @@ public class DataEncryptionService : IDataEncryptionService
             aesGcm.Encrypt(nonce, plainTextBytes, cipherTextBytes, tag);
 
             // Combine version, nonce, tag, and ciphertext
+            // Version is stored as byte, so key versions must be <= 255
+            if (keyVersion > 255)
+            {
+                throw new InvalidOperationException($"Key version {keyVersion} exceeds maximum supported version (255).");
+            }
+            
             var result = new byte[HeaderSize + cipherTextBytes.Length];
             result[0] = (byte)keyVersion;
             Buffer.BlockCopy(nonce, 0, result, VersionSize, NonceSize);

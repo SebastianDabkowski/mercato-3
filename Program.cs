@@ -1,14 +1,18 @@
+using MercatoApp;
 using MercatoApp.Authorization;
 using MercatoApp.Data;
 using MercatoApp.Models;
 using MercatoApp.Services;
 using Microsoft.AspNetCore.Authentication;
-using MercatoApp; // For CommissionInvoiceTestScenario class
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+
+#if DEBUG
+using MercatoApp.Tests; // Only reference test namespace in debug builds
+#endif
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -321,6 +325,9 @@ if (app.Environment.IsDevelopment())
     // Run RBAC test scenario
     var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
     await RbacTestScenario.RunTestAsync(context, permissionService);
+
+    // Run encryption test scenario
+    await EncryptionTest.RunTestAsync();
 }
 
 // Configure the HTTP request pipeline.

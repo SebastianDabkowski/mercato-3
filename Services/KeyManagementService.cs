@@ -65,7 +65,7 @@ public interface IKeyManagementService
     /// This should be called during key rotation procedures.
     /// </summary>
     /// <returns>The new key version.</returns>
-    Task<int> RotateKeyAsync();
+    int RotateKey();
 }
 
 /// <summary>
@@ -165,7 +165,7 @@ public class KeyManagementService : IKeyManagementService
     }
 
     /// <inheritdoc />
-    public async Task<int> RotateKeyAsync()
+    public int RotateKey()
     {
         // In production, this should:
         // 1. Generate new key in KMS
@@ -200,27 +200,32 @@ public class KeyManagementService : IKeyManagementService
         // Note: In production, update configuration in secure storage
         // This is a placeholder - actual implementation should update Azure Key Vault, AWS Secrets Manager, etc.
         
-        return await Task.FromResult(newVersion);
+        return newVersion;
     }
 
     /// <summary>
     /// Derives a versioned key from the master key using HKDF (HMAC-based Key Derivation Function).
+    /// Uses .NET's built-in HKDF implementation which conforms to RFC 5869.
     /// </summary>
     private static byte[] DeriveKey(byte[] masterKey, int version)
     {
         // Use HKDF to derive a version-specific key
         // Info parameter includes version to ensure different keys for each version
-        var info = Encoding.UTF8.GetBytes($"MercatoApp-v{version}");
-        var salt = Encoding.UTF8.GetBytes("MercatoApp-Salt"); // In production, use a secure random salt
+        var info = Encoding.UTF8.GetBytes($"MercatoApp-Encryption-v{version}");
+        
+        // Use a deployment-specific salt in production
+        // For development, use a constant but document that this should be unique per deployment
+        var salt = Encoding.UTF8.GetBytes("MercatoApp-HKDF-Salt-ChangeInProduction");
         
         var derivedKey = new byte[32]; // 256 bits for AES-256
         
-        using var hkdf = new HMACSHA256(masterKey);
-        var prk = hkdf.ComputeHash(salt.Concat(new byte[] { 0 }).ToArray());
-        
-        using var hkdf2 = new HMACSHA256(prk);
-        var okm = hkdf2.ComputeHash(info.Concat(new byte[] { 1 }).ToArray());
-        Array.Copy(okm, derivedKey, 32);
+        // Use .NET's HKDF implementation (RFC 5869 compliant)
+        HKDF.DeriveKey(
+            HashAlgorithmName.SHA256,
+            masterKey,
+            derivedKey,
+            salt,
+            info);
         
         return derivedKey;
     }
