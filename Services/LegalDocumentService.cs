@@ -122,7 +122,7 @@ public class LegalDocumentService : ILegalDocumentService
         existing.UpdatedByUserId = adminUserId;
 
         // If being activated with current or past effective date, deactivate others
-        if (document.IsActive && !existing.IsActive && document.EffectiveDate <= DateTime.UtcNow)
+        if (document.IsActive && !existing.IsActive && existing.EffectiveDate <= DateTime.UtcNow)
         {
             await DeactivateOtherVersionsAsync(existing.DocumentType, existing.LanguageCode);
         }

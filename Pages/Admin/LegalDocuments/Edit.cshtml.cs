@@ -225,7 +225,8 @@ public class EditModel : PageModel
                 return $"{major}.{minor}";
             }
         }
-        return version;
+        // If version format is not recognized, suggest a default next version
+        return "2.0";
     }
 
     private static string GetDefaultTitle(LegalDocumentType type)
