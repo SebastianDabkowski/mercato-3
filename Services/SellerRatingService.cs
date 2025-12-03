@@ -21,7 +21,7 @@ public class SellerRatingService : ISellerRatingService
     }
 
     /// <inheritdoc />
-    public async Task<SellerRating> SubmitRatingAsync(int userId, int sellerSubOrderId, int rating)
+    public async Task<SellerRating> SubmitRatingAsync(int userId, int sellerSubOrderId, int rating, string? reviewText = null)
     {
         // Validate rating range
         if (rating < 1 || rating > 5)
@@ -71,7 +71,12 @@ public class SellerRatingService : ISellerRatingService
             UserId = userId,
             SellerSubOrderId = sellerSubOrderId,
             Rating = rating,
-            CreatedAt = DateTime.UtcNow
+            ReviewText = reviewText,
+            CreatedAt = DateTime.UtcNow,
+            // Set moderation defaults - approved by default
+            IsApproved = true,
+            ModerationStatus = ReviewModerationStatus.Approved,
+            ApprovedAt = DateTime.UtcNow
         };
 
         _context.SellerRatings.Add(sellerRating);

@@ -13,12 +13,13 @@ public interface ISellerRatingService
     /// <param name="userId">The ID of the user submitting the rating.</param>
     /// <param name="sellerSubOrderId">The ID of the seller sub-order being rated.</param>
     /// <param name="rating">The rating (1-5 stars).</param>
+    /// <param name="reviewText">Optional review text/feedback for the seller.</param>
     /// <returns>The created seller rating.</returns>
     /// <exception cref="InvalidOperationException">
     /// Thrown when the user is not authorized to rate the seller,
     /// the sub-order is not delivered, or the user has already rated this sub-order.
     /// </exception>
-    Task<SellerRating> SubmitRatingAsync(int userId, int sellerSubOrderId, int rating);
+    Task<SellerRating> SubmitRatingAsync(int userId, int sellerSubOrderId, int rating, string? reviewText = null);
 
     /// <summary>
     /// Gets the average rating for a seller (store).
