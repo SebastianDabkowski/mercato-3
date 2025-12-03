@@ -159,4 +159,37 @@ public class AdminAuditLogService : IAdminAuditLogService
             .OrderBy(a => a)
             .ToListAsync();
     }
+
+    /// <inheritdoc />
+    public async Task<AdminAuditLog> LogSensitiveAccessAsync(
+        int adminUserId,
+        string entityType,
+        int entityId,
+        string? entityDisplayName,
+        int? targetUserId = null)
+    {
+        var auditLog = new AdminAuditLog
+        {
+            AdminUserId = adminUserId,
+            Action = "ViewSensitiveData",
+            EntityType = entityType,
+            EntityId = entityId,
+            EntityDisplayName = entityDisplayName,
+            TargetUserId = targetUserId,
+            Reason = "Sensitive data access",
+            ActionTimestamp = DateTime.UtcNow
+        };
+
+        _context.AdminAuditLogs.Add(auditLog);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Sensitive data access logged: {EntityType} {EntityId} accessed by admin user {AdminUserId} (Target User: {TargetUserId})",
+            entityType,
+            entityId,
+            adminUserId,
+            targetUserId);
+
+        return auditLog;
+    }
 }

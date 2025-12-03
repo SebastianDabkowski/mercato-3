@@ -63,4 +63,20 @@ public interface IAdminAuditLogService
     /// </summary>
     /// <returns>A list of distinct actions.</returns>
     Task<List<string>> GetActionsAsync();
+
+    /// <summary>
+    /// Logs access to sensitive data by admin or support users.
+    /// </summary>
+    /// <param name="adminUserId">The admin/support user ID accessing the data.</param>
+    /// <param name="entityType">The type of sensitive entity being accessed (e.g., "UserProfile", "PayoutDetails").</param>
+    /// <param name="entityId">The ID of the entity being accessed.</param>
+    /// <param name="entityDisplayName">Display name for the entity (e.g., user email, order number).</param>
+    /// <param name="targetUserId">The user ID whose data is being accessed.</param>
+    /// <returns>The created audit log entry.</returns>
+    Task<AdminAuditLog> LogSensitiveAccessAsync(
+        int adminUserId,
+        string entityType,
+        int entityId,
+        string? entityDisplayName,
+        int? targetUserId = null);
 }

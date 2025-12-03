@@ -16,6 +16,7 @@ public class OrderService : IOrderService
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
     private readonly IAnalyticsEventService _analyticsService;
+    private readonly IResourceAuthorizationService _resourceAuthService;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
@@ -26,6 +27,7 @@ public class OrderService : IOrderService
         IEmailService emailService,
         INotificationService notificationService,
         IAnalyticsEventService analyticsService,
+        IResourceAuthorizationService resourceAuthService,
         ILogger<OrderService> logger)
     {
         _context = context;
@@ -35,6 +37,7 @@ public class OrderService : IOrderService
         _emailService = emailService;
         _notificationService = notificationService;
         _analyticsService = analyticsService;
+        _resourceAuthService = resourceAuthService;
         _logger = logger;
     }
 
@@ -779,6 +782,24 @@ public class OrderService : IOrderService
             .Include(so => so.ShippingMethod)
             .Include(so => so.StatusHistory.OrderByDescending(h => h.ChangedAt))
             .FirstOrDefaultAsync(so => so.Id == subOrderId);
+    }
+
+    /// <inheritdoc />
+    public async Task<SellerSubOrder?> GetSubOrderByIdForSellerAsync(int subOrderId, int sellerUserId)
+    {
+        // First check authorization
+        var (authResult, storeId) = await _resourceAuthService.AuthorizeSubOrderAccessAsync(sellerUserId, subOrderId);
+        
+        if (!authResult.IsAuthorized)
+        {
+            _logger.LogWarning(
+                "Unauthorized sub-order access attempt - User {UserId} tried to access sub-order {SubOrderId}: {Reason}",
+                sellerUserId, subOrderId, authResult.FailureReason);
+            return null;
+        }
+
+        // If authorized, return the full sub-order details
+        return await GetSubOrderByIdAsync(subOrderId);
     }
 
     /// <inheritdoc />

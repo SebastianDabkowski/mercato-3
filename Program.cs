@@ -61,6 +61,7 @@ builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<ILoginEventService, LoginEventService>();
 builder.Services.AddScoped<IRoleAuthorizationService, RoleAuthorizationService>();
+builder.Services.AddScoped<IResourceAuthorizationService, ResourceAuthorizationService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IAuthorizationHandler, RoleAuthorizationHandler>();
 builder.Services.AddScoped<ISellerOnboardingService, SellerOnboardingService>();

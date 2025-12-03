@@ -113,6 +113,14 @@ public interface IOrderService
     Task<SellerSubOrder?> GetSubOrderByIdAsync(int subOrderId);
 
     /// <summary>
+    /// Gets a specific seller sub-order by its ID with authorization check.
+    /// </summary>
+    /// <param name="subOrderId">The sub-order ID.</param>
+    /// <param name="sellerUserId">The seller user ID requesting the sub-order.</param>
+    /// <returns>The seller sub-order, or null if not found or not authorized.</returns>
+    Task<SellerSubOrder?> GetSubOrderByIdForSellerAsync(int subOrderId, int sellerUserId);
+
+    /// <summary>
     /// Gets filtered and paginated seller sub-orders for a specific store/seller.
     /// </summary>
     /// <param name="storeId">The store ID.</param>
