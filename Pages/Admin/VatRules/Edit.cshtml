@@ -1,0 +1,258 @@
+@page
+@model MercatoApp.Pages.Admin.VatRules.EditModel
+@{
+    ViewData["Title"] = "Edit VAT Rule - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Admin</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/VatRules">VAT & Tax Rules</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-pencil-square"></i> Edit VAT Rule
+            </h1>
+        </div>
+    </div>
+
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Rule.Id" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        <!-- Basic Information -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Basic Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="Name" class="form-label">Rule Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="Name" asp-for="Rule.Name" required maxlength="200" />
+                        <div class="form-text">A descriptive name for this VAT rule (e.g., "UK Standard VAT", "US Sales Tax - CA").</div>
+                        <span asp-validation-for="Rule.Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="Priority" class="form-label">Priority</label>
+                        <input type="number" class="form-control" id="Priority" asp-for="Rule.Priority" min="0" />
+                        <div class="form-text">Higher values have higher priority in conflict resolution.</div>
+                        <span asp-validation-for="Rule.Priority" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="Notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="Notes" asp-for="Rule.Notes" rows="3" maxlength="1000"></textarea>
+                        <div class="form-text">Optional notes about this rule (e.g., legal basis, exemptions).</div>
+                        <span asp-validation-for="Rule.Notes" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tax Rate -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-calculator"></i> Tax Rate
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="TaxPercentage" class="form-label">Tax Percentage <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="TaxPercentage" 
+                                asp-for="Rule.TaxPercentage" step="0.01" min="0" max="100" required />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="form-text">VAT/Tax rate as a percentage (e.g., 20 for 20%, 7.5 for 7.5%).</div>
+                        <span asp-validation-for="Rule.TaxPercentage" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Geographic Scope -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-globe"></i> Geographic Scope
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="CountryCode" class="form-label">Country Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control text-uppercase" id="CountryCode" 
+                            asp-for="Rule.CountryCode" required maxlength="2" placeholder="US" />
+                        <div class="form-text">ISO 3166-1 alpha-2 country code (e.g., US, GB, DE, FR, PL).</div>
+                        <span asp-validation-for="Rule.CountryCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="RegionCode" class="form-label">Region/State Code (Optional)</label>
+                        <input type="text" class="form-control text-uppercase" id="RegionCode" 
+                            asp-for="Rule.RegionCode" maxlength="10" placeholder="CA" />
+                        <div class="form-text">State/region code for country subdivisions (e.g., CA, NY, TX for US states).</div>
+                        <span asp-validation-for="Rule.RegionCode" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applicability -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-funnel"></i> Applicability
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Applicability Type <span class="text-danger">*</span></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="Rule.ApplicabilityType" 
+                                id="ApplicabilityGlobal" value="Global" asp-for="Rule.ApplicabilityType" 
+                                onclick="toggleCategoryField()" />
+                            <label class="form-check-label" for="ApplicabilityGlobal">
+                                <strong>Global</strong> - Applies to all products in this country/region
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="Rule.ApplicabilityType" 
+                                id="ApplicabilityCategory" value="Category" asp-for="Rule.ApplicabilityType"
+                                onclick="toggleCategoryField()" />
+                            <label class="form-check-label" for="ApplicabilityCategory">
+                                <strong>Category</strong> - Applies only to a specific product category
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6" id="categoryField">
+                        <label for="CategoryId" class="form-label">Category</label>
+                        <select class="form-select" id="CategoryId" asp-for="Rule.CategoryId" asp-items="Model.Categories">
+                        </select>
+                        <div class="form-text">Select a category for category-specific rules.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Effective Dates -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-range"></i> Effective Dates
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="EffectiveStartDate" class="form-label">Effective Start Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="EffectiveStartDate" 
+                            asp-for="Rule.EffectiveStartDate" required />
+                        <div class="form-text">The rule becomes effective on this date.</div>
+                        <span asp-validation-for="Rule.EffectiveStartDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="EffectiveEndDate" class="form-label">Effective End Date (Optional)</label>
+                        <input type="date" class="form-control" id="EffectiveEndDate" asp-for="Rule.EffectiveEndDate" />
+                        <div class="form-text">Leave empty for no end date (active indefinitely).</div>
+                        <span asp-validation-for="Rule.EffectiveEndDate" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-toggle-on"></i> Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="IsActive" asp-for="Rule.IsActive" />
+                    <label class="form-check-label" for="IsActive">
+                        Active (rule is enabled for tax calculations)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Information -->
+        @if (Model.Rule.CreatedByUser != null)
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Audit Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Created By:</strong> @Model.Rule.CreatedByUser.FirstName @Model.Rule.CreatedByUser.LastName (@Model.Rule.CreatedByUser.Email)</p>
+                            <p class="mb-0 text-muted"><strong>Created At:</strong> @Model.Rule.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</p>
+                        </div>
+                        @if (Model.Rule.UpdatedByUser != null)
+                        {
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Last Updated By:</strong> @Model.Rule.UpdatedByUser.FirstName @Model.Rule.UpdatedByUser.LastName (@Model.Rule.UpdatedByUser.Email)</p>
+                                <p class="mb-0 text-muted"><strong>Last Updated At:</strong> @Model.Rule.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss") UTC</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-between">
+            <a href="/Admin/VatRules" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Update VAT Rule
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Toggle category field visibility based on applicability type
+        function toggleCategoryField() {
+            const categoryRadio = document.getElementById('ApplicabilityCategory');
+            const categoryField = document.getElementById('categoryField');
+            const categorySelect = document.getElementById('CategoryId');
+            
+            if (categoryRadio && categoryRadio.checked) {
+                categoryField.style.display = 'block';
+                categorySelect.required = true;
+            } else {
+                categoryField.style.display = 'none';
+                categorySelect.required = false;
+                categorySelect.value = '';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleCategoryField();
+        });
+    </script>
+}

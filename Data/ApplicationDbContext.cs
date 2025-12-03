@@ -378,6 +378,12 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<PhotoFlag> PhotoFlags { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the VAT rules table.
+    /// Supports effective dates, country/region applicability, and versioning.
+    /// </summary>
+    public DbSet<VatRule> VatRules { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1808,6 +1814,34 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ResolvedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<VatRule>(entity =>
+        {
+            // Indexes for efficient rule lookup
+            entity.HasIndex(e => new { e.IsActive, e.EffectiveStartDate, e.EffectiveEndDate });
+            entity.HasIndex(e => new { e.CountryCode, e.RegionCode });
+            entity.HasIndex(e => new { e.ApplicabilityType, e.CategoryId });
+
+            // Configure decimal precision
+            entity.Property(e => e.TaxPercentage)
+                .HasPrecision(5, 2);
+
+            // Configure relationships
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Category)
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
