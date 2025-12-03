@@ -44,11 +44,11 @@ public class IndexModel : PageModel
 
         Attributes = await _attributeService.GetAttributesForCategoryAsync(categoryId);
 
-        // Get product counts for each attribute
-        foreach (var attribute in Attributes)
+        // Get product counts for all attributes in a single query
+        if (Attributes.Count > 0)
         {
-            var count = await _attributeService.GetProductCountForAttributeAsync(attribute.Id);
-            ProductCounts[attribute.Id] = count;
+            var attributeIds = Attributes.Select(a => a.Id);
+            ProductCounts = await _attributeService.GetProductCountsForAttributesAsync(attributeIds);
         }
 
         return Page();
@@ -58,45 +58,27 @@ public class IndexModel : PageModel
     {
         var result = await _attributeService.DeprecateAttributeAsync(id);
 
-        if (result.Success)
+        if (result.Success && result.CategoryAttribute != null)
         {
-            SuccessMessage = $"Attribute '{result.CategoryAttribute?.Name}' has been deprecated.";
-        }
-        else
-        {
-            ErrorMessage = string.Join(", ", result.Errors);
+            SuccessMessage = $"Attribute '{result.CategoryAttribute.Name}' has been deprecated.";
+            return RedirectToPage(new { categoryId = result.CategoryAttribute.CategoryId });
         }
 
-        // Get the category ID from the attribute
-        var attribute = await _attributeService.GetAttributeByIdAsync(id);
-        if (attribute == null)
-        {
-            return NotFound();
-        }
-
-        return RedirectToPage(new { categoryId = attribute.CategoryId });
+        ErrorMessage = string.Join(", ", result.Errors);
+        return RedirectToPage(new { categoryId = CategoryId });
     }
 
     public async Task<IActionResult> OnPostRestoreAsync(int id)
     {
         var result = await _attributeService.RestoreAttributeAsync(id);
 
-        if (result.Success)
+        if (result.Success && result.CategoryAttribute != null)
         {
-            SuccessMessage = $"Attribute '{result.CategoryAttribute?.Name}' has been restored.";
-        }
-        else
-        {
-            ErrorMessage = string.Join(", ", result.Errors);
+            SuccessMessage = $"Attribute '{result.CategoryAttribute.Name}' has been restored.";
+            return RedirectToPage(new { categoryId = result.CategoryAttribute.CategoryId });
         }
 
-        // Get the category ID from the attribute
-        var attribute = await _attributeService.GetAttributeByIdAsync(id);
-        if (attribute == null)
-        {
-            return NotFound();
-        }
-
-        return RedirectToPage(new { categoryId = attribute.CategoryId });
+        ErrorMessage = string.Join(", ", result.Errors);
+        return RedirectToPage(new { categoryId = CategoryId });
     }
 }

@@ -111,6 +111,13 @@ public interface ICategoryAttributeService
     /// Gets the count of products using this attribute.
     /// </summary>
     Task<int> GetProductCountForAttributeAsync(int attributeId);
+
+    /// <summary>
+    /// Gets product counts for multiple attributes in a single query.
+    /// </summary>
+    /// <param name="attributeIds">The attribute IDs to get counts for.</param>
+    /// <returns>A dictionary mapping attribute ID to product count.</returns>
+    Task<Dictionary<int, int>> GetProductCountsForAttributesAsync(IEnumerable<int> attributeIds);
 }
 
 /// <summary>
@@ -321,19 +328,41 @@ public class CategoryAttributeService : ICategoryAttributeService
         // Update options if select-type attribute
         if (data.Options != null && (attribute.AttributeType == AttributeType.SingleSelect || attribute.AttributeType == AttributeType.MultiSelect))
         {
-            // Remove existing options
-            _context.CategoryAttributeOptions.RemoveRange(attribute.Options);
+            // Use differential update to preserve existing option IDs and avoid breaking product value references
+            var newOptionValues = data.Options
+                .Where(o => !string.IsNullOrWhiteSpace(o))
+                .Select(o => o.Trim())
+                .ToList();
 
-            // Add new options
-            var displayOrder = 0;
-            foreach (var optionValue in data.Options)
+            var existingOptions = attribute.Options.ToList();
+
+            // Mark options that are no longer in the list as inactive instead of deleting
+            foreach (var existingOption in existingOptions)
             {
-                if (!string.IsNullOrWhiteSpace(optionValue))
+                if (!newOptionValues.Contains(existingOption.Value))
                 {
+                    existingOption.IsActive = false;
+                }
+            }
+
+            // Add new options that don't exist yet
+            var displayOrder = 0;
+            foreach (var optionValue in newOptionValues)
+            {
+                var existingOption = existingOptions.FirstOrDefault(o => o.Value == optionValue);
+                if (existingOption != null)
+                {
+                    // Update existing option
+                    existingOption.DisplayOrder = displayOrder++;
+                    existingOption.IsActive = true;
+                }
+                else
+                {
+                    // Add new option
                     var option = new CategoryAttributeOption
                     {
                         CategoryAttributeId = attribute.Id,
-                        Value = optionValue.Trim(),
+                        Value = optionValue,
                         DisplayOrder = displayOrder++,
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
@@ -495,5 +524,32 @@ public class CategoryAttributeService : ICategoryAttributeService
             .Select(v => v.ProductId)
             .Distinct()
             .CountAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<Dictionary<int, int>> GetProductCountsForAttributesAsync(IEnumerable<int> attributeIds)
+    {
+        var attributeIdList = attributeIds.ToList();
+        if (attributeIdList.Count == 0)
+        {
+            return new Dictionary<int, int>();
+        }
+
+        var counts = await _context.ProductAttributeValues
+            .Where(v => attributeIdList.Contains(v.CategoryAttributeId))
+            .GroupBy(v => v.CategoryAttributeId)
+            .Select(g => new { AttributeId = g.Key, Count = g.Select(v => v.ProductId).Distinct().Count() })
+            .ToDictionaryAsync(x => x.AttributeId, x => x.Count);
+
+        // Ensure all requested attribute IDs are in the dictionary, even if count is 0
+        foreach (var id in attributeIdList)
+        {
+            if (!counts.ContainsKey(id))
+            {
+                counts[id] = 0;
+            }
+        }
+
+        return counts;
     }
 }
