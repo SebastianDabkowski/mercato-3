@@ -445,6 +445,12 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserConsent> UserConsents { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets the data export logs table.
+    /// Stores audit trail of user data export requests for GDPR compliance.
+    /// </summary>
+    public DbSet<DataExportLog> DataExportLogs { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the feature flags table.
     /// Stores feature flags for controlling platform features.
     /// </summary>

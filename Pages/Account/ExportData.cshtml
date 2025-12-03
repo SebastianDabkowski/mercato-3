@@ -1,0 +1,155 @@
+@page
+@model MercatoApp.Pages.Account.ExportDataModel
+@{
+    ViewData["Title"] = "Export My Data";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Export My Personal Data</h2>
+            <p class="text-muted">
+                Exercise your right to access your personal data under GDPR and other data protection regulations.
+            </p>
+
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @Model.SuccessMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Request Data Export</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        When you request a data export, we will generate a comprehensive package containing all 
+                        personal data that Mercato stores about you. This includes:
+                    </p>
+                    <ul>
+                        <li>Your account profile and contact information</li>
+                        <li>Saved addresses</li>
+                        <li>Store information (if you are a seller)</li>
+                        <li>Order history and details</li>
+                        <li>Product reviews and ratings</li>
+                        <li>Consent and privacy preferences</li>
+                        <li>Login history (last 100 logins)</li>
+                        <li>Notifications and messages</li>
+                        <li>Return requests</li>
+                        <li>Product questions</li>
+                        <li>Browsing and analytics data (last 500 events)</li>
+                    </ul>
+                    <p>
+                        The export will be provided as a ZIP file containing JSON files with your data in a 
+                        structured, machine-readable format.
+                    </p>
+                    <p class="text-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Important:</strong> The exported file contains sensitive personal information. 
+                        Please store it securely and do not share it with unauthorized parties.
+                    </p>
+
+                    <form method="post" asp-page-handler="GenerateExport">
+                        <button type="submit" class="btn btn-primary btn-lg" @(Model.IsGenerating ? "disabled" : "")>
+                            @if (Model.IsGenerating)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>Generating Export...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-download me-2"></i>
+                                <span>Generate Data Export</span>
+                            }
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.ExportHistory.Any())
+            {
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Export History</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Your recent data export requests:</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Status</th>
+                                        <th>Size</th>
+                                        <th>Format</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var export in Model.ExportHistory)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @export.RequestedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC
+                                            </td>
+                                            <td>
+                                                @if (export.IsSuccessful)
+                                                {
+                                                    <span class="badge bg-success">Completed</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Failed</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (export.FileSizeBytes.HasValue)
+                                                {
+                                                    @($"{export.FileSizeBytes.Value / 1024.0:N2} KB")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>@export.Format</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="alert alert-info mt-4">
+                <h6 class="alert-heading">Need Help?</h6>
+                <p class="mb-0">
+                    If you have questions about your data export or need assistance, please contact our 
+                    privacy team. You can also visit our 
+                    <a href="/Privacy" class="alert-link">Privacy Policy</a> or 
+                    <a asp-page="/Account/PrivacySettings" class="alert-link">Privacy Settings</a> page.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+    </script>
+}
