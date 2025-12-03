@@ -124,6 +124,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPaymentProviderService, MockPaymentProviderService>();
 builder.Services.AddScoped<IRefundService, RefundService>();
 builder.Services.AddScoped<ICommissionService, CommissionService>();
+builder.Services.AddScoped<ICommissionRuleService, CommissionRuleService>();
 builder.Services.AddScoped<ICommissionInvoiceService, CommissionInvoiceService>();
 builder.Services.AddScoped<IEscrowService, EscrowService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
