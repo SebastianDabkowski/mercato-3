@@ -1,3 +1,4 @@
+using MercatoApp.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace MercatoApp.Services;
@@ -38,12 +39,12 @@ public interface IFeatureFlagService
 public class FeatureFlagService : IFeatureFlagService
 {
     private readonly IConfiguration _configuration;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly ApplicationDbContext _context;
 
-    public FeatureFlagService(IConfiguration configuration, IServiceProvider serviceProvider)
+    public FeatureFlagService(IConfiguration configuration, ApplicationDbContext context)
     {
         _configuration = configuration;
-        _serviceProvider = serviceProvider;
+        _context = context;
     }
 
     /// <inheritdoc />
@@ -57,12 +58,8 @@ public class FeatureFlagService : IFeatureFlagService
     /// <inheritdoc />
     public async Task<bool> IsEnabledAsync(string featureKey, int? userId = null, string? userRole = null, int? storeId = null, string? environment = null)
     {
-        // Create a scope to access scoped services
-        using var scope = _serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<Data.ApplicationDbContext>();
-
         // Get the feature flag from the database
-        var flag = await context.FeatureFlags
+        var flag = await _context.FeatureFlags
             .Include(f => f.Rules.OrderBy(r => r.Priority))
             .FirstOrDefaultAsync(f => f.Key == featureKey && f.IsActive);
 
@@ -162,14 +159,18 @@ public class FeatureFlagService : IFeatureFlagService
 
     private int HashUserId(int userId, int ruleId)
     {
-        // Simple hash function for consistent percentage rollout
-        // Combines userId and ruleId to ensure different rules give different results
-        var combined = $"{userId}-{ruleId}";
-        var hash = 0;
-        foreach (var c in combined)
-        {
-            hash = (hash * 31 + c) & 0x7FFFFFFF; // Keep positive
-        }
-        return hash;
+        // Use a more robust hash for better distribution in percentage rollouts
+        // Combine userId and ruleId to ensure different rules give different results
+        var input = $"{userId}-{ruleId}";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+        
+        using var md5 = System.Security.Cryptography.MD5.Create();
+        var hashBytes = md5.ComputeHash(bytes);
+        
+        // Use first 4 bytes to create an integer
+        var hashValue = BitConverter.ToInt32(hashBytes, 0);
+        
+        // Ensure positive value and return modulo 100
+        return Math.Abs(hashValue) % 100;
     }
 }

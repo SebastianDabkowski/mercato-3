@@ -74,7 +74,13 @@ public class IndexModel : PageModel
     {
         try
         {
-            var adminUserId = int.Parse(User.FindFirst("UserId")!.Value);
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                ErrorMessage = "Unable to identify admin user.";
+                return RedirectToPage();
+            }
+
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
 
@@ -112,7 +118,13 @@ public class IndexModel : PageModel
     {
         try
         {
-            var adminUserId = int.Parse(User.FindFirst("UserId")!.Value);
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                ErrorMessage = "Unable to identify admin user.";
+                return RedirectToPage();
+            }
+
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
 

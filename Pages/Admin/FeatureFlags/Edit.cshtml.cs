@@ -70,7 +70,13 @@ public class EditModel : PageModel
 
         try
         {
-            var adminUserId = int.Parse(User.FindFirst("UserId")!.Value);
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                ErrorMessage = "Unable to identify admin user.";
+                return Page();
+            }
+
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
 
