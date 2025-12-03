@@ -71,7 +71,13 @@ public class DetailsModel : PageModel
     {
         try
         {
-            var adminUserId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                ErrorMessage = "Authentication error. Please log in again.";
+                return RedirectToPage(new { imageId });
+            }
+
             await _moderationService.ApprovePhotoAsync(imageId, adminUserId, reason);
             
             SuccessMessage = "Photo approved successfully.";
@@ -89,7 +95,13 @@ public class DetailsModel : PageModel
     {
         try
         {
-            var adminUserId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                ErrorMessage = "Authentication error. Please log in again.";
+                return RedirectToPage(new { imageId });
+            }
+
             await _moderationService.RemovePhotoAsync(imageId, adminUserId, reason);
             
             SuccessMessage = "Photo removed successfully. The seller has been notified.";

@@ -79,8 +79,9 @@ public class IndexModel : PageModel
                 status = PhotoModerationStatus.PendingReview;
                 break;
             case "flagged":
+                // Show all flagged photos regardless of status
                 flaggedOnly = true;
-                status = PhotoModerationStatus.Flagged;
+                status = null;
                 break;
             case "approved":
                 status = PhotoModerationStatus.Approved;
@@ -107,7 +108,13 @@ public class IndexModel : PageModel
     {
         try
         {
-            var adminUserId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                ErrorMessage = "Authentication error. Please log in again.";
+                return RedirectToPage(new { CurrentTab, ProductId, StoreId });
+            }
+
             await _moderationService.ApprovePhotoAsync(imageId, adminUserId);
             
             SuccessMessage = "Photo approved successfully.";
@@ -125,7 +132,13 @@ public class IndexModel : PageModel
     {
         try
         {
-            var adminUserId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                ErrorMessage = "Authentication error. Please log in again.";
+                return RedirectToPage(new { CurrentTab, ProductId, StoreId });
+            }
+
             await _moderationService.RemovePhotoAsync(imageId, adminUserId, reason);
             
             SuccessMessage = "Photo removed successfully.";
@@ -143,7 +156,13 @@ public class IndexModel : PageModel
     {
         try
         {
-            var adminUserId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var adminUserId))
+            {
+                ErrorMessage = "Authentication error. Please log in again.";
+                return RedirectToPage(new { CurrentTab, ProductId, StoreId });
+            }
+
             var count = await _moderationService.BulkApprovePhotosAsync(selectedPhotoIds, adminUserId);
             
             SuccessMessage = $"{count} photo(s) approved successfully.";

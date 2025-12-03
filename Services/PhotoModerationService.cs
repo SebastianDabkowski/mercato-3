@@ -278,7 +278,8 @@ public class PhotoModerationService : IPhotoModerationService
 
         // Update photo to be flagged
         photo.IsFlagged = true;
-        if (photo.ModerationStatus == PhotoModerationStatus.Approved)
+        // Update moderation status to Flagged if not already rejected
+        if (photo.ModerationStatus != PhotoModerationStatus.Rejected)
         {
             photo.ModerationStatus = PhotoModerationStatus.Flagged;
         }
@@ -367,6 +368,11 @@ public class PhotoModerationService : IPhotoModerationService
             .Where(pi => imageIds.Contains(pi.Id))
             .ToListAsync();
 
+        // Load all unresolved flags for these photos in a single query
+        var unresolvedFlags = await _context.PhotoFlags
+            .Where(f => imageIds.Contains(f.ProductImageId) && !f.IsResolved)
+            .ToListAsync();
+
         int count = 0;
         foreach (var photo in photos)
         {
@@ -390,12 +396,9 @@ public class PhotoModerationService : IPhotoModerationService
 
             _context.PhotoModerationLogs.Add(log);
 
-            // Resolve any open flags for this photo
-            var unresolvedFlags = await _context.PhotoFlags
-                .Where(f => f.ProductImageId == photo.Id && !f.IsResolved)
-                .ToListAsync();
-
-            foreach (var flag in unresolvedFlags)
+            // Resolve flags for this photo
+            var photoFlags = unresolvedFlags.Where(f => f.ProductImageId == photo.Id).ToList();
+            foreach (var flag in photoFlags)
             {
                 flag.IsResolved = true;
                 flag.ResolvedAt = DateTime.UtcNow;
