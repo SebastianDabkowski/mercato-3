@@ -13,6 +13,16 @@ public class AccountDeletionService : IAccountDeletionService
     private readonly ILogger<AccountDeletionService> _logger;
     private readonly IAdminAuditLogService _auditLogService;
 
+    // Constants for anonymized values
+    private const string AnonymizedEmailFormat = "deleted-user-{0}@anonymized.local";
+    private const string AnonymizedFirstName = "Deleted";
+    private const string AnonymizedLastName = "User";
+    private const string AnonymizedAddressLine = "[Anonymized]";
+    private const string AnonymizedCity = "[Anonymized]";
+    private const string AnonymizedPostalCode = "00000";
+    private const string AnonymizedCountryCode = "XX";
+    private const string InvalidPasswordHash = "[DELETED_ACCOUNT_NO_ACCESS]";
+
     public AccountDeletionService(
         ApplicationDbContext context,
         ILogger<AccountDeletionService> logger,
@@ -162,7 +172,7 @@ public class AccountDeletionService : IAccountDeletionService
             try
             {
                 var originalEmail = user.Email;
-                var anonymizedEmail = $"deleted-user-{userId}@anonymized.local";
+                var anonymizedEmail = string.Format(AnonymizedEmailFormat, userId);
 
                 // Count associated records before anonymization
                 var orderCount = await _context.Orders.CountAsync(o => o.UserId == userId);
@@ -170,15 +180,15 @@ public class AccountDeletionService : IAccountDeletionService
 
                 // Anonymize user personal data
                 user.Email = anonymizedEmail;
-                user.FirstName = "Deleted";
-                user.LastName = "User";
+                user.FirstName = AnonymizedFirstName;
+                user.LastName = AnonymizedLastName;
                 user.PhoneNumber = null;
                 user.Address = null;
                 user.City = null;
                 user.PostalCode = null;
                 user.Country = null;
                 user.TaxId = null;
-                user.PasswordHash = string.Empty; // Remove password hash
+                user.PasswordHash = InvalidPasswordHash; // Set to invalid value to prevent any access
                 user.EmailVerificationToken = null;
                 user.PasswordResetToken = null;
                 user.SecurityStamp = null;
@@ -195,13 +205,13 @@ public class AccountDeletionService : IAccountDeletionService
 
                 foreach (var address in addresses)
                 {
-                    address.FullName = "Deleted User";
+                    address.FullName = AnonymizedFirstName + " " + AnonymizedLastName;
                     address.PhoneNumber = string.Empty;
-                    address.AddressLine1 = "[Anonymized]";
+                    address.AddressLine1 = AnonymizedAddressLine;
                     address.AddressLine2 = null;
-                    address.City = "[Anonymized]";
-                    address.PostalCode = "00000";
-                    address.CountryCode = "XX";
+                    address.City = AnonymizedCity;
+                    address.PostalCode = AnonymizedPostalCode;
+                    address.CountryCode = AnonymizedCountryCode;
                 }
 
                 // Anonymize order contact information while preserving transactional data
