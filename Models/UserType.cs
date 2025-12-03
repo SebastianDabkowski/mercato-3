@@ -18,5 +18,15 @@ public enum UserType
     /// <summary>
     /// An admin account that can manage the platform.
     /// </summary>
-    Admin
+    Admin,
+
+    /// <summary>
+    /// A support account that can assist users and manage support tickets.
+    /// </summary>
+    Support,
+
+    /// <summary>
+    /// A compliance account that can review reports and audit logs.
+    /// </summary>
+    Compliance
 }

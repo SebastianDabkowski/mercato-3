@@ -305,6 +305,36 @@ public static class TestDataSeeder
         context.Users.Add(adminUser);
         await context.SaveChangesAsync();
 
+        // Create a test support user
+        var supportUser = new User
+        {
+            Email = "support@test.com",
+            PasswordHash = HashPassword("Test123!"),
+            FirstName = "Support",
+            LastName = "User",
+            UserType = UserType.Support,
+            Status = AccountStatus.Active,
+            AcceptedTerms = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(supportUser);
+        await context.SaveChangesAsync();
+
+        // Create a test compliance user
+        var complianceUser = new User
+        {
+            Email = "compliance@test.com",
+            PasswordHash = HashPassword("Test123!"),
+            FirstName = "Compliance",
+            LastName = "Officer",
+            UserType = UserType.Compliance,
+            Status = AccountStatus.Active,
+            AcceptedTerms = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(complianceUser);
+        await context.SaveChangesAsync();
+
         // Create a test cart with items from both sellers
         var cart = new Cart
         {
