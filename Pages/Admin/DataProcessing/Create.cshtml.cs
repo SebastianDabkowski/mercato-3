@@ -41,7 +41,13 @@ public class CreateModel : PageModel
 
         try
         {
-            var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                ModelState.AddModelError(string.Empty, "Unable to identify user for this operation.");
+                return Page();
+            }
+
             await _processingActivityService.CreateAsync(ProcessingActivity, userId);
 
             TempData["SuccessMessage"] = $"Processing activity '{ProcessingActivity.Name}' created successfully.";

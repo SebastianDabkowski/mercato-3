@@ -52,7 +52,13 @@ public class EditModel : PageModel
 
         try
         {
-            var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                ModelState.AddModelError(string.Empty, "Unable to identify user for this operation.");
+                return Page();
+            }
+
             var success = await _processingActivityService.UpdateAsync(
                 ProcessingActivity, userId, ChangeNotes);
 

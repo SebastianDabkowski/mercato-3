@@ -60,7 +60,13 @@ public class IndexModel : PageModel
     {
         try
         {
-            var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                ErrorMessage = "Unable to identify user for this operation.";
+                return RedirectToPage();
+            }
+
             var activity = await _processingActivityService.GetByIdAsync(id);
             
             if (activity == null)

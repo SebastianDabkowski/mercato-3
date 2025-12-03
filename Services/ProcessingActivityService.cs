@@ -239,13 +239,6 @@ public class ProcessingActivityService : IProcessingActivityService
             var activities = await GetAllAsync();
 
             using var package = new ExcelPackage();
-            
-            // Set license for EPPlus 8 (non-commercial use)
-            if (package.Workbook.Properties.Company == null)
-            {
-                package.Workbook.Properties.Company = "MercatoApp";
-            }
-            
             var worksheet = package.Workbook.Worksheets.Add("Processing Activities");
 
             // Headers

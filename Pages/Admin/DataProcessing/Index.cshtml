@@ -89,33 +89,42 @@
                                 <strong>@activity.Name</strong>
                             </td>
                             <td>
-                                @if (activity.Purpose.Length > 100)
+                                @if (!string.IsNullOrEmpty(activity.Purpose))
                                 {
-                                    @activity.Purpose.Substring(0, 100)<text>...</text>
-                                }
-                                else
-                                {
-                                    @activity.Purpose
-                                }
-                            </td>
-                            <td>
-                                @if (activity.LegalBasis.Length > 50)
-                                {
-                                    @activity.LegalBasis.Substring(0, 50)<text>...</text>
-                                }
-                                else
-                                {
-                                    @activity.LegalBasis
+                                    if (activity.Purpose.Length > 100)
+                                    {
+                                        @activity.Purpose.Substring(0, 100)<text>...</text>
+                                    }
+                                    else
+                                    {
+                                        @activity.Purpose
+                                    }
                                 }
                             </td>
                             <td>
-                                @if (activity.DataSubjects.Length > 50)
+                                @if (!string.IsNullOrEmpty(activity.LegalBasis))
                                 {
-                                    @activity.DataSubjects.Substring(0, 50)<text>...</text>
+                                    if (activity.LegalBasis.Length > 50)
+                                    {
+                                        @activity.LegalBasis.Substring(0, 50)<text>...</text>
+                                    }
+                                    else
+                                    {
+                                        @activity.LegalBasis
+                                    }
                                 }
-                                else
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(activity.DataSubjects))
                                 {
-                                    @activity.DataSubjects
+                                    if (activity.DataSubjects.Length > 50)
+                                    {
+                                        @activity.DataSubjects.Substring(0, 50)<text>...</text>
+                                    }
+                                    else
+                                    {
+                                        @activity.DataSubjects
+                                    }
                                 }
                             </td>
                             <td>@activity.RetentionPeriod</td>
