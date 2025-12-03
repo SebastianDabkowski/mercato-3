@@ -16,6 +16,7 @@ public class PayoutService : IPayoutService
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
     private readonly IConfiguration _configuration;
+    private readonly AuditHelper _auditHelper;
 
     public PayoutService(
         ApplicationDbContext context,
@@ -23,7 +24,8 @@ public class PayoutService : IPayoutService
         IPayoutSettingsService payoutSettingsService,
         IEmailService emailService,
         INotificationService notificationService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        AuditHelper auditHelper)
     {
         _context = context;
         _logger = logger;
@@ -31,6 +33,7 @@ public class PayoutService : IPayoutService
         _emailService = emailService;
         _notificationService = notificationService;
         _configuration = configuration;
+        _auditHelper = auditHelper;
     }
 
     /// <inheritdoc />
