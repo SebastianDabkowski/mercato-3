@@ -208,6 +208,9 @@ public class UserManagementService : IUserManagementService
             {
                 AdminUserId = adminUserId,
                 TargetUserId = userId,
+                EntityType = "User",
+                EntityId = userId,
+                EntityDisplayName = $"User: {user.Email}",
                 Action = "BlockUser",
                 Reason = $"{reason}: {notes}",
                 ActionTimestamp = DateTime.UtcNow,
@@ -261,6 +264,9 @@ public class UserManagementService : IUserManagementService
             {
                 AdminUserId = adminUserId,
                 TargetUserId = userId,
+                EntityType = "User",
+                EntityId = userId,
+                EntityDisplayName = $"User: {user.Email}",
                 Action = "UnblockUser",
                 Reason = notes,
                 ActionTimestamp = DateTime.UtcNow,

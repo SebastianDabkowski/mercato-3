@@ -24,19 +24,40 @@ public class AdminAuditLog
 
     /// <summary>
     /// Gets or sets the target user ID (the user being acted upon).
+    /// Optional - only set for user-related actions.
     /// </summary>
-    public int TargetUserId { get; set; }
+    public int? TargetUserId { get; set; }
 
     /// <summary>
     /// Gets or sets the target user (navigation property).
     /// </summary>
-    public User TargetUser { get; set; } = null!;
+    public User? TargetUser { get; set; }
 
     /// <summary>
-    /// Gets or sets the action performed (e.g., "BlockUser", "UnblockUser", "SuspendUser").
+    /// Gets or sets the type of entity being acted upon (e.g., "User", "Product", "Review", "Order", "Setting").
     /// </summary>
     [Required]
     [MaxLength(50)]
+    public string EntityType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the ID of the entity being acted upon.
+    /// For example, ProductId, ReviewId, OrderId, etc.
+    /// </summary>
+    public int? EntityId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a string representation of the entity for display purposes.
+    /// For example, "Product: iPhone 15" or "User: john@example.com".
+    /// </summary>
+    [MaxLength(500)]
+    public string? EntityDisplayName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the action performed (e.g., "BlockUser", "UnblockUser", "ApproveProduct", "UpdateSetting").
+    /// </summary>
+    [Required]
+    [MaxLength(100)]
     public string Action { get; set; } = string.Empty;
 
     /// <summary>
