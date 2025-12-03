@@ -58,7 +58,13 @@ public static class PayoutServiceManualTest
         var notificationLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<NotificationService>();
         var notificationService = new NotificationService(context, notificationLogger);
         
-        var payoutService = new PayoutService(context, payoutLogger, payoutSettingsService, emailService, notificationService, configuration);
+        // Create a mock audit helper for testing
+        var auditLogger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<AuditHelper>();
+        var auditLogService = new AuditLogService(context, LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<AuditLogService>());
+        var httpContextAccessor = new HttpContextAccessor();
+        var auditHelper = new AuditHelper(auditLogService, httpContextAccessor, auditLogger);
+        
+        var payoutService = new PayoutService(context, payoutLogger, payoutSettingsService, emailService, notificationService, configuration, auditHelper);
 
         // Setup test data
         await SetupTestDataAsync(context, payoutSettingsService);

@@ -13,6 +13,7 @@ public class RefundService : IRefundService
     private readonly IPaymentProviderService _paymentProviderService;
     private readonly IEscrowService _escrowService;
     private readonly IEmailService _emailService;
+    private readonly AuditHelper _auditHelper;
     private readonly ILogger<RefundService> _logger;
 
     /// <summary>
@@ -25,12 +26,14 @@ public class RefundService : IRefundService
         IPaymentProviderService paymentProviderService,
         IEscrowService escrowService,
         IEmailService emailService,
+        AuditHelper auditHelper,
         ILogger<RefundService> logger)
     {
         _context = context;
         _paymentProviderService = paymentProviderService;
         _escrowService = escrowService;
         _emailService = emailService;
+        _auditHelper = auditHelper;
         _logger = logger;
     }
 
@@ -155,6 +158,15 @@ public class RefundService : IRefundService
                     _logger.LogError(emailEx, "Failed to send refund confirmation email for {RefundNumber}", refundTransaction.RefundNumber);
                     // Don't fail the refund if email fails
                 }
+
+                // Audit log successful refund
+                await _auditHelper.LogRefundAsync(
+                    initiatedByUserId,
+                    refundTransaction.Id,
+                    AuditActionType.RefundProcessed,
+                    refundTransaction.RefundAmount,
+                    details: $"Full refund processed. Reason: {reason}",
+                    success: true);
             }
             else
             {
@@ -163,6 +175,16 @@ public class RefundService : IRefundService
                 
                 _logger.LogError("Full refund {RefundNumber} failed: {Error}",
                     refundTransaction.RefundNumber, providerResult.ErrorMessage);
+
+                // Audit log failed refund
+                await _auditHelper.LogRefundAsync(
+                    initiatedByUserId,
+                    refundTransaction.Id,
+                    AuditActionType.RefundFailed,
+                    refundTransaction.RefundAmount,
+                    details: $"Reason: {reason}",
+                    success: false,
+                    failureReason: providerResult.ErrorMessage);
             }
 
             refundTransaction.UpdatedAt = DateTime.UtcNow;
@@ -176,6 +198,16 @@ public class RefundService : IRefundService
             refundTransaction.ErrorMessage = ex.Message;
             refundTransaction.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Audit log exception during refund
+            await _auditHelper.LogRefundAsync(
+                initiatedByUserId,
+                refundTransaction.Id,
+                AuditActionType.RefundFailed,
+                refundTransaction.RefundAmount,
+                details: $"Reason: {reason}",
+                success: false,
+                failureReason: ex.Message);
             
             throw;
         }

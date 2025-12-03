@@ -1,0 +1,251 @@
+@page
+@model MercatoApp.Pages.Admin.SystemAuditLogs.IndexModel
+@{
+    ViewData["Title"] = "System Audit Logs";
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4">System Audit Logs</h1>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="startDate" name="Filter.StartDate" value="@Model.Filter.StartDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="endDate" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="endDate" name="Filter.EndDate" value="@Model.Filter.EndDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="actionType" class="form-label">Action Type</label>
+                        <select class="form-select" id="actionType" name="Filter.ActionType" asp-items="Model.ActionTypes">
+                            <option value="">All Actions</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="entityType" class="form-label">Entity Type</label>
+                        <select class="form-select" id="entityType" name="Filter.EntityType" asp-items="Model.EntityTypes">
+                            <option value="">All Entity Types</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <label for="userId" class="form-label">User ID</label>
+                        <input type="number" class="form-control" id="userId" name="Filter.UserId" value="@Model.Filter.UserId" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="targetUserId" class="form-label">Target User ID</label>
+                        <input type="number" class="form-control" id="targetUserId" name="Filter.TargetUserId" value="@Model.Filter.TargetUserId" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="entityId" class="form-label">Entity ID</label>
+                        <input type="number" class="form-control" id="entityId" name="Filter.EntityId" value="@Model.Filter.EntityId" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="success" class="form-label">Result</label>
+                        <select class="form-select" id="success" name="Filter.Success">
+                            <option value="">All</option>
+                            <option value="true" selected="@(Model.Filter.Success == true ? "selected" : null)">Success</option>
+                            <option value="false" selected="@(Model.Filter.Success == false ? "selected" : null)">Failed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <label for="correlationId" class="form-label">Correlation ID</label>
+                        <input type="text" class="form-control" id="correlationId" name="Filter.CorrelationId" value="@Model.Filter.CorrelationId" />
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mt-4">
+                            <input type="checkbox" class="form-check-input" id="includeArchived" name="Filter.IncludeArchived" value="true" @(Model.Filter.IncludeArchived ? "checked" : "") />
+                            <label class="form-check-label" for="includeArchived">
+                                Include Archived
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-funnel"></i> Apply Filters
+                        </button>
+                        <a href="@Url.Page("/Admin/SystemAuditLogs/Index")" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                Audit Log Entries
+                <span class="badge bg-secondary">@Model.AuditLogs.TotalCount Total</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.AuditLogs.Items.Count == 0)
+            {
+                <div class="alert alert-info">No audit logs found matching the current filters.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Action</th>
+                                <th>User</th>
+                                <th>Entity</th>
+                                <th>Result</th>
+                                <th>IP Address</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model.AuditLogs.Items)
+                            {
+                                <tr class="@(log.Success ? "" : "table-danger")">
+                                    <td>
+                                        <small>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@log.ActionType</span>
+                                        @if (log.IsArchived)
+                                        {
+                                            <span class="badge bg-secondary ms-1">Archived</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (log.User != null)
+                                        {
+                                            <div>@log.User.Email</div>
+                                            <small class="text-muted">ID: @log.UserId</small>
+                                        }
+                                        else if (log.UserId.HasValue)
+                                        {
+                                            <small class="text-muted">User ID: @log.UserId</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">System</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>@log.EntityType</strong>
+                                            @if (log.EntityId.HasValue)
+                                            {
+                                                <span> #@log.EntityId</span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(log.EntityDisplayName))
+                                        {
+                                            <small class="text-muted">@log.EntityDisplayName</small>
+                                        }
+                                        @if (log.TargetUser != null)
+                                        {
+                                            <div><small>Target: @log.TargetUser.Email</small></div>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (log.Success)
+                                        {
+                                            <span class="badge bg-success">Success</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Failed</span>
+                                            @if (!string.IsNullOrEmpty(log.FailureReason))
+                                            {
+                                                <div><small class="text-danger">@log.FailureReason</small></div>
+                                            }
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(log.IpAddress))
+                                        {
+                                            <small>@log.IpAddress</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(log.Details))
+                                        {
+                                            <small>@log.Details</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(log.CorrelationId))
+                                        {
+                                            <div><small class="text-muted">Corr: @log.CorrelationId</small></div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.AuditLogs.TotalPages > 1)
+                {
+                    <nav aria-label="Audit log pagination">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(!Model.AuditLogs.HasPreviousPage ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-page="/Admin/SystemAuditLogs/Index"
+                                   asp-route-Page="@(Model.AuditLogs.PageNumber - 1)"
+                                   asp-route-StartDate="@Model.Filter.StartDate"
+                                   asp-route-EndDate="@Model.Filter.EndDate"
+                                   asp-route-ActionType="@((int?)Model.Filter.ActionType)"
+                                   asp-route-EntityType="@Model.Filter.EntityType"
+                                   asp-route-UserId="@Model.Filter.UserId"
+                                   asp-route-TargetUserId="@Model.Filter.TargetUserId"
+                                   asp-route-EntityId="@Model.Filter.EntityId"
+                                   asp-route-Success="@Model.Filter.Success"
+                                   asp-route-CorrelationId="@Model.Filter.CorrelationId"
+                                   asp-route-IncludeArchived="@Model.Filter.IncludeArchived">
+                                    Previous
+                                </a>
+                            </li>
+
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Page @Model.AuditLogs.PageNumber of @Model.AuditLogs.TotalPages
+                                </span>
+                            </li>
+
+                            <li class="page-item @(!Model.AuditLogs.HasNextPage ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-page="/Admin/SystemAuditLogs/Index"
+                                   asp-route-Page="@(Model.AuditLogs.PageNumber + 1)"
+                                   asp-route-StartDate="@Model.Filter.StartDate"
+                                   asp-route-EndDate="@Model.Filter.EndDate"
+                                   asp-route-ActionType="@((int?)Model.Filter.ActionType)"
+                                   asp-route-EntityType="@Model.Filter.EntityType"
+                                   asp-route-UserId="@Model.Filter.UserId"
+                                   asp-route-TargetUserId="@Model.Filter.TargetUserId"
+                                   asp-route-EntityId="@Model.Filter.EntityId"
+                                   asp-route-Success="@Model.Filter.Success"
+                                   asp-route-CorrelationId="@Model.Filter.CorrelationId"
+                                   asp-route-IncludeArchived="@Model.Filter.IncludeArchived">
+                                    Next
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>

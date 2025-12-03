@@ -12,6 +12,7 @@ public class AccountDeletionService : IAccountDeletionService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<AccountDeletionService> _logger;
     private readonly IAdminAuditLogService _auditLogService;
+    private readonly AuditHelper _auditHelper;
 
     // Constants for anonymized values
     private const string AnonymizedEmailFormat = "deleted-user-{0}@anonymized.local";
@@ -26,11 +27,13 @@ public class AccountDeletionService : IAccountDeletionService
     public AccountDeletionService(
         ApplicationDbContext context,
         ILogger<AccountDeletionService> logger,
-        IAdminAuditLogService auditLogService)
+        IAdminAuditLogService auditLogService,
+        AuditHelper auditHelper)
     {
         _context = context;
         _logger = logger;
         _auditLogService = auditLogService;
+        _auditHelper = auditHelper;
     }
 
     /// <inheritdoc />
@@ -309,6 +312,14 @@ public class AccountDeletionService : IAccountDeletionService
                     reason: $"User requested account deletion. Reason: {reason ?? "Not provided"}",
                     metadata: $"Anonymized to: {anonymizedEmail}"
                 );
+
+                // Log to comprehensive audit log
+                await _auditHelper.LogAccountDeletionAsync(
+                    initiatorUserId: userId,
+                    targetUserId: userId,
+                    targetEmail: originalEmail,
+                    userType: user.UserType.ToString(),
+                    reason: reason);
 
                 await transaction.CommitAsync();
 
