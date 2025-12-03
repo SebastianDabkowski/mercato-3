@@ -23,5 +23,10 @@ public enum AccountStatus
     /// <summary>
     /// Account has been blocked by admin.
     /// </summary>
-    Blocked
+    Blocked,
+
+    /// <summary>
+    /// Account has been deleted and anonymized by user request.
+    /// </summary>
+    Deleted
 }
