@@ -1,0 +1,130 @@
+@page
+@model MercatoApp.Pages.Admin.FeatureFlags.HistoryModel
+@{
+    ViewData["Title"] = "Feature Flag History - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Admin</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/FeatureFlags">Feature Flags</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Change History</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-clock-history"></i> Change History
+            </h1>
+            <p class="text-muted">
+                <strong>Feature Flag:</strong> @Model.FeatureFlag.Name <code>(@Model.FeatureFlag.Key)</code>
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul"></i> History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.History.Any())
+                    {
+                        <div class="timeline">
+                            @foreach (var entry in Model.History)
+                            {
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    @switch (entry.ChangeType)
+                                                    {
+                                                        case MercatoApp.Models.FeatureFlagChangeType.Created:
+                                                            <span class="badge bg-success"><i class="bi bi-plus-circle"></i> Created</span>
+                                                            break;
+                                                        case MercatoApp.Models.FeatureFlagChangeType.Updated:
+                                                            <span class="badge bg-info"><i class="bi bi-pencil"></i> Updated</span>
+                                                            break;
+                                                        case MercatoApp.Models.FeatureFlagChangeType.Deleted:
+                                                            <span class="badge bg-danger"><i class="bi bi-trash"></i> Deleted</span>
+                                                            break;
+                                                        case MercatoApp.Models.FeatureFlagChangeType.Toggled:
+                                                            <span class="badge bg-warning text-dark"><i class="bi bi-toggle-on"></i> Toggled</span>
+                                                            break;
+                                                        case MercatoApp.Models.FeatureFlagChangeType.RulesModified:
+                                                            <span class="badge bg-primary"><i class="bi bi-diagram-3"></i> Rules Modified</span>
+                                                            break;
+                                                    }
+                                                </h6>
+                                                <p class="mb-1">@entry.ChangeDescription</p>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-person"></i> @entry.ChangedByUser.Email
+                                                    <span class="ms-3">
+                                                        <i class="bi bi-calendar"></i> @entry.ChangedAt.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                                                    </span>
+                                                    @if (!string.IsNullOrEmpty(entry.IpAddress))
+                                                    {
+                                                        <span class="ms-3">
+                                                            <i class="bi bi-geo-alt"></i> @entry.IpAddress
+                                                        </span>
+                                                    }
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        @if (!string.IsNullOrEmpty(entry.PreviousState) || !string.IsNullOrEmpty(entry.NewState))
+                                        {
+                                            <div class="mt-3">
+                                                <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                                        data-bs-toggle="collapse" data-bs-target="#details-@entry.Id">
+                                                    <i class="bi bi-code-square"></i> View Details
+                                                </button>
+                                                <div class="collapse mt-2" id="details-@entry.Id">
+                                                    @if (!string.IsNullOrEmpty(entry.PreviousState))
+                                                    {
+                                                        <div class="mb-2">
+                                                            <strong>Previous State:</strong>
+                                                            <pre class="bg-light p-2 small"><code>@entry.PreviousState</code></pre>
+                                                        </div>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(entry.NewState))
+                                                    {
+                                                        <div>
+                                                            <strong>New State:</strong>
+                                                            <pre class="bg-light p-2 small"><code>@entry.NewState</code></pre>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-clock-history" style="font-size: 3rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">No history available for this feature flag.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <a href="/Admin/FeatureFlags" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Feature Flags
+                </a>
+                <a href="/Admin/FeatureFlags/Edit?id=@Model.FeatureFlag.Id" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Edit Feature Flag
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

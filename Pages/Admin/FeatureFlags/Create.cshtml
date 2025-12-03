@@ -1,0 +1,125 @@
+@page
+@model MercatoApp.Pages.Admin.FeatureFlags.CreateModel
+@{
+    ViewData["Title"] = "Create Feature Flag - Admin";
+}
+
+<div class="container-fluid my-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Admin/Dashboard">Admin</a></li>
+                    <li class="breadcrumb-item"><a href="/Admin/FeatureFlags">Feature Flags</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Create</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">
+                <i class="bi bi-plus-circle"></i> Create Feature Flag
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="post">
+                @Html.AntiForgeryToken()
+                
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="FeatureFlag.Key" class="form-label">Flag Key *</label>
+                            <input asp-for="FeatureFlag.Key" class="form-control" placeholder="e.g., seller_user_management" />
+                            <div class="form-text">Unique identifier used in code. Use lowercase with underscores.</div>
+                            <span asp-validation-for="FeatureFlag.Key" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FeatureFlag.Name" class="form-label">Display Name *</label>
+                            <input asp-for="FeatureFlag.Name" class="form-control" placeholder="e.g., Seller User Management" />
+                            <span asp-validation-for="FeatureFlag.Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FeatureFlag.Description" class="form-label">Description</label>
+                            <textarea asp-for="FeatureFlag.Description" class="form-control" rows="3" 
+                                      placeholder="Describe what this feature flag controls"></textarea>
+                            <span asp-validation-for="FeatureFlag.Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FeatureFlag.Environments" class="form-label">Environments</label>
+                            <input asp-for="FeatureFlag.Environments" class="form-control" 
+                                   placeholder="dev,test,stage,prod (leave empty for all)" />
+                            <div class="form-text">Comma-separated list of environments where this flag applies. Leave empty to apply to all environments.</div>
+                            <span asp-validation-for="FeatureFlag.Environments" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="FeatureFlag.IsEnabledByDefault" class="form-check-input" type="checkbox" />
+                                <label asp-for="FeatureFlag.IsEnabledByDefault" class="form-check-label">
+                                    Enable by Default
+                                </label>
+                                <div class="form-text">When enabled, the feature will be on by default (unless targeting rules override it).</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="FeatureFlag.IsActive" class="form-check-input" type="checkbox" checked />
+                                <label asp-for="FeatureFlag.IsActive" class="form-check-label">
+                                    Active
+                                </label>
+                                <div class="form-text">Inactive flags are not evaluated and always return false.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="/Admin/FeatureFlags" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Create Feature Flag
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Feature Key Naming:</strong></p>
+                    <ul class="mb-3">
+                        <li>Use lowercase letters</li>
+                        <li>Separate words with underscores</li>
+                        <li>Be descriptive but concise</li>
+                        <li>Example: <code>advanced_search</code></li>
+                    </ul>
+
+                    <p class="mb-2"><strong>Default State:</strong></p>
+                    <ul class="mb-3">
+                        <li>Enable by default for features that should be on</li>
+                        <li>Keep disabled for gradual rollouts</li>
+                        <li>Use targeting rules to override the default</li>
+                    </ul>
+
+                    <p class="mb-2"><strong>Next Steps:</strong></p>
+                    <p class="mb-0">After creating the flag, you can add targeting rules on the edit page to control who sees the feature.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -136,6 +136,7 @@ builder.Services.AddScoped<ICurrencyService, CurrencyService>();
 builder.Services.AddScoped<IIntegrationService, IntegrationService>();
 builder.Services.AddScoped<ILegalDocumentService, LegalDocumentService>();
 builder.Services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
+builder.Services.AddScoped<IFeatureFlagManagementService, FeatureFlagManagementService>();
 
 // Add background services
 builder.Services.AddHostedService<MercatoApp.Helpers.SLAMonitoringService>();
