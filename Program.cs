@@ -138,6 +138,7 @@ builder.Services.AddScoped<ICurrencyService, CurrencyService>();
 builder.Services.AddScoped<IIntegrationService, IntegrationService>();
 builder.Services.AddScoped<ILegalDocumentService, LegalDocumentService>();
 builder.Services.AddScoped<IConsentManagementService, ConsentManagementService>();
+builder.Services.AddScoped<IDataExportService, DataExportService>();
 builder.Services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 builder.Services.AddScoped<IFeatureFlagManagementService, FeatureFlagManagementService>();
 builder.Services.AddScoped<IProcessingActivityService, ProcessingActivityService>();
