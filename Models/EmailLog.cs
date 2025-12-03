@@ -66,6 +66,16 @@ public enum EmailType
     SellerPhotoRemoval,
 
     /// <summary>
+    /// Newsletter email sent to users with consent.
+    /// </summary>
+    Newsletter,
+
+    /// <summary>
+    /// Marketing email sent to users with consent.
+    /// </summary>
+    Marketing,
+
+    /// <summary>
     /// Other email types.
     /// </summary>
     Other

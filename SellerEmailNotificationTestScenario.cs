@@ -30,8 +30,10 @@ public class SellerEmailNotificationTestScenario
         var orderLogger = loggerFactory.CreateLogger<OrderService>();
         var returnLogger = loggerFactory.CreateLogger<ReturnRequestService>();
         var payoutLogger = loggerFactory.CreateLogger<PayoutService>();
+        var consentLogger = loggerFactory.CreateLogger<ConsentManagementService>();
 
-        var emailService = new EmailService(context, emailLogger);
+        var consentService = new ConsentManagementService(context, consentLogger);
+        var emailService = new EmailService(context, emailLogger, consentService);
         
         // Setup test data
         var (seller, store, buyer, product) = await SetupTestDataAsync(context);
