@@ -27,6 +27,9 @@ public static class TestDataSeeder
             return; // Database already has data
         }
 
+        // Seed roles and permissions first
+        await SeedRolesAndPermissionsAsync(context);
+
         // Create a test seller user
         var sellerUser = new User
         {
@@ -300,6 +303,36 @@ public static class TestDataSeeder
             CreatedAt = DateTime.UtcNow
         };
         context.Users.Add(adminUser);
+        await context.SaveChangesAsync();
+
+        // Create a test support user
+        var supportUser = new User
+        {
+            Email = "support@test.com",
+            PasswordHash = HashPassword("Test123!"),
+            FirstName = "Support",
+            LastName = "User",
+            UserType = UserType.Support,
+            Status = AccountStatus.Active,
+            AcceptedTerms = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(supportUser);
+        await context.SaveChangesAsync();
+
+        // Create a test compliance user
+        var complianceUser = new User
+        {
+            Email = "compliance@test.com",
+            PasswordHash = HashPassword("Test123!"),
+            FirstName = "Compliance",
+            LastName = "Officer",
+            UserType = UserType.Compliance,
+            Status = AccountStatus.Active,
+            AcceptedTerms = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(complianceUser);
         await context.SaveChangesAsync();
 
         // Create a test cart with items from both sellers
@@ -726,6 +759,145 @@ public static class TestDataSeeder
         };
 
         context.SellerRatings.Add(sellerRating);
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds roles and permissions into the database.
+    /// </summary>
+    private static async Task SeedRolesAndPermissionsAsync(ApplicationDbContext context)
+    {
+        // Create roles
+        var buyerRole = new Role { Name = Role.RoleNames.Buyer, Description = "Buyers can browse and purchase products", IsActive = true };
+        var sellerRole = new Role { Name = Role.RoleNames.Seller, Description = "Sellers can manage their stores and products", IsActive = true };
+        var adminRole = new Role { Name = Role.RoleNames.Admin, Description = "Administrators have full system access", IsActive = true };
+        var supportRole = new Role { Name = Role.RoleNames.Support, Description = "Support staff can assist users and manage tickets", IsActive = true };
+        var complianceRole = new Role { Name = Role.RoleNames.Compliance, Description = "Compliance officers can review reports and audit logs", IsActive = true };
+
+        context.Roles.AddRange(buyerRole, sellerRole, adminRole, supportRole, complianceRole);
+        await context.SaveChangesAsync();
+
+        // Create permissions
+        var permissions = new List<Permission>
+        {
+            // Product permissions
+            new Permission { Name = Permission.PermissionNames.ViewProducts, Module = Permission.ModuleNames.Products, Description = "View product catalog" },
+            new Permission { Name = Permission.PermissionNames.CreateProducts, Module = Permission.ModuleNames.Products, Description = "Create new products" },
+            new Permission { Name = Permission.PermissionNames.EditProducts, Module = Permission.ModuleNames.Products, Description = "Edit existing products" },
+            new Permission { Name = Permission.PermissionNames.DeleteProducts, Module = Permission.ModuleNames.Products, Description = "Delete products" },
+            new Permission { Name = Permission.PermissionNames.ModerateProducts, Module = Permission.ModuleNames.Products, Description = "Moderate product listings" },
+
+            // Order permissions
+            new Permission { Name = Permission.PermissionNames.ViewOrders, Module = Permission.ModuleNames.Orders, Description = "View own orders" },
+            new Permission { Name = Permission.PermissionNames.ManageOrders, Module = Permission.ModuleNames.Orders, Description = "Manage own store orders" },
+            new Permission { Name = Permission.PermissionNames.ViewAllOrders, Module = Permission.ModuleNames.Orders, Description = "View all system orders" },
+
+            // User permissions
+            new Permission { Name = Permission.PermissionNames.ViewUsers, Module = Permission.ModuleNames.Users, Description = "View user information" },
+            new Permission { Name = Permission.PermissionNames.ManageUsers, Module = Permission.ModuleNames.Users, Description = "Manage user accounts" },
+            new Permission { Name = Permission.PermissionNames.BlockUsers, Module = Permission.ModuleNames.Users, Description = "Block/unblock users" },
+
+            // Store permissions
+            new Permission { Name = Permission.PermissionNames.ViewStores, Module = Permission.ModuleNames.Stores, Description = "View store listings" },
+            new Permission { Name = Permission.PermissionNames.ManageOwnStore, Module = Permission.ModuleNames.Stores, Description = "Manage own store" },
+            new Permission { Name = Permission.PermissionNames.ManageAllStores, Module = Permission.ModuleNames.Stores, Description = "Manage all stores" },
+
+            // Review permissions
+            new Permission { Name = Permission.PermissionNames.ViewReviews, Module = Permission.ModuleNames.Reviews, Description = "View product reviews" },
+            new Permission { Name = Permission.PermissionNames.WriteReviews, Module = Permission.ModuleNames.Reviews, Description = "Write product reviews" },
+            new Permission { Name = Permission.PermissionNames.ModerateReviews, Module = Permission.ModuleNames.Reviews, Description = "Moderate reviews" },
+
+            // Support permissions
+            new Permission { Name = Permission.PermissionNames.ViewSupportTickets, Module = Permission.ModuleNames.Support, Description = "View support tickets" },
+            new Permission { Name = Permission.PermissionNames.ManageSupportTickets, Module = Permission.ModuleNames.Support, Description = "Manage support tickets" },
+
+            // Compliance permissions
+            new Permission { Name = Permission.PermissionNames.ViewComplianceReports, Module = Permission.ModuleNames.Compliance, Description = "View compliance reports" },
+            new Permission { Name = Permission.PermissionNames.ManageCompliance, Module = Permission.ModuleNames.Compliance, Description = "Manage compliance cases" },
+            new Permission { Name = Permission.PermissionNames.AccessAuditLogs, Module = Permission.ModuleNames.Compliance, Description = "Access audit logs" },
+
+            // Cart permissions
+            new Permission { Name = Permission.PermissionNames.ManageCart, Module = Permission.ModuleNames.Cart, Description = "Manage shopping cart" },
+
+            // Dashboard permissions
+            new Permission { Name = Permission.PermissionNames.ViewBuyerDashboard, Module = Permission.ModuleNames.Dashboard, Description = "View buyer dashboard" },
+            new Permission { Name = Permission.PermissionNames.ViewSellerDashboard, Module = Permission.ModuleNames.Dashboard, Description = "View seller dashboard" },
+            new Permission { Name = Permission.PermissionNames.ViewAdminDashboard, Module = Permission.ModuleNames.Dashboard, Description = "View admin dashboard" },
+
+            // Configuration permissions
+            new Permission { Name = Permission.PermissionNames.ManageRoles, Module = Permission.ModuleNames.Configuration, Description = "Manage roles and permissions" },
+            new Permission { Name = Permission.PermissionNames.ManagePermissions, Module = Permission.ModuleNames.Configuration, Description = "Assign/revoke permissions" },
+            new Permission { Name = Permission.PermissionNames.ManageSettings, Module = Permission.ModuleNames.Configuration, Description = "Manage system settings" }
+        };
+
+        context.Permissions.AddRange(permissions);
+        await context.SaveChangesAsync();
+
+        // Create role-permission mappings
+        var rolePermissions = new List<RolePermission>();
+
+        // Buyer permissions
+        var buyerPermissions = permissions.Where(p => 
+            p.Name == Permission.PermissionNames.ViewProducts ||
+            p.Name == Permission.PermissionNames.ViewOrders ||
+            p.Name == Permission.PermissionNames.ViewStores ||
+            p.Name == Permission.PermissionNames.ViewReviews ||
+            p.Name == Permission.PermissionNames.WriteReviews ||
+            p.Name == Permission.PermissionNames.ManageCart ||
+            p.Name == Permission.PermissionNames.ViewBuyerDashboard
+        ).Select(p => new RolePermission { RoleId = buyerRole.Id, PermissionId = p.Id });
+        rolePermissions.AddRange(buyerPermissions);
+
+        // Seller permissions
+        var sellerPermissions = permissions.Where(p =>
+            p.Name == Permission.PermissionNames.ViewProducts ||
+            p.Name == Permission.PermissionNames.CreateProducts ||
+            p.Name == Permission.PermissionNames.EditProducts ||
+            p.Name == Permission.PermissionNames.DeleteProducts ||
+            p.Name == Permission.PermissionNames.ViewOrders ||
+            p.Name == Permission.PermissionNames.ManageOrders ||
+            p.Name == Permission.PermissionNames.ViewStores ||
+            p.Name == Permission.PermissionNames.ManageOwnStore ||
+            p.Name == Permission.PermissionNames.ViewReviews ||
+            p.Name == Permission.PermissionNames.ViewSellerDashboard
+        ).Select(p => new RolePermission { RoleId = sellerRole.Id, PermissionId = p.Id });
+        rolePermissions.AddRange(sellerPermissions);
+
+        // Admin permissions (all permissions)
+        var adminPermissions = permissions.Select(p => new RolePermission { RoleId = adminRole.Id, PermissionId = p.Id });
+        rolePermissions.AddRange(adminPermissions);
+
+        // Support permissions
+        var supportPermissions = permissions.Where(p =>
+            p.Name == Permission.PermissionNames.ViewProducts ||
+            p.Name == Permission.PermissionNames.ViewOrders ||
+            p.Name == Permission.PermissionNames.ViewAllOrders ||
+            p.Name == Permission.PermissionNames.ViewUsers ||
+            p.Name == Permission.PermissionNames.ViewStores ||
+            p.Name == Permission.PermissionNames.ViewReviews ||
+            p.Name == Permission.PermissionNames.ModerateReviews ||
+            p.Name == Permission.PermissionNames.ViewSupportTickets ||
+            p.Name == Permission.PermissionNames.ManageSupportTickets
+        ).Select(p => new RolePermission { RoleId = supportRole.Id, PermissionId = p.Id });
+        rolePermissions.AddRange(supportPermissions);
+
+        // Compliance permissions
+        var compliancePermissions = permissions.Where(p =>
+            p.Name == Permission.PermissionNames.ViewProducts ||
+            p.Name == Permission.PermissionNames.ModerateProducts ||
+            p.Name == Permission.PermissionNames.ViewOrders ||
+            p.Name == Permission.PermissionNames.ViewAllOrders ||
+            p.Name == Permission.PermissionNames.ViewUsers ||
+            p.Name == Permission.PermissionNames.ViewStores ||
+            p.Name == Permission.PermissionNames.ViewReviews ||
+            p.Name == Permission.PermissionNames.ModerateReviews ||
+            p.Name == Permission.PermissionNames.ViewComplianceReports ||
+            p.Name == Permission.PermissionNames.ManageCompliance ||
+            p.Name == Permission.PermissionNames.AccessAuditLogs
+        ).Select(p => new RolePermission { RoleId = complianceRole.Id, PermissionId = p.Id });
+        rolePermissions.AddRange(compliancePermissions);
+
+        context.RolePermissions.AddRange(rolePermissions);
         await context.SaveChangesAsync();
     }
 

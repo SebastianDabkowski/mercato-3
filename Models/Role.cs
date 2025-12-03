@@ -36,6 +36,11 @@ public class Role
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
+    /// Navigation property for role permissions.
+    /// </summary>
+    public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+
+    /// <summary>
     /// Standard role names for the marketplace.
     /// </summary>
     public static class RoleNames
@@ -43,5 +48,7 @@ public class Role
         public const string Buyer = "Buyer";
         public const string Seller = "Seller";
         public const string Admin = "Admin";
+        public const string Support = "Support";
+        public const string Compliance = "Compliance";
     }
 }

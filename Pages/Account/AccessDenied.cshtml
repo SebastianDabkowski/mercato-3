@@ -19,6 +19,12 @@
                         You do not have permission to access this resource. 
                         This area is restricted to authorized users only.
                     </p>
+                    @if (!string.IsNullOrEmpty(Model.RequiredRole))
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Required Role:</strong> @Model.RequiredRole
+                        </div>
+                    }
                     @if (!string.IsNullOrEmpty(Model.ReturnUrl))
                     {
                         <p class="text-muted small mb-4">
