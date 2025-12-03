@@ -1,4 +1,5 @@
 using MercatoApp.Data;
+using MercatoApp.Helpers;
 using MercatoApp.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +21,8 @@ public class CategoryResult
 public class CreateCategoryData
 {
     public required string Name { get; set; }
+    public string? Slug { get; set; }
+    public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
     public int DisplayOrder { get; set; }
 }
@@ -30,6 +33,8 @@ public class CreateCategoryData
 public class UpdateCategoryData
 {
     public required string Name { get; set; }
+    public required string Slug { get; set; }
+    public string? Description { get; set; }
     public int? ParentCategoryId { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; }
@@ -160,6 +165,25 @@ public class CategoryService : ICategoryService
             return result;
         }
 
+        // Generate or validate slug
+        var slug = string.IsNullOrWhiteSpace(data.Slug) 
+            ? SlugGenerator.GenerateSlug(trimmedName) 
+            : SlugGenerator.GenerateSlug(data.Slug);
+
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            result.Errors.Add("Could not generate a valid slug. Please provide a different name or custom slug.");
+            return result;
+        }
+
+        // Check for duplicate slug
+        var slugExists = await _context.Categories.AnyAsync(c => c.Slug == slug);
+        if (slugExists)
+        {
+            result.Errors.Add("A category with this slug already exists. Please use a different name or custom slug.");
+            return result;
+        }
+
         // Validate parent category exists if specified
         if (data.ParentCategoryId.HasValue)
         {
@@ -183,6 +207,8 @@ public class CategoryService : ICategoryService
         var category = new Category
         {
             Name = trimmedName,
+            Slug = slug,
+            Description = data.Description?.Trim(),
             ParentCategoryId = data.ParentCategoryId,
             DisplayOrder = data.DisplayOrder,
             IsActive = true,
@@ -193,7 +219,7 @@ public class CategoryService : ICategoryService
         _context.Categories.Add(category);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Created category {CategoryId} with name '{CategoryName}'", category.Id, category.Name);
+        _logger.LogInformation("Created category {CategoryId} with name '{CategoryName}' and slug '{Slug}'", category.Id, category.Name, category.Slug);
 
         result.Success = true;
         result.Category = category;
@@ -223,6 +249,28 @@ public class CategoryService : ICategoryService
         if (trimmedName.Length > MaxNameLength)
         {
             result.Errors.Add($"Category name must be {MaxNameLength} characters or less.");
+            return result;
+        }
+
+        // Validate and normalize slug
+        if (string.IsNullOrWhiteSpace(data.Slug))
+        {
+            result.Errors.Add("Category slug is required.");
+            return result;
+        }
+
+        var slug = SlugGenerator.GenerateSlug(data.Slug);
+        if (string.IsNullOrWhiteSpace(slug))
+        {
+            result.Errors.Add("Could not generate a valid slug. Please provide a different slug.");
+            return result;
+        }
+
+        // Check for duplicate slug (excluding current category)
+        var slugExists = await _context.Categories.AnyAsync(c => c.Slug == slug && c.Id != categoryId);
+        if (slugExists)
+        {
+            result.Errors.Add("A category with this slug already exists. Please use a different slug.");
             return result;
         }
 
@@ -261,10 +309,13 @@ public class CategoryService : ICategoryService
         }
 
         var oldName = category.Name;
+        var oldSlug = category.Slug;
         var oldParentId = category.ParentCategoryId;
         var oldIsActive = category.IsActive;
 
         category.Name = trimmedName;
+        category.Slug = slug;
+        category.Description = data.Description?.Trim();
         category.ParentCategoryId = data.ParentCategoryId;
         category.DisplayOrder = data.DisplayOrder;
         category.IsActive = data.IsActive;
@@ -288,8 +339,8 @@ public class CategoryService : ICategoryService
         }
 
         _logger.LogInformation(
-            "Updated category {CategoryId}: Name '{OldName}' -> '{NewName}', ParentId {OldParentId} -> {NewParentId}, IsActive {OldIsActive} -> {NewIsActive}",
-            categoryId, oldName, trimmedName, oldParentId, data.ParentCategoryId, oldIsActive, data.IsActive);
+            "Updated category {CategoryId}: Name '{OldName}' -> '{NewName}', Slug '{OldSlug}' -> '{NewSlug}', ParentId {OldParentId} -> {NewParentId}, IsActive {OldIsActive} -> {NewIsActive}",
+            categoryId, oldName, trimmedName, oldSlug, slug, oldParentId, data.ParentCategoryId, oldIsActive, data.IsActive);
 
         result.Success = true;
         result.Category = category;

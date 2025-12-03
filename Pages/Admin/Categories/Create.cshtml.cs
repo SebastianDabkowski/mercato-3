@@ -33,6 +33,10 @@ public class CreateModel : PageModel
         [Display(Name = "Category Name")]
         public string Name { get; set; } = string.Empty;
 
+        [MaxLength(500, ErrorMessage = "Description must be 500 characters or less.")]
+        [Display(Name = "Description")]
+        public string? Description { get; set; }
+
         [Display(Name = "Parent Category")]
         public int? ParentCategoryId { get; set; }
 
@@ -58,6 +62,7 @@ public class CreateModel : PageModel
         var data = new CreateCategoryData
         {
             Name = Input.Name,
+            Description = Input.Description,
             ParentCategoryId = Input.ParentCategoryId,
             DisplayOrder = Input.DisplayOrder
         };
