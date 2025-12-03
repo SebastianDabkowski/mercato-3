@@ -102,4 +102,36 @@ public class ProductImage
     /// Gets or sets the date and time when the image was uploaded.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Gets or sets the moderation status of the photo.
+    /// </summary>
+    public PhotoModerationStatus ModerationStatus { get; set; } = PhotoModerationStatus.PendingReview;
+
+    /// <summary>
+    /// Gets or sets whether the photo has been flagged for review.
+    /// </summary>
+    public bool IsFlagged { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the photo has been removed by moderation.
+    /// </summary>
+    public bool IsRemoved { get; set; }
+
+    /// <summary>
+    /// Gets or sets the reason why the photo was removed.
+    /// </summary>
+    [MaxLength(1000)]
+    public string? RemovalReason { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date and time when the photo was removed.
+    /// </summary>
+    public DateTime? RemovedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the archived URL path for removed photos (for legal retention).
+    /// </summary>
+    [MaxLength(500)]
+    public string? ArchivedUrl { get; set; }
 }
